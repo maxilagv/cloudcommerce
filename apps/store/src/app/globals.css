@@ -1,0 +1,244 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CloudCommerce design tokens — source of truth
+   Mirrors .claude/Skills/estetica.md + snippets/tokens.css
+   Primary = #0B6BFF (cc-* system). Use var(--cc-*) in component CSS.
+   ============================================================ */
+:root {
+  /* Surfaces / backgrounds */
+  --cc-bg-page: #f6f8fb;
+  --cc-bg-shell: #ffffff;
+  --cc-bg-surface: #ffffff;
+  --cc-bg-surface-soft: #f8fafd;
+  --cc-bg-surface-blue: #f3f8ff;
+  --cc-bg-hover: #f6f9ff;
+
+  /* Borders */
+  --cc-border-subtle: #eef2f7;
+  --cc-border-default: #e5eaf2;
+  --cc-border-strong: #d7dfea;
+
+  /* Text */
+  --cc-text-primary: #101828;
+  --cc-text-secondary: #475467;
+  --cc-text-muted: #7b8798;
+  --cc-text-faint: #98a2b3;
+
+  /* Brand blue */
+  --cc-primary: #0b6bff;
+  --cc-primary-hover: #005be8;
+  --cc-primary-active: #004ecc;
+  --cc-primary-soft: #eaf3ff;
+  --cc-primary-softer: #f4f8ff;
+  --cc-primary-border: #bbd7ff;
+
+  /* Semantic */
+  --cc-success: #16a34a;
+  --cc-success-soft: #eafbf0;
+  --cc-warning: #f59e0b;
+  --cc-warning-soft: #fff7e6;
+  --cc-danger: #ef4444;
+  --cc-danger-soft: #fef2f2;
+  --cc-star: #ffb020;
+
+  /* Radii */
+  --cc-radius-xs: 8px;
+  --cc-radius-sm: 10px;
+  --cc-radius-md: 14px;
+  --cc-radius-lg: 18px;
+  --cc-radius-xl: 22px;
+  --cc-radius-2xl: 28px;
+  --cc-radius-pill: 999px;
+
+  /* Shadows — delicate, ambient depth (estetica.md §6) */
+  --cc-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --cc-shadow-sm: 0 8px 22px rgba(16, 24, 40, 0.05);
+  --cc-shadow-md: 0 14px 42px rgba(16, 24, 40, 0.075);
+  --cc-shadow-lg: 0 24px 70px rgba(11, 107, 255, 0.1), 0 8px 24px rgba(16, 24, 40, 0.06);
+  --cc-shadow-focus: 0 0 0 4px rgba(11, 107, 255, 0.12);
+
+  /* Motion (Microanimaciones.md §3) */
+  --cc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --cc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --cc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cc-duration-instant: 90ms;
+  --cc-duration-fast: 140ms;
+  --cc-duration-normal: 220ms;
+  --cc-duration-slow: 360ms;
+}
+
+/* ============================================================
+   Expose tokens to Tailwind v4's utility generator.
+   Conventional prefixes turn keys into utilities:
+     --color-*  -> bg-/text-/border-
+     --radius-* -> rounded-
+     --shadow-* -> shadow-
+     --ease-*   -> ease-
+     --animate-*-> animate-
+     --font-*   -> font-
+   ============================================================ */
+@theme inline {
+  --color-cc-page: var(--cc-bg-page);
+  --color-cc-shell: var(--cc-bg-shell);
+  --color-cc-surface: var(--cc-bg-surface);
+  --color-cc-soft: var(--cc-bg-surface-soft);
+  --color-cc-surface-blue: var(--cc-bg-surface-blue);
+  --color-cc-hover: var(--cc-bg-hover);
+
+  --color-cc-border-subtle: var(--cc-border-subtle);
+  --color-cc-border: var(--cc-border-default);
+  --color-cc-border-strong: var(--cc-border-strong);
+
+  --color-cc-text: var(--cc-text-primary);
+  --color-cc-secondary: var(--cc-text-secondary);
+  --color-cc-muted: var(--cc-text-muted);
+  --color-cc-faint: var(--cc-text-faint);
+
+  --color-cc-primary: var(--cc-primary);
+  --color-cc-primary-hover: var(--cc-primary-hover);
+  --color-cc-primary-active: var(--cc-primary-active);
+  --color-cc-primary-soft: var(--cc-primary-soft);
+  --color-cc-primary-softer: var(--cc-primary-softer);
+  --color-cc-primary-border: var(--cc-primary-border);
+
+  --color-cc-success: var(--cc-success);
+  --color-cc-success-soft: var(--cc-success-soft);
+  --color-cc-warning: var(--cc-warning);
+  --color-cc-warning-soft: var(--cc-warning-soft);
+  --color-cc-danger: var(--cc-danger);
+  --color-cc-danger-soft: var(--cc-danger-soft);
+  --color-cc-star: var(--cc-star);
+
+  --radius-cc-xs: var(--cc-radius-xs);
+  --radius-cc-sm: var(--cc-radius-sm);
+  --radius-cc-md: var(--cc-radius-md);
+  --radius-cc-lg: var(--cc-radius-lg);
+  --radius-cc-xl: var(--cc-radius-xl);
+  --radius-cc-2xl: var(--cc-radius-2xl);
+
+  --shadow-cc-xs: var(--cc-shadow-xs);
+  --shadow-cc-sm: var(--cc-shadow-sm);
+  --shadow-cc-md: var(--cc-shadow-md);
+  --shadow-cc-lg: var(--cc-shadow-lg);
+  --shadow-cc-focus: var(--cc-shadow-focus);
+
+  --ease-cc-out: var(--cc-ease-out);
+  --ease-cc-in-out: var(--cc-ease-in-out);
+  --ease-cc-spring: var(--cc-ease-spring);
+
+  --animate-cc-shimmer: cc-shimmer 1.35s linear infinite;
+  --animate-cc-float: cc-float-soft 3.2s ease-in-out infinite;
+  --animate-cc-pulse: cc-assistant-pulse 2.8s ease-in-out infinite;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ============================================================
+   Keyframes (snippets/tokens.css + Microanimaciones.md)
+   ============================================================ */
+@keyframes cc-shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes cc-float-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -7px, 0);
+  }
+}
+
+@keyframes cc-badge-pop {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.6;
+  }
+  55% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cc-assistant-pulse {
+  0%,
+  100% {
+    box-shadow: 0 18px 45px rgba(11, 107, 255, 0.32);
+  }
+  50% {
+    box-shadow: 0 18px 55px rgba(11, 107, 255, 0.44);
+  }
+}
+
+/* ============================================================
+   Base layer
+   ============================================================ */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--cc-bg-page);
+    color: var(--cc-text-primary);
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  /* Premium focus ring (estetica.md §6) */
+  .cc-focus-ring:focus-visible {
+    outline: none;
+    box-shadow: var(--cc-shadow-focus);
+  }
+}
+
+/* Line clamp helper for product names (tarjetas.md §9) */
+.cc-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Hide scrollbar for horizontal chip rails */
+.cc-no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.cc-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Skeleton shimmer surface */
+.cc-skeleton {
+  background: linear-gradient(90deg, #f1f4f8 0%, #fafbfd 50%, #f1f4f8 100%);
+  background-size: 220% 100%;
+  animation: var(--animate-cc-shimmer);
+}
+
+/* ============================================================
+   Accessibility — respect reduced motion (Microanimaciones.md §4)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
