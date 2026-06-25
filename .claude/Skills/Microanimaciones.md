@@ -1,361 +1,370 @@
-# Microanimaciones y Hover States — CloudCommerce
-
-Especificación de todas las interacciones animadas.
-Implementar con Tailwind transitions + Framer Motion donde se indica.
-
+---
+name: cloudcommerce-microanimaciones
+description: Skill para definir microanimaciones, motion tokens y estados interactivos del catálogo cloudcommerce.
+version: 1.0.0
+scope: motion, css-animation, frontend-interactions, ux-polish
 ---
 
-## Principios
+# Skill — Microanimaciones cloudcommerce
 
-- **Velocidad**: 150-250ms en la mayoría de las interacciones. Nunca más de 400ms.
-- **Easing**: `ease-out` para entradas, `ease-in` para salidas, `ease-in-out` para hover.
-- **Intención**: cada animación refuerza la acción, nunca es decorativa pura.
-- **Respeto al usuario**: respetar `prefers-reduced-motion`. Usar `@media (prefers-reduced-motion: reduce)` para desactivar.
+## 1. Objetivo
 
----
+Añadir vida a la interfaz sin romper la estética premium. Las microanimaciones deben ser sutiles, rápidas, útiles y coherentes. El usuario debe sentir que la interfaz responde con precisión, no que hay animaciones decorativas innecesarias.
 
-## Product Card hover
+## 2. Principios de movimiento
+
+1. **Sutileza**: no más de `3px` de desplazamiento en hover para tarjetas.
+2. **Rapidez**: la mayoría de animaciones duran `120ms–260ms`.
+3. **Easing premium**: evitar `linear` para UI, excepto shimmer o loops suaves.
+4. **Propósito**: cada movimiento debe indicar estado, disponibilidad, selección, foco o actualización.
+5. **Respeto a accesibilidad**: desactivar o reducir movimiento con `prefers-reduced-motion`.
+
+## 3. Tokens de movimiento
 
 ```css
-/* Card container */
-transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+:root {
+  --cc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --cc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --cc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-hover: {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  border-color: #CBD5E1;
+  --cc-duration-instant: 90ms;
+  --cc-duration-fast: 140ms;
+  --cc-duration-normal: 220ms;
+  --cc-duration-slow: 360ms;
+  --cc-duration-loop: 1600ms;
+}
+```
+
+## 4. Reduced motion
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+```
+
+## 5. Header
+
+### 5.1 Nav hover
+
+```css
+.nav-link {
+  transition: color var(--cc-duration-fast) var(--cc-ease-out),
+              background var(--cc-duration-fast) var(--cc-ease-out);
+}
+.nav-link:hover {
+  color: var(--cc-primary);
+  background: var(--cc-primary-softer);
+}
+```
+
+### 5.2 Search focus
+
+```css
+.search-command:focus-within {
+  background: #fff;
+  border-color: var(--cc-primary-border);
+  box-shadow: var(--cc-shadow-focus);
+}
+```
+
+El buscador debe sentirse activado al enfocar.
+
+### 5.3 Badges de carrito/favoritos
+
+Al cambiar contador:
+
+```css
+@keyframes cc-badge-pop {
+  0% { transform: scale(.72); opacity: .6; }
+  55% { transform: scale(1.16); opacity: 1; }
+  100% { transform: scale(1); }
 }
 
-/* Imagen dentro de la card */
-.card:hover img {
-  transform: scale(1.04);
-  transition: transform 300ms ease-out;
+.action-badge[data-updated="true"] {
+  animation: cc-badge-pop 260ms var(--cc-ease-spring);
+}
+```
+
+## 6. Hero
+
+### 6.1 Dots flotantes
+
+```css
+@keyframes cc-float-soft {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -7px, 0); }
 }
 
-/* Botón "Agregar al carrito" — slide up desde abajo */
-.add-to-cart-btn {
-  transform: translateY(8px);
+.hero-orbit-dot {
+  animation: cc-float-soft 3.2s ease-in-out infinite;
+}
+```
+
+Usar en pequeños puntos decorativos del hero.
+
+### 6.2 CTA hero
+
+```css
+.hero-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(11,107,255,.30);
+}
+.hero-cta:active {
+  transform: translateY(0) scale(.985);
+}
+```
+
+### 6.3 Productos del hero
+
+```css
+.hero-product-stack {
+  transition: transform 360ms var(--cc-ease-out);
+}
+.hero-banner:hover .hero-product-stack {
+  transform: translateY(-3px) scale(1.008);
+}
+```
+
+Movimiento casi imperceptible, como si el hero tuviera profundidad.
+
+## 7. Chips de categorías
+
+### 7.1 Hover
+
+```css
+.category-chip {
+  transition: transform 180ms var(--cc-ease-out),
+              border-color 180ms var(--cc-ease-out),
+              box-shadow 180ms var(--cc-ease-out),
+              background 180ms var(--cc-ease-out);
+}
+
+.category-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--cc-primary-border);
+  box-shadow: 0 10px 24px rgba(16,24,40,.055);
+}
+```
+
+### 7.2 Active transition
+
+Cuando cambia chip activo:
+
+- icono cambia a azul,
+- borde se vuelve azul,
+- fondo se aclara,
+- contador puede hacer fade.
+
+Duración: `180ms–220ms`.
+
+## 8. Sidebar de filtros
+
+### 8.1 Filas hover
+
+```css
+.category-filter-row {
+  transition: background var(--cc-duration-fast) var(--cc-ease-out),
+              color var(--cc-duration-fast) var(--cc-ease-out);
+}
+.category-filter-row:hover {
+  background: #F8FAFD;
+}
+```
+
+### 8.2 Accordion
+
+```css
+.filter-content {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 220ms var(--cc-ease-out),
+              opacity 180ms var(--cc-ease-out);
+}
+
+.filter-section[data-collapsed="true"] .filter-content {
+  grid-template-rows: 0fr;
   opacity: 0;
-  transition: transform 200ms ease-out, opacity 200ms ease-out;
 }
-.card:hover .add-to-cart-btn {
-  transform: translateY(0);
+
+.filter-content > div {
+  overflow: hidden;
+}
+```
+
+### 8.3 Slider
+
+- Thumb crece de `14px` a `16px` en hover.
+- Al arrastrar, mostrar sombra azul suave.
+- La pista activa se actualiza sin jitter.
+
+## 9. Product cards
+
+### 9.1 Card hover
+
+```css
+.product-card {
+  will-change: transform;
+}
+.product-card:hover {
+  transform: translateY(-3px);
+}
+```
+
+### 9.2 Imagen hover
+
+```css
+.product-image {
+  transition: transform 260ms var(--cc-ease-out), filter 260ms var(--cc-ease-out);
+}
+.product-card:hover .product-image {
+  transform: translateY(-2px) scale(1.025);
+  filter: drop-shadow(0 18px 24px rgba(16,24,40,.14));
+}
+```
+
+### 9.3 Quick action reveal
+
+```css
+.quick-action {
+  transform: translateY(4px) scale(.96);
+  transition: transform 180ms var(--cc-ease-out), opacity 180ms var(--cc-ease-out);
+}
+.product-card:hover .quick-action {
+  transform: translateY(0) scale(1);
   opacity: 1;
 }
 ```
 
-Alternativa más simple (si se prefiere siempre visible): solo hacer hover en el botón con `bg darken`.
+### 9.4 Add-to-cart click
 
----
+Al click:
 
-## Botón primario (Agregar al carrito)
+- botón hace `scale(.985)`,
+- icono carrito puede desplazarse 2px,
+- badge de carrito en header hace pop,
+- opcional toast mini `Agregado al carrito`.
 
-```css
-button {
-  transition: background-color 150ms ease, transform 100ms ease, box-shadow 150ms ease;
-}
+No bloquear la UI con modales.
 
-hover: {
-  background-color: #0047D9;
-  transform: scale(1.01);
-}
-
-active: {
-  transform: scale(0.97);
-  background-color: #003FBB;
-}
-
-/* Estado de carga (después de click) */
-loading: {
-  opacity: 0.85;
-  cursor: wait;
-  /* spinner icon reemplaza el texto */
-}
-```
-
-### Feedback de "Agregado al carrito"
-Cuando el usuario agrega un producto:
-1. Botón se transforma: `[🛒 Agregar al carrito]` → `[✓ Agregado]` (verde, 1.5s)
-2. Ícono del carrito en el header hace un bump: `scale(1.2)` → `scale(1)`, 300ms.
-3. Badge del carrito incrementa con fade-in del número nuevo.
-4. Toast notification aparece desde arriba derecha (ver Toasts).
-
----
-
-## Wishlist (corazón)
+## 10. Skeleton y carga
 
 ```css
-/* Ícono corazón — idle */
-color: #94A3B8; /* gris */
-transition: color 200ms, transform 200ms;
-
-/* Hover */
-.wishlist-btn:hover {
-  color: #F43F5E; /* rose */
-  transform: scale(1.15);
+@keyframes cc-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
 }
 
-/* Activo (guardado en wishlist) */
-.wishlist-btn.active {
-  color: #F43F5E;
-  fill: #F43F5E;
-  animation: heartPop 300ms ease-out;
-}
-
-@keyframes heartPop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.3); }
-  70%  { transform: scale(0.9); }
-  100% { transform: scale(1); }
-}
-```
-
----
-
-## Progress bar (seguimiento de envíos)
-
-```css
-/* Carga inicial — barras de progreso */
-.progress-fill {
-  width: 0%;
-  transition: width 800ms ease-out;
-  /* Al montar el componente, anima hasta el valor real */
-}
-
-/* Step tracker — círculos */
-.step-circle.completed {
-  animation: stepComplete 400ms ease-out;
-}
-
-@keyframes stepComplete {
-  0%   { transform: scale(0.8); opacity: 0.5; }
-  60%  { transform: scale(1.15); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-/* Dot pulsante en el paso actual (En Camino) */
-.step-dot-active::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid #0057FF;
-  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-@keyframes ping {
-  0%   { transform: scale(1); opacity: 0.75; }
-  100% { transform: scale(2); opacity: 0; }
-}
-```
-
----
-
-## Skeleton loading (carga de productos)
-
-```css
-/* Mientras cargan las tarjetas de producto */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    #F1F5F9 25%,
-    #E2E8F0 50%,
-    #F1F5F9 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 8px;
-}
-
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  background: linear-gradient(90deg, #F1F4F8 0%, #FAFBFD 50%, #F1F4F8 100%);
+  background-size: 220% 100%;
+  animation: cc-shimmer 1.35s linear infinite;
 }
 ```
 
-Usar skeleton en: grid de productos, imagen PDP, stats del dashboard, tabla de pedidos.
+## 11. Trust bar
 
----
+### 11.1 Iconos de beneficios
 
-## Toast notifications
-
-Librería: Sonner (shadcn/ui default).
-
-```
-Posición: top-right, offset 20px desde el borde
-Duración: 3000ms (3s)
-Animación entrada: slide-in-right + fade-in (200ms)
-Animación salida: fade-out + slide-up (150ms)
-
-Tipos:
-✓ Éxito:  bg white, borde-left 4px #10B981, ícono check verde
-ℹ Info:   bg white, borde-left 4px #0057FF, ícono info azul
-⚠ Aviso:  bg white, borde-left 4px #F59E0B, ícono warning amber
-✗ Error:  bg white, borde-left 4px #EF4444, ícono x rojo
-
-Ejemplos de texto:
-- "✓ Samsung Galaxy añadido al carrito"
-- "✓ Guardado en tu lista de deseos"
-- "ℹ Sesión iniciada correctamente"
-```
-
----
-
-## Cart drawer (panel lateral)
+Hover suave:
 
 ```css
-/* Overlay */
-.cart-overlay {
-  background: rgba(0,0,0,0.4);
-  animation: fadeIn 200ms ease-out;
-}
-
-/* Drawer panel */
-.cart-panel {
-  transform: translateX(100%);
-  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.cart-panel.open {
-  transform: translateX(0);
+.trust-item:hover .trust-icon {
+  transform: translateY(-1px) scale(1.04);
+  background: var(--cc-primary-soft);
+  color: var(--cc-primary);
 }
 ```
 
----
+### 11.2 Cloudplus panel
 
-## Navegación sidebar (portal cliente)
+Puede tener un gradiente animado casi imperceptible:
 
 ```css
-/* Item de sidebar al hacer click */
-.sidebar-item {
-  transition: background-color 150ms ease, color 150ms ease;
-}
-
-/* Indicador activo — borde izquierdo */
-.sidebar-item.active::before {
-  content: '';
+.cloudplus-panel::before {
+  content: "";
   position: absolute;
-  left: 0;
-  width: 3px;
-  height: 100%;
-  background: #0057FF;
-  border-radius: 0 2px 2px 0;
-  animation: slideInBar 200ms ease-out;
+  inset: -40%;
+  background: radial-gradient(circle, rgba(11,107,255,.16), transparent 40%);
+  animation: cc-slow-drift 8s ease-in-out infinite;
 }
 
-@keyframes slideInBar {
-  from { height: 0%; opacity: 0; }
-  to   { height: 100%; opacity: 1; }
+@keyframes cc-slow-drift {
+  0%, 100% { transform: translateX(-4%) translateY(0); }
+  50% { transform: translateX(4%) translateY(-3%); }
 }
 ```
 
----
+## 12. Floating assistant
 
-## Gráfico de línea (dashboard — gastos)
-
-```
-Con Recharts:
-- Línea se dibuja de izquierda a derecha al montar
-- strokeDasharray animado: totalLength → 0
-- Duración: 1000ms ease-out
-- Puntos (dots) aparecen con delay escalonado: 50ms × index
-- Área fill: fadeIn 600ms delay 400ms
-```
-
----
-
-## Mapa (página de seguimiento)
-
-```
-Al cargar la página:
-1. Mapa hace zoom-in desde vista continental → vista de ruta (1500ms)
-2. Marcadores de origen y destino: drop-in con bounce (300ms cada uno)
-3. Línea de ruta se "dibuja" de origen a destino (1000ms)
-4. Ícono de camión aparece y hace la animación de movimiento a lo largo de la ruta
-
-Camión en movimiento:
-- Framer Motion path animation
-- Loop suave en el trayecto actual
-- Rotación del ícono sigue la dirección de la ruta
-```
-
----
-
-## Número counter (stats del dashboard)
-
-```
-Al montar las stat cards:
-- Los números cuentan desde 0 hasta el valor real
-- Duración: 1200ms, ease-out
-- Delay escalonado: card 1 → 0ms, card 2 → 100ms, card 3 → 200ms...
-
-Implementar con: useCountUp hook custom o react-countup
-```
-
----
-
-## Imagen de producto en PDP
+### 12.1 Idle pulse
 
 ```css
-/* Thumbnail → imagen principal */
-Al hacer click en thumbnail:
-  imagen principal: crossfade (opacity 0 → 1, 200ms)
-  thumbnail activo: borde 2px solid #0057FF
-
-/* Zoom en hover (desktop) */
-.product-image:hover {
-  cursor: zoom-in;
+@keyframes cc-assistant-pulse {
+  0%, 100% { box-shadow: 0 18px 45px rgba(11,107,255,.32); }
+  50% { box-shadow: 0 18px 55px rgba(11,107,255,.44); }
 }
-/* Lupa: mostrar imagen 2x en un panel flotante al lado */
-/* Implementar con react-medium-image-zoom */
+
+.floating-assistant {
+  animation: cc-assistant-pulse 2.8s ease-in-out infinite;
+}
 ```
 
----
-
-## Badge counter del carrito
+### 12.2 Estado online
 
 ```css
-@keyframes cartBump {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.4); }
-  100% { transform: scale(1); }
-}
-
-.cart-badge {
-  animation: cartBump 300ms ease-out;
-  /* Se dispara cada vez que se agrega un item */
-}
-```
-
----
-
-## Tabla de pedidos (row hover)
-
-```css
-tr {
-  transition: background-color 100ms ease;
-}
-
-tr:hover {
-  background-color: #F8F9FA;
-}
-
-/* Click → feedback */
-tr:active {
-  background-color: #EBF0FF;
+.online-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #22C55E;
+  border: 2px solid #fff;
+  position: absolute;
+  top: 3px;
+  right: 3px;
 }
 ```
 
----
+## 13. Toasts
 
-## Implementación en Next.js
+Para acciones como carrito/favorito:
 
-```ts
-// tailwind.config.ts — asegurar que las transiciones estén habilitadas
-// Framer Motion para animaciones complejas (mapa, gráficos, counters)
-// CSS puro para hover states simples (más performante)
-// Intersection Observer para animar elementos al entrar al viewport
-
-// Ejemplo: animar stats al entrar al viewport
-const { ref, inView } = useInView({ threshold: 0.1, triggerOnce: true })
-// Solo arrancar el counter cuando la card es visible
+```txt
+Producto agregado al carrito
+Ver carrito
 ```
+
+Estilo:
+
+- fondo blanco/glass,
+- borde suave,
+- icono verde o azul,
+- sombra media,
+- entra desde abajo con `translateY(8px)` y fade.
+
+Duración: `2400ms`.
+
+## 14. Performance
+
+- Animar `transform` y `opacity` siempre que sea posible.
+- Evitar animar `width`, `height`, `left`, `top` en loops.
+- Usar `will-change` solo en elementos animados frecuentemente.
+- No tener más de 3–5 animaciones infinitas visibles simultáneamente.
+- Pausar loops decorativos si el tab no está visible, si aplica.
+
+## 15. Checklist de microanimaciones
+
+- ¿Los hover se sienten rápidos y suaves?
+- ¿No hay movimientos exagerados?
+- ¿El hero parece vivo pero no distrae?
+- ¿Las tarjetas elevan suavemente?
+- ¿El botón de carrito responde al click?
+- ¿El buscador tiene focus premium?
+- ¿Los filtros colapsan sin salto brusco?
+- ¿Se respeta `prefers-reduced-motion`?

@@ -1,212 +1,344 @@
-# Sistema Visual — CloudCommerce
-
-Fuente de verdad del diseño. Aplica a `apps/store` y `apps/admin`.
-Basado en las 5 imágenes de referencia confirmadas.
-
+---
+name: cloudcommerce-estetica-visual
+description: Skill de estética visual para reproducir la apariencia blanca, premium y tecnológica del catálogo cloudcommerce.
+version: 1.0.0
+scope: design-tokens, visual-system, frontend-style
 ---
 
-## Paleta de colores
+# Skill — Estética visual cloudcommerce
 
-```
-Primary blue:       #0057FF   (botones, links, logo, acentos)
-Primary hover:      #0047D9   (hover de botones)
-Primary light:      #EBF0FF   (backgrounds de chips, badges info)
+## 1. Objetivo
 
-Background page:    #F4F6FA   (fondo gris muy suave de toda la app)
-Surface card:       #FFFFFF   (fondo de tarjetas, paneles, sidebar)
-Border:             #E2E8F0   (separadores, bordes de cards)
-Border hover:       #CBD5E1
+Definir el sistema visual que debe gobernar todos los componentes del catálogo. Esta skill evita que el frontend se vuelva inconsistente. Cada componente debe parecer parte de una misma plataforma premium: blanco dominante, azul nítido, bordes suaves, sombras delicadas, tipografía limpia y detalles refinados.
 
-Text primary:       #0F172A   (títulos, precios, texto importante)
-Text secondary:     #475569   (descripciones, labels)
-Text muted:         #94A3B8   (placeholders, texto deshabilitado)
+## 2. Personalidad visual
 
-Success green:      #10B981   (disponible, entregado, ahorro)
-Warning amber:      #F59E0B   (alertas, stock bajo)
-Error red:          #EF4444   (errores, fuera de stock)
-Info blue:          #3B82F6   (informativos, notificaciones)
+La interfaz debe comunicar:
 
-Price color:        #0F172A   (precio principal, bold)
-Price old:          #94A3B8   (precio tachado)
-Price discount:     #10B981   (porcentaje de descuento, badge verde)
-```
+- tecnología confiable,
+- compra segura,
+- catálogo premium,
+- claridad extrema,
+- ligereza,
+- sofisticación,
+- movimiento sutil,
+- alto nivel de detalle.
 
----
+No debe comunicar:
 
-## Tipografía
+- marketplace barato,
+- plantilla genérica,
+- diseño corporativo pesado,
+- dashboard oscuro,
+- exceso de color,
+- saturación visual,
+- sombras duras,
+- botones enormes sin refinamiento.
 
-**Font family**: Inter (Google Fonts). Fallback: system-ui, sans-serif.
+## 3. Paleta de color
 
-```
-/* Jerarquía de tamaños */
-Hero heading:     48px / font-bold / leading-tight / text-white (sobre banner)
-Page title:       28px / font-bold / text-primary
-Section title:    20px / font-semibold / text-primary
-Product title:    15px / font-medium / text-primary / leading-snug (2 líneas max)
-Price main:       22px / font-bold / text-primary
-Price secondary:  14px / font-normal / text-muted / line-through
-Label:            12px / font-medium / text-secondary / uppercase tracking-wide
-Body:             14px / font-normal / text-secondary
-Caption:          12px / font-normal / text-muted
-Nav item:         14px / font-medium / text-secondary
-Button:           14px / font-semibold
-```
+### 3.1 Colores base
 
----
+```css
+:root {
+  --cc-bg-page: #F6F8FB;
+  --cc-bg-shell: #FFFFFF;
+  --cc-bg-surface: #FFFFFF;
+  --cc-bg-surface-soft: #F8FAFD;
+  --cc-bg-surface-blue: #F3F8FF;
+  --cc-bg-hover: #F6F9FF;
 
-## Espaciado y layout
+  --cc-border-subtle: #EEF2F7;
+  --cc-border-default: #E5EAF2;
+  --cc-border-strong: #D7DFEA;
 
-```
-/* Contenedor principal */
-max-width: 1440px, centrado, padding horizontal: 24px
+  --cc-text-primary: #101828;
+  --cc-text-secondary: #475467;
+  --cc-text-muted: #7B8798;
+  --cc-text-faint: #98A2B3;
 
-/* Grid de productos */
-Columnas desktop (≥1280px): 4 columnas, gap: 16px
-Columnas tablet (768-1279px): 3 columnas, gap: 16px
-Columnas mobile (<768px): 2 columnas, gap: 12px
+  --cc-primary: #0B6BFF;
+  --cc-primary-hover: #005BE8;
+  --cc-primary-active: #004ECC;
+  --cc-primary-soft: #EAF3FF;
+  --cc-primary-softer: #F4F8FF;
+  --cc-primary-border: #BBD7FF;
 
-/* Sidebar izquierdo (store) */
-width: 240px, sticky top-0, padding: 16px
+  --cc-success: #16A34A;
+  --cc-success-soft: #EAFBF0;
+  --cc-warning: #F59E0B;
+  --cc-warning-soft: #FFF7E6;
+  --cc-danger: #EF4444;
+  --cc-danger-soft: #FEF2F2;
 
-/* Padding interno de cards */
-padding: 16px
-
-/* Gap entre secciones de página */
-gap vertical entre secciones: 32px
-```
-
----
-
-## Border radius
-
-```
-Cards de producto:      rounded-xl   (12px)
-Botones primarios:      rounded-lg   (8px)
-Botones pequeños:       rounded-md   (6px)
-Badges / chips:         rounded-full (9999px)
-Inputs:                 rounded-lg   (8px)
-Modales / panels:       rounded-2xl  (16px)
-Avatar usuario:         rounded-full
-Thumbnails imagen:      rounded-lg   (8px)
+  --cc-star: #FFB020;
+}
 ```
 
----
+### 3.2 Regla de proporción cromática
 
-## Sombras
+Usar la regla 80/15/5:
 
-```
-Card default:   box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)
-Card hover:     box-shadow: 0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.06)
-Dropdown:       box-shadow: 0 8px 24px rgba(0,0,0,0.12)
-Modal:          box-shadow: 0 20px 60px rgba(0,0,0,0.15)
-Sidebar:        box-shadow: 2px 0 8px rgba(0,0,0,0.06) (solo cuando es overlay)
-Button:         ninguna (flat design en botones)
-```
+- 80% blanco y grises muy claros.
+- 15% azul suave o superficies celestes.
+- 5% acentos intensos: CTA azul, badges, rating, stock, descuentos.
 
----
+Si el azul ocupa demasiado espacio, la interfaz se vuelve menos premium. El azul debe guiar la atención, no dominarla.
 
-## Componentes de botón
+### 3.3 Uso correcto del azul
 
-### Botón primario (Agregar al carrito)
-```
-bg: #0057FF
-text: white
-padding: 10px 16px
-border-radius: 8px
-font: 14px semibold
-hover: bg #0047D9, slight scale(1.01)
-active: scale(0.98)
-width: 100% (dentro de cards)
-icon: shopping cart icon izquierda (16px)
-```
+Usar azul intenso para:
 
-### Botón secundario (Compare ahora, Ver todos)
-```
-bg: transparent
-border: 1.5px solid #0057FF
-text: #0057FF
-padding: 10px 16px
-border-radius: 8px
-hover: bg #EBF0FF
-```
+- botón `Agregar al carrito`,
+- link activo de navegación,
+- chip seleccionado,
+- slider de precio,
+- puntos de carousel,
+- badges numéricos,
+- iconos de beneficios,
+- foco visual.
 
-### Botón ghost / link
-```
-text: #0057FF
-underline on hover
-no background ni border
+Usar azul suave para:
+
+- fondos de chips activos,
+- hover de filas,
+- panel cloudplus,
+- hero gradient,
+- tarjetas de información secundaria.
+
+No usar azul intenso como fondo de todas las tarjetas.
+
+## 4. Tipografía
+
+### 4.1 Familia
+
+Preferir una fuente moderna de UI:
+
+```css
+font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 ```
 
----
+Alternativas válidas: `Geist`, `SF Pro`, `Plus Jakarta Sans`, `Manrope`. No mezclar más de una familia principal.
 
-## Header / Navbar
+### 4.2 Escala tipográfica
 
-Layout: `logo | nav-links | search-bar | location | icons`
+```css
+--cc-font-xs: 11px;
+--cc-font-sm: 12px;
+--cc-font-md: 13px;
+--cc-font-base: 14px;
+--cc-font-lg: 16px;
+--cc-font-xl: 20px;
+--cc-font-2xl: 24px;
+--cc-font-hero: 30px;
 
-- **Logo**: "cloudcommerce" en azul con ícono de nube a la izquierda. Font bold.
-- **Nav links**: Inicio, Catálogo, Ofertas, Novedades, Marcas, Capacitaciones — 14px medium, gap 24px, hover text-primary.
-- **Search bar**: ocupa el centro, ~380px ancho, rounded-full, bg #F1F5F9, placeholder "Buscar producto, catálogo o más...", lupa icon azul a la derecha. Border: none, focus: ring blue.
-- **Localización**: pin icon + "Bogotá, CO" — 13px, text-secondary.
-- **Iconos derecha**: usuario (circle icon), corazón (wishlist), carrito (con badge número en rojo). Gap: 20px.
-- **Background**: blanco, `border-bottom: 1px solid #E2E8F0`, sticky top-0, z-50.
-- **Height**: ~64px.
-
----
-
-## Sidebar de categorías (store)
-
-Estructura dentro del sidebar izquierdo de 240px:
-
-```
-[CATEGORÍAS]              ← label uppercase 11px muted
-  ▾ Electrónica           ← item con chevron, 14px medium
-      Computadoras        ← subitem indentado 12px
-      Celulares
-      Consolas
-      ...
-  ▾ Refrigeradores
-  ▾ Lavadoras
-  ▾ Audio y Video
-  ▾ Imagen
-  ▾ Electrodomésticos
-
-[RANGO DE PRECIO]         ← separador + label
-  [slider dual range]     ← azul, thumb circular
-  $0 ─────────── $5M+
-
-[CALIFICACIONES]
-  ★★★★★  (4+)
-  ★★★★☆  (3+)
-
-[DISPONIBILIDAD]
-  □ En stock
-  □ Disponible hoy
+--cc-leading-tight: 1.15;
+--cc-leading-normal: 1.35;
+--cc-leading-relaxed: 1.55;
 ```
 
-Fondo blanco, padding 16px, separadores `border-top: 1px solid #E2E8F0`.
+### 4.3 Pesos
 
----
+- Logo: `700`.
+- Navegación activa: `650`.
+- Hero headline: `760–800`.
+- Títulos de sección: `650–700`.
+- Nombre de producto: `580–650`.
+- Precio: `760–800`.
+- Texto normal: `400–500`.
 
-## Barra de confianza (trust bar) — pie de página interior
+### 4.4 Letter spacing
 
-4 items horizontales, centrados, separados por divisor vertical:
+- Títulos grandes: `-0.035em`.
+- Precios: `-0.025em`.
+- Navegación y etiquetas: `-0.01em`.
 
+La referencia visual tiene una sensación compacta y precisa. Evitar textos demasiado espaciados.
+
+## 5. Radios
+
+```css
+--cc-radius-xs: 8px;
+--cc-radius-sm: 10px;
+--cc-radius-md: 14px;
+--cc-radius-lg: 18px;
+--cc-radius-xl: 22px;
+--cc-radius-2xl: 28px;
+--cc-radius-pill: 999px;
 ```
-📦 Envíos desde $4.99   |   🔒 Pago seguro   |   ↩ Fácil devoluciones   |   💬 Atención 24/7
+
+Uso:
+
+- Inputs: `12px–14px`.
+- Chips: `14px–16px` o pill.
+- Product card: `18px`.
+- Hero: `22px–26px`.
+- Shell: `20px`.
+- Botón principal: `11px–13px`.
+- FAB: `999px`.
+
+## 6. Sombras
+
+Las sombras son una de las claves para que la UI se vea premium.
+
+```css
+--cc-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+--cc-shadow-sm: 0 8px 22px rgba(16, 24, 40, 0.05);
+--cc-shadow-md: 0 14px 42px rgba(16, 24, 40, 0.075);
+--cc-shadow-lg: 0 24px 70px rgba(11, 107, 255, 0.10), 0 8px 24px rgba(16, 24, 40, 0.06);
+--cc-shadow-focus: 0 0 0 4px rgba(11, 107, 255, 0.12);
 ```
 
-- Fondo blanco, padding 20px 0, border-top 1px solid #E2E8F0.
-- Ícono azul (20px) + texto 13px medium text-secondary.
-- Sticky al fondo de la página o dentro del contenido, no footer fijo.
+Regla: si se nota demasiado la sombra, está mal. Debe sentirse como profundidad ambiental, no como sombra de tarjeta antigua.
 
----
+## 7. Bordes
 
-## States de interacción globales
-
+```css
+border: 1px solid var(--cc-border-default);
 ```
-Focus ring: outline: 2px solid #0057FF, outline-offset: 2px
-Disabled: opacity-50, cursor-not-allowed
-Loading: skeleton shimmer (#F1F5F9 → #E2E8F0 → #F1F5F9, 1.5s infinite)
-Empty state: ilustración centrada + texto muted + CTA
-Error state: borde rojo, mensaje debajo en rojo
+
+Estados:
+
+- default: `#E5EAF2`.
+- hover: `#CFE0FF`.
+- active/selected: `#0B6BFF` o `#BBD7FF` según importancia.
+
+No usar bordes negros ni grises muy oscuros.
+
+## 8. Spacing
+
+Base `4px`, pero la UI trabaja con múltiplos suaves:
+
+```txt
+4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40
 ```
+
+Aplicación:
+
+- Padding card pequeña: `14px–16px`.
+- Padding card grande: `18px–24px`.
+- Gaps internos: `8px–12px`.
+- Gaps entre cards: `16px–20px`.
+- Padding shell: `22px`.
+
+## 9. Superficies
+
+### 9.1 Card normal
+
+```css
+.cc-card {
+  background: #fff;
+  border: 1px solid var(--cc-border-default);
+  border-radius: var(--cc-radius-lg);
+  box-shadow: var(--cc-shadow-xs);
+}
+```
+
+### 9.2 Card elevada / hover
+
+```css
+.cc-card:hover {
+  border-color: var(--cc-primary-border);
+  box-shadow: var(--cc-shadow-md);
+  transform: translateY(-2px);
+}
+```
+
+### 9.3 Glass panel sutil
+
+Usar solo en hero, trust bar, panel cloudplus o badges flotantes.
+
+```css
+.cc-glass {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(220, 230, 245, 0.75);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 36px rgba(16, 24, 40, 0.06);
+}
+```
+
+## 10. Iconografía
+
+- Estilo lineal, grosor `1.75px–2px`.
+- Esquinas redondeadas.
+- Tamaños comunes: `16px`, `18px`, `20px`, `22px`.
+- Iconos dentro de chips: `22px` con contenedor `36px`.
+- Iconos de header: `22px–24px`.
+- Iconos dentro del sidebar: `16px`.
+
+Recomendación: `lucide-react` o un set lineal equivalente.
+
+## 11. Imágenes de producto
+
+- Fondo de producto transparente o blanco.
+- Producto centrado.
+- Sombras propias suaves, no sombras CSS agresivas.
+- `object-fit: contain`.
+- Altura visual constante entre tarjetas.
+- Dejar aire alrededor del producto.
+- Electrodomésticos negros/grises funcionan muy bien contra blanco.
+
+## 12. Jerarquía visual obligatoria
+
+Orden de atención:
+
+1. Hero headline.
+2. CTA del hero.
+3. Producto destacado visual del hero.
+4. Chips de categorías.
+5. Producto/imagen en tarjeta.
+6. Precio.
+7. CTA `Agregar al carrito`.
+8. Filtros.
+9. Trust bar.
+
+Si el sidebar compite más que el hero, reducir contraste de filtros.
+
+## 13. Detalles estéticos pequeños
+
+Incluir de forma moderada:
+
+- puntos verdes de stock,
+- badges azules de descuento,
+- dots de carousel,
+- chips con conteos,
+- iconos de acciones rápidas,
+- badge numérico en favoritos/carrito,
+- micro-glow en botón primario,
+- mini divisores internos,
+- tooltip ligero en controles,
+- barra inferior con beneficios,
+- botón flotante IA con sparkle.
+
+Estos detalles deben sentirse intencionales, no decorativos sin función.
+
+## 14. Anti-patrones
+
+Evitar:
+
+- fondos `#F0F0F0` planos y fríos,
+- tarjetas con `box-shadow: 0 4px 8px rgba(0,0,0,.25)`,
+- bordes muy oscuros,
+- cards cuadradas,
+- tipografía gigante en todo,
+- CTA de múltiples colores,
+- gradientes fuertes tipo neón,
+- iconos rellenos sin consistencia,
+- imágenes desalineadas,
+- exceso de texto en la tarjeta,
+- sidebar demasiado ancho,
+- grid de 3 columnas en desktop amplio.
+
+## 15. Checklist estética
+
+Antes de finalizar una pantalla:
+
+- ¿El blanco domina la interfaz?
+- ¿El azul aparece donde guía una acción?
+- ¿Las tarjetas tienen radio grande y sombra casi invisible?
+- ¿Los textos secundarios son grises, no negros?
+- ¿Los precios tienen peso y contraste?
+- ¿Las imágenes están centradas y limpias?
+- ¿Los badges se ven como parte del sistema?
+- ¿El layout respira sin perder densidad?
+- ¿La pantalla se ve como producto premium, no como plantilla?
