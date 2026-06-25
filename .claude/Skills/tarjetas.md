@@ -1,263 +1,441 @@
-# Tarjetas y Cards — CloudCommerce
-
-Especificación visual de todos los tipos de tarjeta que aparecen en las referencias.
-Ver `estetica.md` para tokens de color, tipografía y sombras base.
-
+---
+name: cloudcommerce-tarjetas-producto
+description: Skill para implementar tarjetas de producto premium del catálogo cloudcommerce.
+version: 1.0.0
+scope: product-card, ecommerce, catalog-grid, ui-components
 ---
 
-## 1. Product Card (tarjeta de producto — grilla principal)
+# Skill — Tarjetas de producto cloudcommerce
 
-Usada en: homepage grid, búsqueda, recomendaciones, dashboard cliente.
+## 1. Objetivo
 
-```
-┌─────────────────────────┐
-│   [♡ wishlist]          │  ← ícono corazón top-right, absoluto
-│                         │
-│      [imagen producto]  │  ← cuadrado, object-contain, bg #F8F9FA
-│      150px × 150px      │
-│                         │
-│  Samsung Galaxy Tab...  │  ← 15px medium, max 2 líneas, ellipsis
-│  ★★★★☆  (241)          │  ← estrellas amarillas + count 12px muted
-│                         │
-│  $ 2.349.900            │  ← 22px bold text-primary
-│  ~~$ 2.800.000~~        │  ← 13px muted, line-through (si hay descuento)
-│  [badge: -16%]          │  ← badge verde rounded-full, 11px
-│                         │
-│  [🛒 Agregar al carrito]│  ← botón azul full-width, 40px height
-└─────────────────────────┘
+Crear tarjetas de producto que reproduzcan la estética de la referencia: blancas, limpias, con imagen protagonista, badges sutiles, rating compacto, beneficios con iconos, precio fuerte, envío gratis y CTA azul.
 
-Card specs:
-- background: white
-- border: 1px solid #E2E8F0 (muy sutil)
-- border-radius: 12px
-- padding: 16px
-- hover: border-color #CBD5E1, shadow elevada, traducción Y -2px (ver microanimaciones.md)
-- width: auto (fill grid column)
+La tarjeta debe ser comercialmente efectiva y visualmente premium. Cada card debe parecer un componente de producto real, no un bloque de información genérico.
+
+## 2. Anatomía obligatoria
+
+```txt
+ProductCard
+├─ TopBadges
+│  ├─ stock / discount / nuevo
+│  └─ favorite button
+├─ ProductImageArea
+│  ├─ image
+│  └─ compare / quick action button
+├─ ProductContent
+│  ├─ brand
+│  ├─ product name
+│  ├─ rating
+│  ├─ features list
+│  ├─ price row
+│  ├─ shipping row
+│  └─ add-to-cart button
 ```
 
-### Badge de descuento
-```
-bg: #D1FAE5 (verde claro)
-text: #065F46 (verde oscuro)
-padding: 2px 8px
-border-radius: 9999px
-font: 11px semibold
-contenido: "-16%" o "OFERTA"
-posición: inline debajo del precio viejo, o absoluto top-left sobre imagen
-```
+## 3. Dimensiones
 
-### Badge "Nuevo"
-```
-bg: #DBEAFE
-text: #1D4ED8
-mismo tamaño que badge descuento
+```txt
+card min-height: 420px
+card radius: 18px
+card padding: 14px
+image area height: 176px–190px
+content gap: 8px
+button height: 36px
 ```
 
----
-
-## 2. Stat Card (tarjeta de estadística — dashboard cliente)
-
-Usada en: dashboard del cliente (imagen 4), panel de admin.
-
-```
-┌──────────────────────────────┐
-│  💳  Puntuación de gastos    │  ← ícono + label 12px muted
-│                              │
-│  $ 12.560.000                │  ← valor 26px bold
-│  ↑ +8.2% vs mes anterior     │  ← tendencia 12px verde o rojo
-└──────────────────────────────┘
-
-Specs:
-- background: white
-- border-radius: 16px
-- padding: 20px 24px
-- border: none
-- shadow: suave (ver estetica.md)
-- ícono en circle de color suave (bg del color del tema, 36px)
-- grid: 4-5 cards en fila (dashboard)
+```css
+.product-card {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--cc-border-default);
+  background: #fff;
+  box-shadow: var(--cc-shadow-xs);
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 220ms var(--cc-ease-out),
+    box-shadow 220ms var(--cc-ease-out),
+    border-color 220ms var(--cc-ease-out);
+}
 ```
 
-Variantes de color del ícono:
-- Gastos: blue (#EBF0FF bg, #0057FF icon)
-- Ahorros: green (#D1FAE5 bg, #10B981 icon)  
-- Cupones: amber (#FEF3C7 bg, #F59E0B icon)
-- Seguimiento: purple (#EDE9FE bg, #7C3AED icon)
-- Nivel/Puntos: indigo (#E0E7FF bg, #4F46E5 icon)
+## 4. Hover premium
 
----
+```css
+.product-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--cc-primary-border);
+  box-shadow: 0 18px 44px rgba(16,24,40,.08), 0 8px 22px rgba(11,107,255,.06);
+}
 
-## 3. Order Status Card (estado de pedido — dashboard)
+.product-card:hover .product-image {
+  transform: translateY(-2px) scale(1.025);
+}
 
-```
-┌─────────────────────────────────────────┐
-│  Estado de pedidos                      │
-│                                         │
-│  [imagen]  Pedido #CC-001-2847          │
-│  Samsung...                             │
-│            En camino ──────● [badge]    │
-│            Entrega estimada: Jun 18     │
-│                                         │
-│  [imagen]  Pedido #CC-001-2831          │
-│  LG...                                  │
-│            Entregado        [badge ✓]   │
-│                                         │
-│  [Ver todos los pedidos →]              │
-└─────────────────────────────────────────┘
-
-Badge estados:
-- "En camino":   bg #DBEAFE, text #1D4ED8
-- "Entregado":   bg #D1FAE5, text #065F46
-- "Procesando":  bg #FEF3C7, text #92400E
-- "Cancelado":   bg #FEE2E2, text #991B1B
+.product-card:hover .quick-action {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
 ```
 
----
+No elevar más de `3px`. La referencia es sutil, no exagerada.
 
-## 4. Product Detail Card (panel derecho en PDP)
+## 5. Badges
 
-Panel lateral de compra en la página de producto (imagen 2).
+### 5.1 Stock
 
-```
-┌──────────────────────────────┐
-│  Comprar ahora               │
-│                              │
-│  Color: Negro Mate  ▼        │  ← selector de variante
-│                              │
-│  $ 7.299.900                 │  ← precio 28px bold
-│  $ 6.999.936  Ahorra 4%      │  ← precio cuotas / promo
-│                              │
-│  [🛒 Agregar al carrito]     │  ← botón azul, 48px height
-│                              │
-│  ──────────────────────────  │
-│  🚚 Envío sin costo          │  ← ícono + texto 14px
-│     Ingresa tu código postal │
-│                              │
-│  ⚡ Disponible hoy           │
-│                              │
-│  💳 Hasta 36 cuotas          │
-│     sin interés              │
-│                              │
-│  [VISA] [MC] [Amex] [PSE]   │  ← logos de pago pequeños
-└──────────────────────────────┘
-
-- Sticky mientras scrolleas (position sticky top-80px)
-- border-radius: 16px
-- border: 1px solid #E2E8F0
-- padding: 24px
-- shadow: media
+```txt
+En stock
 ```
 
----
-
-## 5. Recommendation Card (recomendaciones IA — dashboard cliente)
-
-Más compacta que la product card normal. Usada en sección "Recomendaciones inteligentes".
-
-```
-┌────────────────────────────┐
-│  [imagen 80px]             │
-│  Samsung 55"...            │  ← 14px medium, 1 línea
-│  $ 3,299,900               │  ← 16px bold
-│  ★★★★☆                    │
-│  [Agregar] [♡]             │  ← botones pequeños
-└────────────────────────────┘
-
-- Scroll horizontal en mobile
-- Gap: 12px
-- min-width: 180px por card
+```css
+.badge-stock {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--cc-success-soft);
+  color: var(--cc-success);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 ```
 
----
+Incluir punto/círculo pequeño o check.
 
-## 6. Alert / Tracking Card (seguimiento — dashboard cliente)
+### 5.2 Descuento
 
-```
-┌──────────────────────────────────────┐
-│  📦  Seguimiento y alertas           │
-│                                      │
-│  Pedido #CC-2025-45872               │
-│  ━━━━━━━━━━━━━━━━ ← progress bar    │
-│  En camino · Llega el 17 Jun         │
-│                                      │
-│  Pedido #CC-2025-45831              │
-│  ━━━━━━━━━━━━━━━━━━━━━ (completo)  │
-│  Entregado el 14 Jun ✓              │
-└──────────────────────────────────────┘
-
-Progress bar:
-- height: 4px
-- background: #E2E8F0
-- fill: #0057FF
-- border-radius: 2px
-- animado (ver microanimaciones.md)
+```txt
+-20%
 ```
 
----
-
-## 7. AI Assistant Card (widget flotante)
-
-Botón flotante azul en esquina inferior derecha:
-
-```
-[●]  ← círculo azul 56px, shadow elevada
-     ícono sparkle/chat blanco 24px
-     Badge numérico si hay mensajes nuevos
-
-Al hacer click → panel lateral 320px:
-┌────────────────────────────┐
-│  ✨ CloudIA                │  ← header azul
-│  ¿En qué puedo ayudarte?  │
-│  ────────────────────────  │
-│  [input text]             │
-│  Sugerencias:             │
-│  · Buscar productos        │
-│  · Rastrear pedido         │
-│  · Ver ofertas             │
-└────────────────────────────┘
+```css
+.badge-discount {
+  background: var(--cc-primary);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(11,107,255,.22);
+}
 ```
 
----
+### 5.3 Nuevo
 
-## 8. Category Chip / Filtro horizontal
-
-```
-[Todo] [Recomendados] [Computadoras] [Celulares] ...
-
-Estado activo:
-  bg: #0057FF, text: white, border: none
-
-Estado inactivo:
-  bg: white, text: #475569, border: 1px solid #E2E8F0
-  hover: bg #F1F5F9
-
-Specs:
-  padding: 8px 16px
-  border-radius: 9999px
-  font: 13px medium
-  scroll horizontal sin barra en mobile
+```txt
+Nuevo
 ```
 
----
+- Fondo azul suave.
+- Texto azul.
+- No usar rojo.
 
-## 9. CloudEnvíos Widget (sidebar dashboard)
+## 6. Botón favorito
 
-Widget especial con branding propio dentro del dashboard cliente (imagen 4, bottom left).
+Ubicado arriba a la derecha.
 
+```css
+.favorite-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: #1F2937;
+}
+
+.favorite-btn:hover {
+  background: #F5F8FF;
+  border-color: var(--cc-border-default);
+  color: var(--cc-primary);
+}
 ```
-┌──────────────────────────────┐
-│  📦 CloudEnvíos              │  ← header azul suave
-│  maxilava... ✉               │
-│                              │
-│  3 paquetes en camino        │
-│  ──────────────────────────  │
-│  [Rastrear envíos]           │
-│  [¿Necesitas ayuda?]         │
-│                              │
-│  [avatar asistente]          │
-└──────────────────────────────┘
 
-- border-radius: 16px
-- border: 1px solid #E2E8F0
-- fondo: gradiente suave azul muy claro (#F0F4FF → white)
-- texto header: 14px semibold
+Al seleccionar:
+
+- corazón azul o relleno suave,
+- pequeño pop `scale(1.12)` durante 120ms.
+
+## 7. Área de imagen
+
+```css
+.product-image-wrap {
+  height: 184px;
+  margin-top: 8px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.product-image {
+  max-width: 88%;
+  max-height: 168px;
+  object-fit: contain;
+  transition: transform 260ms var(--cc-ease-out);
+  filter: drop-shadow(0 14px 20px rgba(16,24,40,.12));
+}
 ```
+
+Reglas:
+
+- No deformar imágenes.
+- No llenar todo el card con la imagen.
+- Mantener alineación vertical entre productos.
+- Para productos muy altos, limitar altura.
+- Para laptops/TVs, permitir ancho mayor.
+
+## 8. Quick action / comparar
+
+Botón flotante pequeño en la esquina inferior derecha del área de imagen.
+
+```css
+.quick-action {
+  position: absolute;
+  right: 4px;
+  bottom: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.88);
+  border: 1px solid var(--cc-border-default);
+  box-shadow: var(--cc-shadow-sm);
+  color: var(--cc-primary);
+  opacity: .92;
+}
+```
+
+## 9. Marca y nombre
+
+```css
+.product-brand {
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--cc-text-primary);
+  font-weight: 700;
+}
+
+.product-name {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.28;
+  color: var(--cc-text-primary);
+  font-weight: 500;
+  min-height: 34px;
+}
+```
+
+Nombre máximo: dos líneas. Usar line clamp.
+
+```css
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+```
+
+## 10. Rating
+
+```txt
+★ 4.8 (320)
+```
+
+```css
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--cc-text-secondary);
+}
+
+.rating-star {
+  color: var(--cc-star);
+  font-size: 13px;
+}
+```
+
+## 11. Lista de beneficios
+
+Cada tarjeta debe mostrar 2–3 beneficios pequeños.
+
+Ejemplos:
+
+- Tecnología SpaceMax™
+- Twin Cooling Plus™
+- Ahorro de energía
+- Chip Apple M2
+- Hasta 18h de batería
+- Inteligencia Artificial AI DD™
+- Cámara Leica 50MP
+- Carga rápida 90W
+
+```css
+.product-features {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.product-feature {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--cc-text-secondary);
+}
+```
+
+Iconos de beneficios: `12px–13px`, gris/azul desaturado.
+
+## 12. Precio
+
+```css
+.product-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.product-price {
+  font-size: 19px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--cc-text-primary);
+  letter-spacing: -0.025em;
+}
+
+.product-old-price {
+  font-size: 12px;
+  color: var(--cc-text-faint);
+  text-decoration: line-through;
+}
+```
+
+El precio debe ser uno de los puntos de mayor contraste después de la imagen.
+
+## 13. Envío gratis
+
+```css
+.shipping-free {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--cc-success);
+}
+```
+
+## 14. CTA agregar al carrito
+
+```css
+.add-to-cart {
+  height: 36px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #1374FF 0%, #005FEF 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 10px 22px rgba(11,107,255,.24);
+  transition:
+    transform 160ms var(--cc-ease-out),
+    box-shadow 160ms var(--cc-ease-out),
+    filter 160ms var(--cc-ease-out);
+}
+
+.add-to-cart:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 14px 28px rgba(11,107,255,.32);
+}
+
+.add-to-cart:active {
+  transform: translateY(0) scale(.99);
+}
+```
+
+## 15. Datos mínimos del producto
+
+```ts
+export type ProductCardData = {
+  id: string;
+  brand: string;
+  name: string;
+  sku?: string;
+  image: string;
+  imageAlt: string;
+  badge?: {
+    type: 'stock' | 'discount' | 'new' | 'soon';
+    label: string;
+  };
+  rating: number;
+  reviewCount: number;
+  features: string[];
+  price: number;
+  oldPrice?: number;
+  shipping?: 'free' | 'paid' | 'pickup';
+  stockStatus: 'in-stock' | 'soon' | 'out-of-stock';
+  isFavorite?: boolean;
+};
+```
+
+## 16. Contenido de referencia para la primera fila
+
+1. Samsung — Nevera Side by Side 655L — `RS67A8811B1/CO` — $ 5.299.900.
+2. Apple — MacBook Air M2 13” — `8GB – 256GB SSD` — $ 5.499.900.
+3. LG — Lavadora Carga Frontal 22kg — `AI DD™ – FV22WV2S6S` — $ 2.899.900.
+4. Xiaomi — Xiaomi 14 Ultra 5G — `16GB – 512GB` — $ 4.499.900.
+
+## 17. Skeleton loading
+
+Mientras cargan productos:
+
+- card con mismo tamaño,
+- imagen placeholder suave,
+- líneas skeleton para nombre/precio,
+- shimmer horizontal muy sutil.
+
+```css
+.skeleton {
+  background: linear-gradient(90deg, #F2F5FA 0%, #F8FAFD 50%, #F2F5FA 100%);
+  background-size: 220% 100%;
+  animation: cc-shimmer 1.4s infinite linear;
+}
+```
+
+## 18. Estado sin resultados
+
+Mantener estética premium:
+
+- ilustración suave,
+- título: `No encontramos productos`,
+- texto: `Probá ajustar los filtros o buscar otra categoría.`,
+- botón: `Limpiar filtros`.
+
+## 19. Checklist
+
+- ¿La imagen es protagonista?
+- ¿El precio se lee inmediatamente?
+- ¿El CTA azul está alineado abajo?
+- ¿Los badges son sutiles y consistentes?
+- ¿El hover eleva sin exagerar?
+- ¿Las tarjetas de una fila tienen altura consistente?
+- ¿El texto no se desborda?
+- ¿El botón favorito no compite con el CTA?
+- ¿La card parece premium, no una ficha genérica?
