@@ -4,7 +4,13 @@ import { useState } from "react";
 import { Check, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function AddToCartButton({ productName }: { productName: string }) {
+export function AddToCartButton({
+  productName,
+  size = "md",
+}: {
+  productName: string;
+  size?: "md" | "lg";
+}) {
   const [added, setAdded] = useState(false);
 
   function handleClick() {
@@ -18,7 +24,10 @@ export function AddToCartButton({ productName }: { productName: string }) {
       onClick={handleClick}
       aria-label={`Agregar ${productName} al carrito`}
       className={cn(
-        "cc-focus-ring mt-2.5 flex h-9 w-full items-center justify-center gap-2 rounded-[11px] text-xs font-bold text-white",
+        "cc-focus-ring flex w-full items-center justify-center gap-2 rounded-[11px] font-bold text-white",
+        size === "lg"
+          ? "h-12 text-sm mt-0"
+          : "h-9 text-xs mt-2.5",
         "transition-[transform,box-shadow,filter] duration-[160ms] ease-cc-out",
         "active:translate-y-0 active:scale-[0.99]",
         added
