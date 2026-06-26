@@ -7,7 +7,7 @@ import type { ProductDetailData } from "@/lib/mock-product-detail";
 
 export function ProductDetail({ product }: { product: ProductDetailData }) {
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-6">
+    <main id="producto" aria-labelledby="product-title" className="mx-auto max-w-[1440px] px-4 py-6">
       <Breadcrumb items={product.breadcrumb} />
 
       {/* Desktop 3-column (45% | 35% | 20%) */}
@@ -33,6 +33,6 @@ export function ProductDetail({ product }: { product: ProductDetailData }) {
       <div className="mt-10">
         <ContentTabs product={product} />
       </div>
-    </div>
+    </main>
   );
 }

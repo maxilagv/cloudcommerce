@@ -38,7 +38,7 @@ export function ProductInfo({ product }: { product: ProductDetailData }) {
       </span>
 
       {/* Product name */}
-      <h1 className="text-[22px] font-bold leading-tight text-cc-text">
+      <h1 id="product-title" className="text-[22px] font-bold leading-tight text-cc-text">
         {product.name}
       </h1>
 
