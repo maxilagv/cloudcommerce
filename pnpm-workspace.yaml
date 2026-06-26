@@ -1,0 +1,5 @@
+# Scoped to apps/store for the visual catalog build.
+# The other workspaces are still empty 0-byte stubs; widen this glob
+# (e.g. "apps/*", "packages/*") once they have valid package.json files.
+packages:
+  - "apps/store"

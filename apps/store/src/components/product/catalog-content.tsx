@@ -1,0 +1,26 @@
+import { mockProducts } from "@/lib/mock-products";
+import { HeroBanner } from "./hero-banner";
+import { CategoryChips } from "./category-chips";
+import { CatalogToolbar } from "./catalog-toolbar";
+import { ProductGrid } from "./grid";
+
+/** Right column: hero + chips + toolbar + product grid. */
+export function CatalogContent() {
+  return (
+    <div className="min-w-0 flex-1">
+      <HeroBanner />
+
+      <div id="catalogo" className="mt-6 scroll-mt-24">
+        <CategoryChips />
+      </div>
+
+      <div className="mt-4">
+        <CatalogToolbar />
+      </div>
+
+      <div className="mt-5">
+        <ProductGrid products={mockProducts} />
+      </div>
+    </div>
+  );
+}
