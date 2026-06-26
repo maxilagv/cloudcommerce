@@ -1,21 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import { chips } from "@/lib/mock-products";
 import { cn } from "@/lib/utils";
+import { useCatalog } from "@/store/catalog";
 
 export function CategoryChips() {
-  const [active, setActive] = useState(chips[0]);
+  const category = useCatalog((s) => s.category);
+  const setCategory = useCatalog((s) => s.setCategory);
+  const activeChip = category ?? "Todo";
 
   return (
     <div className="cc-no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1">
       {chips.map((chip) => {
-        const isActive = chip === active;
+        const isActive = chip === activeChip;
         return (
           <button
             key={chip}
             type="button"
-            onClick={() => setActive(chip)}
+            onClick={() => setCategory(chip === "Todo" ? null : chip)}
             aria-pressed={isActive}
             className={cn(
               "cc-focus-ring shrink-0 rounded-full border px-4 py-2 text-[13px] font-medium",

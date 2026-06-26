@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { Truck, ShieldCheck, MapPin } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCOP } from "@/lib/utils";
+import type { ProductDetailData } from "@/lib/mock-product-detail";
+import { FINANCING_PLANS } from "@/lib/constants";
+import { toast } from "@/store/toast";
+import { Modal } from "@/components/ui/modal";
 import { AddToCartButton } from "./add-to-cart-button";
 
 const PAYMENT_LOGOS = [
@@ -14,8 +18,17 @@ const PAYMENT_LOGOS = [
   { id: "banco", label: "BANCO", color: "#0D47A1" },
 ] as const;
 
-export function PurchasePanel({ productName }: { productName: string }) {
+export function PurchasePanel({ product }: { product: ProductDetailData }) {
   const [postal, setPostal] = useState("");
+  const [financingOpen, setFinancingOpen] = useState(false);
+
+  function calcShipping() {
+    if (!/^\d{4,8}$/.test(postal.trim())) {
+      toast.error("Ingresá un código postal válido");
+      return;
+    }
+    toast.success(`Envío a ${postal}`, { description: "Llega en 2 a 4 días hábiles · Gratis" });
+  }
 
   return (
     <div className="rounded-cc-xl border border-cc-border bg-white shadow-cc-md overflow-hidden">
@@ -57,6 +70,7 @@ export function PurchasePanel({ productName }: { productName: string }) {
           />
           <button
             type="button"
+            onClick={calcShipping}
             className={cn(
               "h-8 px-3 rounded-cc-xs border border-cc-border text-[12px] font-semibold text-cc-secondary",
               "hover:border-cc-primary hover:text-cc-primary transition-colors duration-[140ms]",
@@ -113,6 +127,7 @@ export function PurchasePanel({ productName }: { productName: string }) {
         </div>
         <button
           type="button"
+          onClick={() => setFinancingOpen(true)}
           className="mt-2.5 text-[12px] text-cc-primary font-medium hover:underline"
         >
           Ver opciones de financiación →
@@ -123,8 +138,36 @@ export function PurchasePanel({ productName }: { productName: string }) {
 
       {/* CTA */}
       <div className="p-4">
-        <AddToCartButton productName={productName} size="lg" />
+        <AddToCartButton product={product} size="lg" />
       </div>
+
+      <Modal
+        open={financingOpen}
+        onClose={() => setFinancingOpen(false)}
+        title="Opciones de financiación"
+      >
+        <p className="mb-3 text-[13px] text-cc-muted">
+          Pagá <span className="font-semibold text-cc-text">{formatCOP(product.price)}</span> en
+          cuotas fijas con cualquier tarjeta de crédito.
+        </p>
+        <ul className="flex flex-col gap-2">
+          {FINANCING_PLANS.map((n) => (
+            <li
+              key={n}
+              className="flex items-center justify-between rounded-cc-sm border border-cc-border px-4 py-3"
+            >
+              <span className="text-[13px] font-medium text-cc-text">{n} cuotas</span>
+              <span className="text-[14px] font-bold text-cc-text">
+                {formatCOP(Math.round(product.price / n))}
+                <span className="text-[12px] font-normal text-cc-muted"> /mes</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-[11px] text-cc-faint">
+          Valores estimados sin interés. Sujeto a aprobación de tu entidad bancaria.
+        </p>
+      </Modal>
     </div>
   );
 }

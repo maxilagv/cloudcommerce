@@ -1,4 +1,5 @@
 import { AccountSidebar } from "@/components/account/account-sidebar";
+import { AuthGuard } from "@/components/account/auth-guard";
 
 export default function AccountLayout({
   children,
@@ -6,9 +7,11 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-8 flex gap-8 items-start">
-      <AccountSidebar activePath="/account" />
-      <main className="min-w-0 flex-1">{children}</main>
-    </div>
+    <AuthGuard>
+      <div className="mx-auto max-w-[1440px] px-4 py-8 flex gap-8 items-start">
+        <AccountSidebar activePath="/account" />
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
+    </AuthGuard>
   );
 }

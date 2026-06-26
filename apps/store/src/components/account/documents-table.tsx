@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { mockDocuments, type AccountDocument } from "@/lib/mock-account";
 import { formatCOP } from "@/lib/utils";
+import { toast } from "@/store/toast";
 
 type Tab = "remito" | "factura" | "nota-credito";
 
@@ -95,6 +96,11 @@ export function DocumentsTable() {
                   <td className="px-5 py-3.5 text-right">
                     <button
                       type="button"
+                      onClick={() =>
+                        toast.success(`Descargando ${doc.number}.pdf`, {
+                          description: "El documento se está generando.",
+                        })
+                      }
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-cc-xs border border-cc-primary-border text-[12px] font-semibold text-cc-primary bg-cc-primary-soft hover:bg-cc-primary hover:text-white transition-colors duration-[140ms] ease-cc-out"
                     >
                       <Download className="h-3 w-3" strokeWidth={2} />

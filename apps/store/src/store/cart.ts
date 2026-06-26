@@ -25,6 +25,8 @@ export const useCart = create<CartStore>()(
       isOpen: false,
 
       add(product, quantity = 1) {
+        // Feedback is handled by a toast + badge bump (see AddToCartButton),
+        // so we intentionally don't force the drawer open here.
         const existing = get().items.find((i) => i.product.id === product.id)
         if (existing) {
           set({
@@ -33,10 +35,9 @@ export const useCart = create<CartStore>()(
                 ? { ...i, quantity: i.quantity + quantity }
                 : i,
             ),
-            isOpen: true,
           })
         } else {
-          set({ items: [...get().items, { product, quantity }], isOpen: true })
+          set({ items: [...get().items, { product, quantity }] })
         }
       },
 

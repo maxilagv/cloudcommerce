@@ -3,6 +3,7 @@
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/store/wishlist";
+import { toast } from "@/store/toast";
 import type { ProductCardData } from "@/lib/mock-products";
 
 export function FavoriteButton({
@@ -13,11 +14,21 @@ export function FavoriteButton({
   showLabel?: boolean;
 }) {
   const toggle = useWishlist((s) => s.toggle);
+  const openWishlist = useWishlist((s) => s.open);
   const active = useWishlist((s) => s.has(product.id));
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     toggle(product);
+    if (active) {
+      toast.info("Quitado de favoritos", { description: product.name });
+    } else {
+      toast.success("Agregado a favoritos", {
+        description: product.name,
+        actionLabel: "Ver favoritos",
+        onAction: openWishlist,
+      });
+    }
   }
 
   if (showLabel) {

@@ -3,6 +3,7 @@ import { TrustBar } from "./trust-bar";
 import { FloatingAssistantButton } from "./floating-assistant";
 import { CartDrawer } from "@/components/cart/drawer";
 import { WishlistDrawer } from "./wishlist-drawer";
+import { CompareBar } from "@/components/compare/compare-bar";
 
 /** Page shell: header + content slot + trust bar + floating assistant + drawers. */
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <FloatingAssistantButton />
       <CartDrawer />
       <WishlistDrawer />
+      <CompareBar />
     </div>
   );
 }

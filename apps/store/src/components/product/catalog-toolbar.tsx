@@ -1,27 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { totalResults } from "@/lib/mock-products";
-
-const SORT_OPTIONS = [
-  "Relevancia",
-  "Menor precio",
-  "Mayor precio",
-  "Mejor valorados",
-  "Más nuevos",
-];
+import { SORT_OPTIONS, type SortKey } from "@/lib/catalog-filter";
+import { useCatalog, useFilteredProducts } from "@/store/catalog";
 
 export function CatalogToolbar() {
-  const [sort, setSort] = useState(SORT_OPTIONS[0]);
+  const sort = useCatalog((s) => s.sort);
+  const setSort = useCatalog((s) => s.setSort);
+  const count = useFilteredProducts().length;
 
   return (
     <div className="flex items-center justify-between gap-4">
       <p className="text-sm text-cc-muted">
         <span className="font-semibold text-cc-text">
-          {totalResults.toLocaleString("es-CO")}
+          {count.toLocaleString("es-CO")}
         </span>{" "}
-        productos encontrados
+        {count === 1 ? "producto encontrado" : "productos encontrados"}
       </p>
 
       <label className="flex items-center gap-2 text-sm text-cc-secondary">
@@ -29,12 +23,12 @@ export function CatalogToolbar() {
         <div className="relative">
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(e) => setSort(e.target.value as SortKey)}
             className="cc-focus-ring appearance-none rounded-cc-sm border border-cc-border bg-cc-surface py-2 pl-3 pr-9 text-sm font-medium text-cc-text transition-colors duration-[140ms] ease-cc-out hover:border-cc-primary-border"
           >
             {SORT_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>

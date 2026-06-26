@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Shield, Truck, RotateCcw, ThumbsUp, ChevronDown } from "lucide-react";
+import { CheckCircle2, Shield, Truck, RotateCcw, ThumbsUp, ChevronDown, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/store/toast";
 import type { ProductDetailData } from "@/lib/mock-product-detail";
 
 type Tab = "descripcion" | "especificaciones" | "servicios" | "opiniones" | "preguntas";
@@ -128,7 +129,7 @@ export function ContentTabs({ product }: { product: ProductDetailData }) {
       id: "opiniones",
       label: `Opiniones (${product.reviewCount.toLocaleString("es-CO")})`,
     },
-    { id: "preguntas", label: `Preguntas (34)` },
+    { id: "preguntas", label: `Preguntas (${product.questions.length})` },
   ];
 
   const totalReviews = product.reviewDistribution.reduce(
@@ -285,35 +286,66 @@ export function ContentTabs({ product }: { product: ProductDetailData }) {
             </div>
 
             {/* Individual reviews */}
-            <div className="mt-2">
-              {product.reviews.map((review, i) => (
-                <ReviewCard key={i} review={review} />
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="mt-4 text-[13px] text-cc-primary font-medium hover:underline"
-            >
-              Ver las {product.reviewCount.toLocaleString("es-CO")} reseñas →
-            </button>
+            {product.reviews.length > 0 ? (
+              <>
+                <div className="mt-2">
+                  {product.reviews.map((review, i) => (
+                    <ReviewCard key={i} review={review} />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    toast.info("Reseñas destacadas", {
+                      description: "Estás viendo las opiniones más útiles de este producto.",
+                    })
+                  }
+                  className="mt-4 text-[13px] text-cc-primary font-medium hover:underline"
+                >
+                  Ver las {product.reviewCount.toLocaleString("es-CO")} reseñas →
+                </button>
+              </>
+            ) : (
+              <div className="mt-6 flex flex-col items-center gap-2 py-8 text-center">
+                <MessageCircle className="h-8 w-8 text-cc-muted" strokeWidth={1.5} />
+                <p className="text-[14px] font-semibold text-cc-text">Todavía no hay reseñas</p>
+                <p className="text-[13px] text-cc-muted">Sé el primero en opinar sobre este producto.</p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Preguntas */}
         {activeTab === "preguntas" && (
           <div className="max-w-2xl">
-            <div className="flex flex-col gap-3">
-              {product.questions.map((q, i) => (
-                <QuestionAccordion key={i} q={q} />
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-5 text-[13px] text-cc-primary font-medium hover:underline"
-            >
-              Ver las 34 preguntas →
-            </button>
+            {product.questions.length > 0 ? (
+              <>
+                <div className="flex flex-col gap-3">
+                  {product.questions.map((q, i) => (
+                    <QuestionAccordion key={i} q={q} />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    toast.info("Preguntas frecuentes", {
+                      description: "Estás viendo las preguntas más relevantes.",
+                    })
+                  }
+                  className="mt-5 text-[13px] text-cc-primary font-medium hover:underline"
+                >
+                  Ver todas las preguntas →
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <MessageCircle className="h-8 w-8 text-cc-muted" strokeWidth={1.5} />
+                <p className="text-[14px] font-semibold text-cc-text">Todavía no hay preguntas</p>
+                <p className="text-[13px] text-cc-muted">
+                  ¿Tenés dudas? Hacé la primera pregunta sobre este producto.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

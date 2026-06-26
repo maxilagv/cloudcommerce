@@ -1,9 +1,9 @@
-import { ArrowLeftRight } from "lucide-react";
 import { formatCOP } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
 import { FavoriteButton } from "./favorite-button";
 import { VariantSelector } from "./variant-selector";
 import { QuantityCounter } from "./quantity-counter";
+import { CompareButton, ShareRow } from "./product-actions";
 import type { ProductDetailData } from "@/lib/mock-product-detail";
 
 function StarRow({ rating }: { rating: number }) {
@@ -110,36 +110,12 @@ export function ProductInfo({ product }: { product: ProductDetailData }) {
 
         <div className="flex items-center gap-2">
           <FavoriteButton product={product} showLabel />
-          <button
-            type="button"
-            className="cc-focus-ring flex h-12 flex-shrink-0 items-center gap-1.5 rounded-cc-xs px-3 text-[13px] font-medium text-cc-primary hover:underline"
-          >
-            <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={1.8} />
-            Comparar
-          </button>
+          <CompareButton product={product} />
         </div>
       </div>
 
       {/* Share row */}
-      <div className="flex items-center gap-3 pt-1">
-        <span className="text-[12px] text-cc-muted">Compartir:</span>
-        <div className="flex items-center gap-2">
-          {[
-            { label: "Facebook", glyph: "f" },
-            { label: "Twitter", glyph: "𝕏" },
-            { label: "Copiar enlace", glyph: "⎘" },
-          ].map((s) => (
-            <button
-              key={s.label}
-              type="button"
-              aria-label={s.label}
-              className="cc-focus-ring flex h-7 w-7 items-center justify-center rounded-full border border-cc-border text-[11px] font-bold text-cc-muted transition-colors duration-[140ms] hover:border-cc-primary-border hover:text-cc-primary"
-            >
-              {s.glyph}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ShareRow name={product.name} />
     </div>
   );
 }

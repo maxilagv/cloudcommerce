@@ -6,6 +6,8 @@ import Image from "next/image";
 import { Truck, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { mockOrders, type OrderStatus } from "@/lib/mock-account";
 import { formatCOP } from "@/lib/utils";
+import { useHydrated } from "@/hooks/use-hydrated";
+import { useOrders } from "@/store/orders";
 
 type Filter = "all" | OrderStatus;
 
@@ -29,10 +31,14 @@ const statusConfig: Record<
 
 export function OrdersList() {
   const [filter, setFilter] = useState<Filter>("all");
+  const hydrated = useHydrated();
+  const placedOrders = useOrders((s) => s.placedOrders);
 
-  const visible = filter === "all"
-    ? mockOrders
-    : mockOrders.filter((o) => o.status === filter);
+  // Show client-placed orders first, then the mock history (after hydration to
+  // avoid an SSR/CSR mismatch on the persisted list).
+  const allOrders = hydrated ? [...placedOrders, ...mockOrders] : mockOrders;
+  const visible =
+    filter === "all" ? allOrders : allOrders.filter((o) => o.status === filter);
 
   return (
     <div>

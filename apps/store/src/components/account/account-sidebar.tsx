@@ -7,10 +7,10 @@ import {
   CreditCard,
   FileText,
   Settings,
-  LogOut,
   Star,
 } from "lucide-react";
 import { mockProfile } from "@/lib/mock-account";
+import { LogoutButton } from "./logout-button";
 
 const navLinks = [
   { href: "/account", label: "Inicio", icon: LayoutDashboard },
@@ -67,13 +67,7 @@ export function AccountSidebar({ activePath }: { activePath?: string }) {
           })}
         </ul>
         <div className="border-t border-cc-border-subtle p-2">
-          <button
-            type="button"
-            className="flex w-full items-center gap-2.5 px-3 py-2.5 rounded-cc-sm text-[13px] font-medium text-cc-muted hover:bg-red-50 hover:text-red-600 transition-colors duration-[140ms] ease-cc-out cc-focus-ring"
-          >
-            <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-            Cerrar sesión
-          </button>
+          <LogoutButton />
         </div>
       </nav>
     </aside>

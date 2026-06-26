@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/store/cart";
+import { toast } from "@/store/toast";
 import type { ProductCardData } from "@/lib/mock-products";
 
 export function AddToCartButton({
@@ -15,11 +16,17 @@ export function AddToCartButton({
 }) {
   const [added, setAdded] = useState(false);
   const add = useCart((s) => s.add);
+  const openCart = useCart((s) => s.open);
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     add(product);
     setAdded(true);
+    toast.success("Agregado al carrito", {
+      description: product.name,
+      actionLabel: "Ver carrito",
+      onAction: openCart,
+    });
     window.setTimeout(() => setAdded(false), 1500);
   }
 

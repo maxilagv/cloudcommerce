@@ -48,14 +48,18 @@ export function CategoryRow({
   label,
   count,
   active,
+  onClick,
 }: {
   label: string;
   count: number;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "cc-focus-ring flex w-full items-center justify-between rounded-cc-sm px-2 py-1.5 text-[13px] transition-colors duration-[140ms] ease-cc-out",
         active
@@ -71,18 +75,25 @@ export function CategoryRow({
   );
 }
 
-export function CheckRow({ label, count }: { label: string; count?: number }) {
-  const [checked, setChecked] = useState(false);
+export function CheckRow({
+  label,
+  count,
+  checked = false,
+  onChange,
+}: {
+  label: string;
+  count?: number;
+  checked?: boolean;
+  onChange?: () => void;
+}) {
   return (
     <label className="flex cursor-pointer items-center justify-between rounded-cc-sm px-2 py-1.5 text-[13px] text-cc-secondary transition-colors duration-[140ms] ease-cc-out hover:bg-cc-soft">
       <span className="flex items-center gap-2.5">
         <span
-          onClick={() => setChecked((v) => !v)}
+          aria-hidden="true"
           className={cn(
             "grid h-[18px] w-[18px] place-items-center rounded-[6px] border transition-colors duration-[140ms] ease-cc-out",
-            checked
-              ? "border-cc-primary bg-cc-primary"
-              : "border-cc-border-strong bg-white",
+            checked ? "border-cc-primary bg-cc-primary" : "border-cc-border-strong bg-white",
           )}
         >
           {checked ? (
@@ -100,7 +111,7 @@ export function CheckRow({ label, count }: { label: string; count?: number }) {
         <input
           type="checkbox"
           checked={checked}
-          onChange={() => setChecked((v) => !v)}
+          onChange={() => onChange?.()}
           className="sr-only"
         />
         {label}
@@ -112,10 +123,25 @@ export function CheckRow({ label, count }: { label: string; count?: number }) {
   );
 }
 
-export function RatingRow({ stars }: { stars: number }) {
+export function RatingRow({
+  stars,
+  active,
+  onClick,
+}: {
+  stars: number;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-cc-sm px-2 py-1.5 transition-colors duration-[140ms] ease-cc-out hover:bg-cc-soft">
-      <input type="radio" name="rating" className="sr-only" />
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "cc-focus-ring flex w-full cursor-pointer items-center gap-2 rounded-cc-sm px-2 py-1.5 transition-colors duration-[140ms] ease-cc-out",
+        active ? "bg-cc-primary-soft" : "hover:bg-cc-soft",
+      )}
+    >
       <span className="flex items-center gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
           <Star
@@ -127,14 +153,25 @@ export function RatingRow({ stars }: { stars: number }) {
           />
         ))}
       </span>
-      <span className="text-[13px] text-cc-secondary">y más</span>
-    </label>
+      <span className={cn("text-[13px]", active ? "font-semibold text-cc-primary" : "text-cc-secondary")}>
+        y más
+      </span>
+    </button>
   );
 }
 
-/** Price range with a single draggable upper bound (presentational). */
-export function PriceRange({ min, max }: { min: number; max: number }) {
-  const [value, setValue] = useState(Math.round(max * 0.62));
+/** Price range with a single draggable upper bound (controlled). */
+export function PriceRange({
+  min,
+  max,
+  value,
+  onChange,
+}: {
+  min: number;
+  max: number;
+  value: number;
+  onChange: (value: number) => void;
+}) {
   const pct = ((value - min) / (max - min)) * 100;
 
   return (
@@ -151,7 +188,7 @@ export function PriceRange({ min, max }: { min: number; max: number }) {
           max={max}
           step={50000}
           value={value}
-          onChange={(e) => setValue(Number(e.target.value))}
+          onChange={(e) => onChange(Number(e.target.value))}
           aria-label="Precio máximo"
           className="absolute inset-0 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-cc-primary [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-cc-sm [&::-webkit-slider-thumb]:transition-transform hover:[&::-webkit-slider-thumb]:scale-110"
         />

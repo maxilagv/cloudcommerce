@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, Scale, Star, Truck, Sparkles } from "lucide-react";
 import type { ProductCardData } from "@/lib/mock-products";
 import { cn, formatCOP } from "@/lib/utils";
+import { useCompare } from "@/store/compare";
 import { FavoriteButton } from "./favorite-button";
 import { AddToCartButton } from "./add-to-cart-button";
 
@@ -53,6 +54,9 @@ export function ProductCard({
   product: ProductCardData;
   aiRecommended?: boolean;
 }) {
+  const toggleCompare = useCompare((s) => s.toggle);
+  const inCompare = useCompare((s) => s.has(product.id));
+
   return (
     <article
       className={cn(
@@ -61,22 +65,25 @@ export function ProductCard({
         "hover:-translate-y-[3px] hover:border-cc-primary-border hover:shadow-cc-md",
       )}
     >
-      {/* Full-card link overlay — sits behind all interactive elements */}
+      {/* Full-card link overlay. Content wrappers are pointer-events-none so
+          clicks fall through to this link; interactive controls re-enable
+          pointer events (pointer-events-auto) to keep working. */}
       <Link
         href={`/products/${product.id}`}
         className="absolute inset-0 z-0 rounded-cc-lg"
         aria-label={`Ver ${product.name}`}
-        tabIndex={-1}
       />
 
-      {/* Top row: badge + favorite (z-10 so they're above the link) */}
-      <div className="relative z-10 flex items-start justify-between">
+      {/* Top row: badge + favorite */}
+      <div className="pointer-events-none relative z-10 flex items-start justify-between">
         <div>{product.badge ? <TopBadge badge={product.badge} /> : null}</div>
-        <FavoriteButton product={product} />
+        <div className="pointer-events-auto">
+          <FavoriteButton product={product} />
+        </div>
       </div>
 
       {/* Image area */}
-      <div className="relative z-10 mt-2 grid h-[184px] place-items-center">
+      <div className="pointer-events-none relative z-10 mt-2 grid h-[184px] place-items-center">
         {aiRecommended && (
           <span className="absolute left-0 top-0 z-10 inline-flex items-center gap-1 rounded-full bg-cc-primary px-2 py-0.5 text-[10px] font-bold text-white">
             <Sparkles className="h-2.5 w-2.5" strokeWidth={2} />
@@ -90,19 +97,29 @@ export function ProductCard({
           height={320}
           className="max-h-[168px] w-auto max-w-[88%] object-contain drop-shadow-[0_14px_20px_rgba(16,24,40,0.12)] transition-transform duration-[260ms] ease-cc-out group-hover:-translate-y-0.5 group-hover:scale-[1.025]"
         />
-        {/* Quick action — reveals on hover */}
+        {/* Quick action — compare toggle (reveals on hover, stays when active) */}
         <button
           type="button"
-          aria-label={`Comparar ${product.name}`}
-          className="cc-focus-ring absolute bottom-2 right-1 grid h-[34px] w-[34px] translate-y-1 scale-95 place-items-center rounded-full border border-cc-border bg-white/90 text-cc-primary opacity-0 shadow-cc-sm transition-[opacity,transform] duration-[180ms] ease-cc-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
+          aria-label={inCompare ? `Quitar ${product.name} del comparador` : `Comparar ${product.name}`}
+          aria-pressed={inCompare}
+          className={cn(
+            "pointer-events-auto cc-focus-ring absolute bottom-2 right-1 grid h-[34px] w-[34px] place-items-center rounded-full border shadow-cc-sm transition-[opacity,transform,background,color] duration-[180ms] ease-cc-out",
+            inCompare
+              ? "border-cc-primary bg-cc-primary text-white opacity-100"
+              : "translate-y-1 scale-95 border-cc-border bg-white/90 text-cc-primary opacity-0 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100",
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleCompare(product);
+          }}
         >
           <Scale className="h-4 w-4" strokeWidth={1.9} />
         </button>
       </div>
 
       {/* Content */}
-      <div className="relative z-10 mt-1 flex flex-1 flex-col">
+      <div className="pointer-events-none relative z-10 mt-1 flex flex-1 flex-col">
         <p className="text-xs font-bold leading-[1.2] text-cc-text">
           {product.brand}
         </p>
@@ -152,7 +169,9 @@ export function ProductCard({
           </p>
         ) : null}
 
-        <AddToCartButton product={product} />
+        <div className="pointer-events-auto">
+          <AddToCartButton product={product} />
+        </div>
       </div>
     </article>
   );
