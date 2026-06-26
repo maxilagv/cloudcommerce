@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Check, Scale, Star, Truck } from "lucide-react";
+import { Check, Scale, Star, Truck, Sparkles } from "lucide-react";
 import type { ProductCardData } from "@/lib/mock-products";
 import { cn, formatCOP } from "@/lib/utils";
 import { FavoriteButton } from "./favorite-button";
@@ -43,7 +43,13 @@ function TopBadge({ badge }: { badge: NonNullable<ProductCardData["badge"]> }) {
   }
 }
 
-export function ProductCard({ product }: { product: ProductCardData }) {
+export function ProductCard({
+  product,
+  aiRecommended,
+}: {
+  product: ProductCardData;
+  aiRecommended?: boolean;
+}) {
   return (
     <article
       className={cn(
@@ -63,6 +69,12 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 
       {/* Image area */}
       <div className="relative mt-2 grid h-[184px] place-items-center">
+        {aiRecommended && (
+          <span className="absolute left-0 top-0 z-10 inline-flex items-center gap-1 rounded-full bg-cc-primary px-2 py-0.5 text-[10px] font-bold text-white">
+            <Sparkles className="h-2.5 w-2.5" strokeWidth={2} />
+            CloudIA Pick
+          </span>
+        )}
         <Image
           src={product.image}
           alt={product.imageAlt}
