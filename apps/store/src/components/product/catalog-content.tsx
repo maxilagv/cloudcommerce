@@ -1,8 +1,8 @@
-import { mockProducts } from "@/lib/mock-products";
 import { HeroBanner } from "./hero-banner";
 import { CategoryChips } from "./category-chips";
 import { CatalogToolbar } from "./catalog-toolbar";
-import { ProductGrid } from "./grid";
+import { CatalogResults } from "./catalog-results";
+import { AiRecommendations } from "./ai-recommendations";
 
 /** Right column: hero + chips + toolbar + product grid. */
 export function CatalogContent() {
@@ -14,12 +14,14 @@ export function CatalogContent() {
         <CategoryChips />
       </div>
 
+      <AiRecommendations />
+
       <div className="mt-4">
         <CatalogToolbar />
       </div>
 
       <div className="mt-5">
-        <ProductGrid products={mockProducts} />
+        <CatalogResults />
       </div>
     </div>
   );

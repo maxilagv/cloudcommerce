@@ -13,6 +13,7 @@ export type ProductCardData = {
   brand: string;
   name: string;
   sku?: string;
+  category: string;
   image: string;
   imageAlt: string;
   badge?: {
@@ -36,6 +37,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Samsung",
     name: "Nevera Side by Side 655L",
     sku: "RS67A8811B1/CO",
+    category: "Refrigeradores",
     image: "/products/samsung-nevera.svg",
     imageAlt: "Nevera Samsung Side by Side 655L negra",
     badge: { type: "stock", label: "En stock" },
@@ -51,6 +53,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Apple",
     name: 'MacBook Air M2 13"',
     sku: "8GB – 256GB SSD",
+    category: "Computadoras",
     image: "/products/apple-macbook-air-m2.svg",
     imageAlt: "Apple MacBook Air M2 13 pulgadas",
     badge: { type: "new", label: "Nuevo" },
@@ -66,6 +69,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "LG",
     name: "Lavadora Carga Frontal 22kg",
     sku: "AI DD™ – FV22WV2S6S",
+    category: "Lavadoras",
     image: "/products/lg-lavadora.svg",
     imageAlt: "Lavadora LG carga frontal 22kg",
     badge: { type: "stock", label: "En stock" },
@@ -81,6 +85,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Xiaomi",
     name: "Xiaomi 14 Ultra 5G",
     sku: "16GB – 512GB",
+    category: "Celulares",
     image: "/products/xiaomi-14-ultra.svg",
     imageAlt: "Xiaomi 14 Ultra 5G",
     badge: { type: "discount", label: "-20%" },
@@ -98,6 +103,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Sony",
     name: "Audífonos WH-1000XM5",
     sku: "WH1000XM5/B",
+    category: "Audio y Video",
     image: "/products/sony-wh1000xm5.svg",
     imageAlt: "Audífonos Sony WH-1000XM5",
     badge: { type: "discount", label: "-15%" },
@@ -114,6 +120,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Samsung",
     name: 'Smart TV QLED 55" 4K',
     sku: "QN55Q70C",
+    category: "Imagen",
     image: "/products/samsung-qled-55.svg",
     imageAlt: "Samsung Smart TV QLED 55 pulgadas 4K",
     badge: { type: "stock", label: "En stock" },
@@ -129,6 +136,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Sony",
     name: "Consola PlayStation 5 Slim",
     sku: "PS5-SLIM-1TB",
+    category: "Consolas",
     image: "/products/sony-ps5.svg",
     imageAlt: "Consola Sony PlayStation 5 Slim",
     badge: { type: "soon", label: "Pronto" },
@@ -144,6 +152,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Apple",
     name: 'iPad Air 11" M2',
     sku: "MUWC3LL/A",
+    category: "Computadoras",
     image: "/products/apple-ipad-air.svg",
     imageAlt: "Apple iPad Air 11 pulgadas M2",
     badge: { type: "new", label: "Nuevo" },
@@ -159,6 +168,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Dyson",
     name: "Aspiradora V15 Detect",
     sku: "V15-DETECT",
+    category: "Aspiradoras",
     image: "/products/dyson-v15.svg",
     imageAlt: "Aspiradora Dyson V15 Detect",
     badge: { type: "discount", label: "-10%" },
@@ -175,6 +185,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "LG",
     name: "Microondas NeoChef 42L",
     sku: "MJ4296OWS",
+    category: "Microondas",
     image: "/products/lg-microondas.svg",
     imageAlt: "Microondas LG NeoChef 42 litros",
     badge: { type: "stock", label: "En stock" },
@@ -190,6 +201,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "Samsung",
     name: "Galaxy Watch 6 Classic",
     sku: "SM-R960",
+    category: "Celulares",
     image: "/products/samsung-galaxy-watch.svg",
     imageAlt: "Samsung Galaxy Watch 6 Classic",
     badge: { type: "new", label: "Nuevo" },
@@ -205,6 +217,7 @@ export const mockProducts: ProductCardData[] = [
     brand: "JBL",
     name: "Parlante Charge 5 Portátil",
     sku: "JBLCHARGE5",
+    category: "Audio y Video",
     image: "/products/jbl-charge5.svg",
     imageAlt: "Parlante JBL Charge 5 portátil",
     badge: { type: "discount", label: "-25%" },
@@ -232,6 +245,8 @@ export const categories: CategoryNode[] = [
   { label: "Electrodomésticos", count: 956 },
   { label: "Refrigeradores", count: 214 },
   { label: "Lavadoras", count: 176 },
+  { label: "Microondas", count: 142 },
+  { label: "Aspiradoras", count: 98 },
 ];
 
 export const brands: { label: string; count: number }[] = [
@@ -241,6 +256,7 @@ export const brands: { label: string; count: number }[] = [
   { label: "Sony", count: 198 },
   { label: "Xiaomi", count: 164 },
   { label: "JBL", count: 91 },
+  { label: "Dyson", count: 54 },
 ];
 
 export const ratingFilters = [5, 4, 3, 2] as const;
@@ -265,3 +281,24 @@ export const chips: string[] = [
 export const priceBounds = { min: 0, max: 8000000 };
 
 export const totalResults = 4871;
+
+// ---- Category taxonomy + matcher (drives sidebar/chip filtering) ----
+
+/** Parent category → leaf categories it contains. */
+export const CATEGORY_TREE: Record<string, string[]> = {
+  Electrónica: ["Computadoras", "Celulares", "Consolas", "Audio y Video", "Imagen"],
+  Electrodomésticos: ["Refrigeradores", "Lavadoras", "Microondas", "Aspiradoras"],
+};
+
+/**
+ * Does a product's `category` satisfy the `selected` filter?
+ * - `null`/"Todo"/"Recomendados" → matches everything (Recomendados is rating-filtered separately).
+ * - a parent in CATEGORY_TREE → matches any of its leaves.
+ * - otherwise → exact leaf equality.
+ */
+export function categoryMatches(productCategory: string, selected: string | null): boolean {
+  if (!selected || selected === "Todo" || selected === "Recomendados") return true;
+  const leaves = CATEGORY_TREE[selected];
+  if (leaves) return leaves.includes(productCategory);
+  return productCategory === selected;
+}
