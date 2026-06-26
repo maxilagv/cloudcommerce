@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { Check, Scale, Star, Truck, Sparkles } from "lucide-react";
 import type { ProductCardData } from "@/lib/mock-products";
@@ -58,17 +59,22 @@ export function ProductCard({
         "hover:-translate-y-[3px] hover:border-cc-primary-border hover:shadow-cc-md",
       )}
     >
-      {/* Top row: badge + favorite */}
-      <div className="flex items-start justify-between">
+      {/* Full-card link overlay — sits behind all interactive elements */}
+      <Link
+        href={`/products/${product.id}`}
+        className="absolute inset-0 z-0 rounded-cc-lg"
+        aria-label={`Ver ${product.name}`}
+        tabIndex={-1}
+      />
+
+      {/* Top row: badge + favorite (z-10 so they're above the link) */}
+      <div className="relative z-10 flex items-start justify-between">
         <div>{product.badge ? <TopBadge badge={product.badge} /> : null}</div>
-        <FavoriteButton
-          initial={product.isFavorite}
-          productName={product.name}
-        />
+        <FavoriteButton product={product} />
       </div>
 
       {/* Image area */}
-      <div className="relative mt-2 grid h-[184px] place-items-center">
+      <div className="relative z-10 mt-2 grid h-[184px] place-items-center">
         {aiRecommended && (
           <span className="absolute left-0 top-0 z-10 inline-flex items-center gap-1 rounded-full bg-cc-primary px-2 py-0.5 text-[10px] font-bold text-white">
             <Sparkles className="h-2.5 w-2.5" strokeWidth={2} />
@@ -87,13 +93,14 @@ export function ProductCard({
           type="button"
           aria-label={`Comparar ${product.name}`}
           className="cc-focus-ring absolute bottom-2 right-1 grid h-[34px] w-[34px] translate-y-1 scale-95 place-items-center rounded-full border border-cc-border bg-white/90 text-cc-primary opacity-0 shadow-cc-sm transition-[opacity,transform] duration-[180ms] ease-cc-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100"
+          onClick={(e) => e.stopPropagation()}
         >
           <Scale className="h-4 w-4" strokeWidth={1.9} />
         </button>
       </div>
 
       {/* Content */}
-      <div className="mt-1 flex flex-1 flex-col">
+      <div className="relative z-10 mt-1 flex flex-1 flex-col">
         <p className="text-xs font-bold leading-[1.2] text-cc-text">
           {product.brand}
         </p>
@@ -143,7 +150,7 @@ export function ProductCard({
           </p>
         ) : null}
 
-        <AddToCartButton productName={product.name} />
+        <AddToCartButton product={product} />
       </div>
     </article>
   );

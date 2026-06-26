@@ -1,32 +1,37 @@
 "use client";
 
-import { useState } from "react";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useWishlist } from "@/store/wishlist";
+import type { ProductCardData } from "@/lib/mock-products";
 
 export function FavoriteButton({
-  initial = false,
-  productName,
+  product,
   showLabel = false,
 }: {
-  initial?: boolean;
-  productName: string;
+  product: ProductCardData;
   showLabel?: boolean;
 }) {
-  const [active, setActive] = useState(initial);
+  const toggle = useWishlist((s) => s.toggle);
+  const active = useWishlist((s) => s.has(product.id));
+
+  function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    toggle(product);
+  }
 
   if (showLabel) {
     return (
       <button
         type="button"
         aria-pressed={active}
-        onClick={() => setActive((v) => !v)}
+        onClick={handleClick}
         className={cn(
-          "cc-focus-ring flex flex-1 h-12 items-center justify-center gap-2 rounded-[11px] border text-[13px] font-semibold",
+          "cc-focus-ring flex h-12 flex-1 items-center justify-center gap-2 rounded-[11px] border text-[13px] font-semibold",
           "transition-[transform,background,color,border-color,box-shadow] duration-[140ms] ease-cc-out",
           active
             ? "border-cc-primary bg-cc-primary-soft text-cc-primary"
-            : "border-cc-border text-cc-secondary hover:border-cc-primary-border hover:text-cc-primary hover:bg-cc-primary-softer",
+            : "border-cc-border text-cc-secondary hover:border-cc-primary-border hover:bg-cc-primary-softer hover:text-cc-primary",
         )}
       >
         <Heart
@@ -47,10 +52,10 @@ export function FavoriteButton({
       aria-pressed={active}
       aria-label={
         active
-          ? `Quitar ${productName} de favoritos`
-          : `Agregar ${productName} a favoritos`
+          ? `Quitar ${product.name} de favoritos`
+          : `Agregar ${product.name} a favoritos`
       }
-      onClick={() => setActive((v) => !v)}
+      onClick={handleClick}
       className={cn(
         "cc-focus-ring grid h-[34px] w-[34px] place-items-center rounded-full border border-transparent text-cc-text",
         "transition-[transform,background,color,border-color] duration-[140ms] ease-cc-out",

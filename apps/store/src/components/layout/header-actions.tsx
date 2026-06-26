@@ -2,20 +2,25 @@
 
 import { Heart, ShoppingCart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCart, useCartCount } from "@/store/cart";
+import { useWishlist, useWishlistCount } from "@/store/wishlist";
 
 function ActionButton({
   label,
   count,
+  onClick,
   children,
 }: {
   label: string;
   count?: number;
+  onClick?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      onClick={onClick}
       className="cc-focus-ring relative grid h-10 w-10 place-items-center rounded-cc-sm text-cc-secondary transition-[color,background] duration-[140ms] ease-cc-out hover:bg-cc-primary-softer hover:text-cc-primary"
     >
       {children}
@@ -23,9 +28,10 @@ function ActionButton({
         <span
           className={cn(
             "absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-cc-primary px-1 text-[10px] font-bold text-white",
+            "animate-[cc-badge-pop_300ms_ease-cc-spring]",
           )}
         >
-          {count}
+          {count > 99 ? "99+" : count}
         </span>
       ) : null}
     </button>
@@ -33,15 +39,28 @@ function ActionButton({
 }
 
 export function HeaderActions() {
+  const cartCount = useCartCount();
+  const wishlistCount = useWishlistCount();
+  const openCart = useCart((s) => s.open);
+  const openWishlist = useWishlist((s) => s.open);
+
   return (
     <div className="flex shrink-0 items-center gap-1">
       <ActionButton label="Mi cuenta">
         <User className="h-[22px] w-[22px]" strokeWidth={1.85} />
       </ActionButton>
-      <ActionButton label="Favoritos" count={3}>
+      <ActionButton
+        label="Favoritos"
+        count={wishlistCount}
+        onClick={openWishlist}
+      >
         <Heart className="h-[22px] w-[22px]" strokeWidth={1.85} />
       </ActionButton>
-      <ActionButton label="Carrito" count={2}>
+      <ActionButton
+        label="Carrito"
+        count={cartCount}
+        onClick={openCart}
+      >
         <ShoppingCart className="h-[22px] w-[22px]" strokeWidth={1.85} />
       </ActionButton>
     </div>
