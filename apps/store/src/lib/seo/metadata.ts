@@ -8,12 +8,12 @@ export const metadataBase = new URL(BASE_URL);
 
 function productTitle(p: ProductDetailData): string {
   const spec = p.capacityVariants.find((c) => c.id === p.activeCapacity)?.label ?? "";
-  return `${p.brand} ${p.name}${spec ? ` ${spec}` : ""} | Precio y envío en Argentina`;
+  return `${p.brand} ${p.name}${spec ? ` ${spec}` : ""} | Precio y envio en Argentina`;
 }
 
 function productDescription(p: ProductDetailData): string {
   const benefit = p.features[0] ?? "";
-  return `Comprá ${p.brand} ${p.name} en ${SITE_NAME}. ${benefit}, precio en ARS, cuotas, stock actualizado y envío a Argentina.`;
+  return `Compra ${p.brand} ${p.name} en ${SITE_NAME}. ${benefit}, precio en ARS, stock actualizado, garantia oficial y envio a Argentina.`;
 }
 
 export function buildProductMetadata(product: ProductDetailData): Metadata {
@@ -53,27 +53,54 @@ export function buildProductMetadata(product: ProductDetailData): Metadata {
   };
 }
 
-export function buildCatalogMetadata(): Metadata {
+export function buildHomeMetadata(): Metadata {
   const canonical = `${BASE_URL}/`;
   return {
     metadataBase,
-    title: `${SITE_NAME} | Tecnología, electrodomésticos y electrónica en Argentina`,
+    title: `${SITE_NAME} | Tecnologia, electronica y electrodomesticos`,
     description:
-      "Encontrá tecnología, electrodomésticos y electrónica en cloudcommerce: compará marcas, precios, cuotas, stock, envío rápido y especificaciones para elegir mejor.",
+      "Descubri electronica, electrodomesticos, celulares, TV, audio, computacion y hogar inteligente en cloudcommerce. Envios rapidos, garantia oficial y compra segura.",
     alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
       type: "website",
       locale: "es_AR",
       siteName: SITE_NAME,
-      title: SITE_NAME,
-      description: "Tecnología y electrodomésticos al mejor precio en Argentina.",
+      title: `${SITE_NAME} | Tecnologia para tu hogar`,
+      description:
+        "Electronica y electrodomesticos con experiencia premium, envios rapidos, garantia oficial y soporte experto.",
       url: canonical,
     },
     twitter: {
       card: "summary_large_image",
-      title: SITE_NAME,
-      description: "Tecnología y electrodomésticos al mejor precio en Argentina.",
+      title: `${SITE_NAME} | Tecnologia para tu hogar`,
+      description:
+        "Electronica y electrodomesticos con experiencia premium, envios rapidos, garantia oficial y soporte experto.",
+    },
+  };
+}
+
+export function buildCatalogMetadata(): Metadata {
+  const canonical = `${BASE_URL}/products`;
+  return {
+    metadataBase,
+    title: `${SITE_NAME} | Tecnologia, electrodomesticos y electronica en Argentina`,
+    description:
+      "Encontra tecnologia, electrodomesticos y electronica en cloudcommerce: compara marcas, precios, stock, envio rapido y especificaciones para elegir mejor.",
+    alternates: { canonical },
+    robots: { index: true, follow: true },
+    openGraph: {
+      type: "website",
+      locale: "es_AR",
+      siteName: SITE_NAME,
+      title: `${SITE_NAME} | Catalogo de tecnologia`,
+      description: "Tecnologia y electrodomesticos con envio rapido en Argentina.",
+      url: canonical,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${SITE_NAME} | Catalogo de tecnologia`,
+      description: "Tecnologia y electrodomesticos con envio rapido en Argentina.",
     },
   };
 }

@@ -82,7 +82,7 @@ export function buildProductJsonLd(product: ProductDetailData) {
       "@type": "Offer",
       "@id": `${canonical}#offer`,
       url: canonical,
-      priceCurrency: "COP",
+      priceCurrency: "ARS",
       price: product.price,
       availability:
         product.stockStatus === "in-stock"
@@ -133,7 +133,7 @@ export function buildProductJsonLd(product: ProductDetailData) {
               shippingRate: {
                 "@type": "MonetaryAmount",
                 value: 0,
-                currency: "COP",
+                currency: "ARS",
               },
             }
           : undefined,

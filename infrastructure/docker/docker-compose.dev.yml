@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cloudcommerce-postgres
+    environment:
+      POSTGRES_USER: cloudcommerce
+      POSTGRES_PASSWORD: cloudcommerce
+      POSTGRES_DB: cloudcommerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - cloudcommerce_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudcommerce -d cloudcommerce"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: cloudcommerce-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - cloudcommerce_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cloudcommerce_postgres:
+  cloudcommerce_redis:

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, ChevronDown, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { COLOMBIA_CITIES, DEFAULT_CITY } from "@/lib/constants";
+import { ARGENTINA_CITIES, DEFAULT_CITY } from "@/lib/constants";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useUi } from "@/store/ui";
 import { toast } from "@/store/toast";
@@ -23,13 +23,13 @@ export function LocationSelector() {
         className="cc-focus-ring hidden shrink-0 items-center gap-1.5 rounded-cc-sm px-2 py-1.5 text-[13px] text-cc-secondary transition-colors duration-[140ms] ease-cc-out hover:bg-cc-soft hover:text-cc-text xl:flex"
       >
         <MapPin className="h-4 w-4 text-cc-primary" strokeWidth={2} />
-        <span className="font-medium">{hydrated ? city : DEFAULT_CITY}</span>
+        <span className="font-medium">Envios a {hydrated ? city : DEFAULT_CITY}</span>
         <ChevronDown className="h-3.5 w-3.5 text-cc-muted" />
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Elegí tu ciudad">
+      <Modal open={open} onClose={() => setOpen(false)} title="Elegi tu ciudad">
         <ul className="flex flex-col gap-0.5">
-          {COLOMBIA_CITIES.map((c) => {
+          {ARGENTINA_CITIES.map((c) => {
             const active = c === city;
             return (
               <li key={c}>

@@ -1,80 +1,74 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, ShieldCheck, MapPin } from "lucide-react";
-import { cn, formatCOP } from "@/lib/utils";
+import { LockKeyhole, MapPin, PackageCheck, ShieldCheck, Truck } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { ProductDetailData } from "@/lib/mock-product-detail";
-import { FINANCING_PLANS } from "@/lib/constants";
 import { toast } from "@/store/toast";
-import { Modal } from "@/components/ui/modal";
 import { AddToCartButton } from "./add-to-cart-button";
 
 const PAYMENT_LOGOS = [
   { id: "visa", label: "VISA", color: "#1A1F71" },
   { id: "mc", label: "MC", color: "#EB001B" },
   { id: "amex", label: "AMEX", color: "#007BC1" },
-  { id: "pse", label: "PSE", color: "#1B5E20" },
-  { id: "nequi", label: "NEQUI", color: "#6B21A8" },
-  { id: "banco", label: "BANCO", color: "#0D47A1" },
+  { id: "mp", label: "MP", color: "#009EE3" },
+  { id: "modo", label: "MODO", color: "#111827" },
+  { id: "cash", label: "EFECTIVO", color: "#166534" },
 ] as const;
+
+const SECURITY_ITEMS = [
+  { icon: ShieldCheck, label: "Compra protegida CloudCommerce" },
+  { icon: PackageCheck, label: "Producto original con garantia oficial" },
+  { icon: LockKeyhole, label: "Tus datos viajan protegidos" },
+];
 
 export function PurchasePanel({ product }: { product: ProductDetailData }) {
   const [postal, setPostal] = useState("");
-  const [financingOpen, setFinancingOpen] = useState(false);
 
   function calcShipping() {
     if (!/^\d{4,8}$/.test(postal.trim())) {
-      toast.error("Ingresá un código postal válido");
+      toast.error("Ingresa un codigo postal valido");
       return;
     }
-    toast.success(`Envío a ${postal}`, { description: "Llega en 2 a 4 días hábiles · Gratis" });
+    toast.success(`Envio a ${postal}`, { description: "Llega en 2 a 4 dias habiles. Gratis" });
   }
 
   return (
-    <div className="rounded-cc-xl border border-cc-border bg-white shadow-cc-md overflow-hidden">
-      {/* Delivery section */}
-      <div className="p-5 flex flex-col gap-3.5">
-        {/* Free shipping */}
+    <div className="overflow-hidden rounded-cc-xl border border-cc-border bg-white shadow-cc-md">
+      <div className="flex flex-col gap-3.5 p-5">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-cc-success-soft">
             <Truck className="h-4 w-4 text-cc-success" strokeWidth={1.8} />
           </div>
           <div>
-            <p className="text-[13px] font-bold text-cc-text">
-              Envío GRATIS a todo el país
-            </p>
-            <p className="text-[12px] text-cc-muted mt-0.5">
-              Llega el{" "}
-              <span className="font-semibold text-cc-text">
-                lunes 30 jun
-              </span>
+            <p className="text-[13px] font-bold text-cc-text">Envio gratis a todo el pais</p>
+            <p className="mt-0.5 text-[12px] text-cc-muted">
+              Llega entre <span className="font-semibold text-cc-text">2 y 4 dias habiles</span>
             </p>
           </div>
         </div>
 
-        {/* Postal calc */}
-        <div className="flex gap-2 items-center">
-          <MapPin className="h-4 w-4 text-cc-muted flex-shrink-0" strokeWidth={1.8} />
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 flex-shrink-0 text-cc-muted" strokeWidth={1.8} />
           <input
             type="text"
-            placeholder="Código postal"
+            placeholder="Codigo postal"
             value={postal}
             onChange={(e) => setPostal(e.target.value)}
-            maxLength={6}
+            maxLength={8}
             className={cn(
-              "flex-1 h-8 rounded-cc-xs border border-cc-border px-2.5 text-[12px]",
-              "placeholder:text-cc-faint text-cc-text bg-white",
-              "focus:outline-none focus:border-cc-primary focus:ring-2 focus:ring-cc-primary/10",
+              "h-8 flex-1 rounded-cc-xs border border-cc-border px-2.5 text-[12px]",
+              "bg-white text-cc-text placeholder:text-cc-faint",
               "transition-[border-color,box-shadow] duration-[140ms]",
+              "focus:border-cc-primary focus:outline-none focus:ring-2 focus:ring-cc-primary/10",
             )}
           />
           <button
             type="button"
             onClick={calcShipping}
             className={cn(
-              "h-8 px-3 rounded-cc-xs border border-cc-border text-[12px] font-semibold text-cc-secondary",
-              "hover:border-cc-primary hover:text-cc-primary transition-colors duration-[140ms]",
-              "cc-focus-ring",
+              "cc-focus-ring h-8 rounded-cc-xs border border-cc-border px-3 text-[12px] font-semibold text-cc-secondary",
+              "transition-colors duration-[140ms] hover:border-cc-primary hover:text-cc-primary",
             )}
           >
             Calcular
@@ -84,90 +78,47 @@ export function PurchasePanel({ product }: { product: ProductDetailData }) {
 
       <hr className="border-cc-border-subtle" />
 
-      {/* Availability + trust */}
-      <div className="px-5 py-3.5 flex flex-col gap-3">
+      <div className="flex flex-col gap-3 px-5 py-3.5">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-cc-success flex-shrink-0" />
-          <span className="text-[13px] text-cc-text font-medium">
-            Disponible hoy
-          </span>
+          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-cc-success" />
+          <span className="text-[13px] font-medium text-cc-text">Disponible hoy</span>
         </div>
-        <div className="flex items-center gap-2">
-          <ShieldCheck
-            className="h-4 w-4 text-cc-primary flex-shrink-0"
-            strokeWidth={1.8}
-          />
-          <span className="text-[13px] text-cc-secondary">
-            Compra protegida CloudCommerce
-          </span>
-        </div>
+        {SECURITY_ITEMS.map(({ icon: Icon, label }) => (
+          <div key={label} className="flex items-center gap-2">
+            <Icon className="h-4 w-4 flex-shrink-0 text-cc-primary" strokeWidth={1.8} />
+            <span className="text-[13px] text-cc-secondary">{label}</span>
+          </div>
+        ))}
       </div>
 
       <hr className="border-cc-border-subtle" />
 
-      {/* Payment methods */}
       <div className="px-5 py-3.5">
-        <p className="text-[11px] text-cc-muted font-medium mb-2.5 uppercase tracking-wide">
-          Métodos de pago
+        <p className="mb-2.5 text-[11px] font-medium uppercase tracking-wide text-cc-muted">
+          Metodos de pago seguros
         </p>
         <div className="grid grid-cols-3 gap-1.5">
           {PAYMENT_LOGOS.map((logo) => (
             <div
               key={logo.id}
-              className="flex items-center justify-center h-7 rounded border border-cc-border bg-cc-soft"
+              className="flex h-7 items-center justify-center rounded border border-cc-border bg-cc-soft"
             >
-              <span
-                className="text-[10px] font-bold tracking-tight"
-                style={{ color: logo.color }}
-              >
+              <span className="text-[10px] font-bold tracking-tight" style={{ color: logo.color }}>
                 {logo.label}
               </span>
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => setFinancingOpen(true)}
-          className="mt-2.5 text-[12px] text-cc-primary font-medium hover:underline"
-        >
-          Ver opciones de financiación →
-        </button>
+        <p className="mt-2.5 text-[12px] font-medium text-cc-secondary">
+          Pago cifrado, validacion segura y comprobante automatico.
+        </p>
       </div>
 
       <hr className="border-cc-border-subtle" />
 
-      {/* CTA */}
       <div className="p-4">
         <AddToCartButton product={product} size="lg" />
       </div>
-
-      <Modal
-        open={financingOpen}
-        onClose={() => setFinancingOpen(false)}
-        title="Opciones de financiación"
-      >
-        <p className="mb-3 text-[13px] text-cc-muted">
-          Pagá <span className="font-semibold text-cc-text">{formatCOP(product.price)}</span> en
-          cuotas fijas con cualquier tarjeta de crédito.
-        </p>
-        <ul className="flex flex-col gap-2">
-          {FINANCING_PLANS.map((n) => (
-            <li
-              key={n}
-              className="flex items-center justify-between rounded-cc-sm border border-cc-border px-4 py-3"
-            >
-              <span className="text-[13px] font-medium text-cc-text">{n} cuotas</span>
-              <span className="text-[14px] font-bold text-cc-text">
-                {formatCOP(Math.round(product.price / n))}
-                <span className="text-[12px] font-normal text-cc-muted"> /mes</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-[11px] text-cc-faint">
-          Valores estimados sin interés. Sujeto a aprobación de tu entidad bancaria.
-        </p>
-      </Modal>
     </div>
   );
 }

@@ -27,7 +27,7 @@ export function SearchCommand() {
         name="q"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Buscar producto, categoría o más..."
+        placeholder="Buscar productos, marcas y mas..."
         className="h-10 w-full rounded-cc-md border border-cc-border bg-cc-soft pl-10 pr-4 text-sm text-cc-text outline-none transition-[background,border-color,box-shadow] duration-[140ms] ease-cc-out placeholder:text-cc-muted focus:border-cc-primary-border focus:bg-white focus:shadow-cc-focus"
       />
     </form>

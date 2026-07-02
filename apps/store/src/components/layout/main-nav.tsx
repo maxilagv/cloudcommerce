@@ -13,19 +13,19 @@ export function MainNav() {
 
   function goCatalog(sort?: SortKey) {
     if (sort) useCatalog.getState().setSort(sort);
-    router.push("/#catalogo");
+    router.push("/products#catalogo");
   }
 
   return (
-    <nav className="hidden items-center gap-1 lg:flex">
+    <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
       <Link
         href="/"
-        className="cc-focus-ring rounded-cc-sm px-3 py-2 text-sm font-medium text-cc-text transition-[color,background] duration-[140ms] ease-cc-out"
+        className="cc-focus-ring rounded-cc-sm bg-cc-primary-soft px-3 py-2 text-sm font-bold text-cc-primary transition-[color,background] duration-[140ms] ease-cc-out"
       >
         Inicio
       </Link>
       <button type="button" onClick={() => goCatalog()} className={linkClass}>
-        Catálogo
+        Catalogo
       </button>
       <button type="button" onClick={() => goCatalog("price-asc")} className={linkClass}>
         Ofertas
