@@ -1,0 +1,54 @@
+export type ApiErrorCode =
+  | "VALIDATION_FAILED"
+  | "UNAUTHENTICATED"
+  | "FORBIDDEN"
+  | "RESOURCE_NOT_FOUND"
+  | "CONFLICT"
+  | "IDEMPOTENCY_CONFLICT"
+  | "RATE_LIMITED"
+  | "UPSTREAM_UNAVAILABLE"
+  | "INTERNAL_ERROR"
+  | "PRODUCT_NOT_PUBLISHABLE"
+  | "PRODUCT_STATUS_TRANSITION_INVALID"
+  | "CATEGORY_TREE_INVALID"
+  | "MEDIA_UPLOAD_INVALID"
+  | "MEDIA_CARDINALITY_INVALID"
+  | "MEDIA_NOT_READY"
+  | "INSUFFICIENT_STOCK"
+  | "PRICE_CHANGED"
+  | "MARGIN_BELOW_MINIMUM"
+  | "NO_SUPPLIER_COST"
+  | "CURRENCY_MISMATCH"
+  | "DISCOUNT_INVALID"
+  | "DISCOUNT_EXHAUSTED"
+  | "NO_ACTIVE_MARKUP_RULE"
+  | "PRICE_POLICY_VIOLATION"
+  | "INVALID_ORDER_STATE"
+  | "PRODUCT_NOT_AVAILABLE"
+  | "ADDRESS_NOT_DELIVERABLE"
+  | "SHIPMENT_TRACKING_UNAVAILABLE"
+  | "DOCUMENT_NOT_READY"
+  | "DOCUMENT_ALREADY_ISSUED"
+  | "CONFIG_SECRET_MISSING"
+  | "AI_QUOTA_EXCEEDED"
+  | "AI_RESPONSE_INVALID"
+  | "AI_CONTENT_REJECTED"
+  | "SUPPLIER_REJECTED"
+  | "SSRF_BLOCKED"
+  | "FEED_RUN_IN_PROGRESS"
+  | "WEBHOOK_SIGNATURE_INVALID";
+
+export type ApiErrorShape = {
+  type: string;
+  title: string;
+  status: number;
+  code: ApiErrorCode;
+  message: string;
+  requestId: string;
+  details?: Array<{ path: string; message: string; code: string }>;
+};
+
+export type ApiEnvelope<T> = {
+  data: T;
+  meta: { requestId: string };
+};

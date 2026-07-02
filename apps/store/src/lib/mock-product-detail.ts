@@ -1,4 +1,4 @@
-import type { ProductCardData } from "./mock-products";
+import { mockProducts, type ProductCardData } from "./mock-products";
 
 export type ColorVariant = { id: string; label: string; hex: string };
 export type CapacityVariant = { id: string; label: string };
@@ -33,11 +33,12 @@ export type ProductDetailData = ProductCardData & {
 
 export const mockProductDetail: ProductDetailData = {
   // Base ProductCardData fields
-  id: "samsung-nevera-655l",
-  slug: "samsung-nevera-655l",
+  id: "samsung-nevera",
+  slug: "samsung-nevera",
   brand: "Samsung",
   name: "Nevera French Door Family Hub 655L",
   sku: "RF65DG960EB1/CO",
+  category: "Refrigeradores",
   image: "/products/samsung-nevera.svg",
   imageAlt: "Nevera Samsung Family Hub 655L Negro Intenso",
   badge: { type: "discount", label: "-11%" },
@@ -204,6 +205,96 @@ export const mockProductDetail: ProductDetailData = {
 
 export const mockProductDetails: ProductDetailData[] = [mockProductDetail];
 
+/** Generic service blurbs reused for products without hand-authored detail. */
+const DEFAULT_SERVICES: ProductDetailData["services"] = [
+  {
+    icon: "shield",
+    title: "Garantía oficial 1 año",
+    body: "Cobertura completa de fábrica gestionada por CloudCommerce sin costo extra.",
+  },
+  {
+    icon: "truck",
+    title: "Envío gratis a todo el país",
+    body: "Despacho asegurado con seguimiento en tiempo real hasta tu puerta.",
+  },
+  {
+    icon: "rotate",
+    title: "Devolución 30 días",
+    body: "Si no quedas satisfecho, recogemos el producto y te reembolsamos el total.",
+  },
+];
+
+/** Build a synthetic 5★→1★ distribution that sums to `reviewCount`. */
+function synthDistribution(rating: number, reviewCount: number) {
+  const weights =
+    rating >= 4.7
+      ? [0.74, 0.18, 0.05, 0.02, 0.01]
+      : rating >= 4.3
+        ? [0.58, 0.27, 0.09, 0.04, 0.02]
+        : [0.42, 0.31, 0.15, 0.08, 0.04];
+  const counts = weights.map((w) => Math.round(w * reviewCount));
+  // absorb rounding drift into the 5★ bucket
+  counts[0] += reviewCount - counts.reduce((a, b) => a + b, 0);
+  return [5, 4, 3, 2, 1].map((stars, i) => ({ stars, count: Math.max(0, counts[i]) }));
+}
+
+/**
+ * Promote a catalog card into a full PDP payload when no hand-authored
+ * `ProductDetailData` exists. Keeps every PDP reachable without a backend.
+ */
+export function synthesizeProductDetail(card: ProductCardData): ProductDetailData {
+  return {
+    ...card,
+    slug: card.id,
+    images: [card.image, card.image, card.image, card.image],
+    colorVariants: [],
+    capacityVariants: [],
+    activeColor: "",
+    activeCapacity: "",
+    specs: [
+      {
+        category: "Características principales",
+        rows: card.features.map((f, i) => ({ label: `Característica ${i + 1}`, value: f })),
+      },
+      {
+        category: "General",
+        rows: [
+          { label: "Marca", value: card.brand },
+          { label: "Modelo / SKU", value: card.sku ?? "—" },
+          { label: "Categoría", value: card.category },
+          { label: "Garantía", value: "12 meses" },
+        ],
+      },
+    ],
+    longDescription: `${card.name} de ${card.brand}. ${card.features.join(". ")}. Un producto seleccionado por CloudCommerce con envío asegurado y compra protegida.`,
+    descriptionBullets: card.features,
+    services: DEFAULT_SERVICES,
+    reviews: [],
+    reviewDistribution: synthDistribution(card.rating, card.reviewCount),
+    questions: [],
+    breadcrumb: [
+      { label: "Inicio", href: "/" },
+      { label: "Catálogo", href: "/" },
+      { label: card.category, href: "/" },
+      { label: card.brand, href: "/" },
+      { label: card.name },
+    ],
+  };
+}
+
+/**
+ * Resolve a PDP by product `id` (the value used in `/products/{id}` links) or
+ * legacy `slug`. Falls back to synthesizing detail from the catalog card so
+ * every product in `mockProducts` has a working detail page.
+ */
+export function getProductDetail(key: string): ProductDetailData | undefined {
+  const authored = mockProductDetails.find((p) => p.id === key || p.slug === key);
+  if (authored) return authored;
+  const card = mockProducts.find((p) => p.id === key);
+  return card ? synthesizeProductDetail(card) : undefined;
+}
+
+/** @deprecated use {@link getProductDetail}. Kept for back-compat. */
 export function getProductBySlug(slug: string): ProductDetailData | undefined {
-  return mockProductDetails.find((p) => p.slug === slug);
+  return getProductDetail(slug);
 }

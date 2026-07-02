@@ -18,7 +18,7 @@ export function ProductDetail({ product }: { product: ProductDetailData }) {
         <ImageGallery images={product.images} productName={product.name} />
         <ProductInfo product={product} />
         <aside className="sticky top-4">
-          <PurchasePanel productName={product.name} />
+          <PurchasePanel product={product} />
         </aside>
       </div>
 
@@ -26,7 +26,7 @@ export function ProductDetail({ product }: { product: ProductDetailData }) {
       <div className="mt-5 flex flex-col gap-6 lg:hidden">
         <ImageGallery images={product.images} productName={product.name} />
         <ProductInfo product={product} />
-        <PurchasePanel productName={product.name} />
+        <PurchasePanel product={product} />
       </div>
 
       {/* Full-width content tabs */}

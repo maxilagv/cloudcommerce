@@ -1,9 +1,9 @@
-import { ArrowLeftRight } from "lucide-react";
 import { formatCOP } from "@/lib/utils";
 import { AddToCartButton } from "./add-to-cart-button";
 import { FavoriteButton } from "./favorite-button";
 import { VariantSelector } from "./variant-selector";
 import { QuantityCounter } from "./quantity-counter";
+import { CompareButton, ShareRow } from "./product-actions";
 import type { ProductDetailData } from "@/lib/mock-product-detail";
 
 function StarRow({ rating }: { rating: number }) {
@@ -43,7 +43,7 @@ export function ProductInfo({ product }: { product: ProductDetailData }) {
       </h1>
 
       {/* Rating + SKU */}
-      <div className="flex items-center flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <StarRow rating={product.rating} />
         <span className="text-[13px] font-bold text-cc-text">
           {product.rating.toFixed(1)}
@@ -64,12 +64,12 @@ export function ProductInfo({ product }: { product: ProductDetailData }) {
 
       {/* Price block */}
       <div className="flex flex-col gap-0.5">
-        <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="text-[28px] font-black text-cc-text leading-none tracking-tight">
+        <div className="flex flex-wrap items-baseline gap-3">
+          <span className="text-[28px] font-black leading-none tracking-tight text-cc-text">
             {formatCOP(product.price)}
           </span>
           {product.oldPrice && (
-            <span className="text-[16px] text-cc-muted line-through font-medium">
+            <span className="text-[16px] font-medium text-cc-muted line-through">
               {formatCOP(product.oldPrice)}
             </span>
           )}
@@ -80,7 +80,7 @@ export function ProductInfo({ product }: { product: ProductDetailData }) {
           </p>
         )}
         {product.shipping === "free" && (
-          <p className="text-[12px] font-semibold text-cc-success mt-0.5">
+          <p className="mt-0.5 text-[12px] font-semibold text-cc-success">
             ✓ Envío gratis incluido
           </p>
         )}
@@ -100,50 +100,22 @@ export function ProductInfo({ product }: { product: ProductDetailData }) {
 
       {/* Quantity */}
       <div>
-        <p className="text-[13px] font-medium text-cc-text mb-2">Cantidad</p>
+        <p className="mb-2 text-[13px] font-medium text-cc-text">Cantidad</p>
         <QuantityCounter min={1} max={50} initial={1} />
       </div>
 
       {/* CTAs */}
-      <div className="flex flex-col gap-2.5 mt-1">
-        <AddToCartButton productName={product.name} size="lg" />
+      <div className="mt-1 flex flex-col gap-2.5">
+        <AddToCartButton product={product} size="lg" />
 
-        <div className="flex gap-2 items-center">
-          <FavoriteButton
-            productName={product.name}
-            initial={product.isFavorite}
-            showLabel
-          />
-          <button
-            type="button"
-            className="flex items-center gap-1.5 px-3 text-[13px] text-cc-primary font-medium hover:underline cc-focus-ring rounded-cc-xs h-12 flex-shrink-0"
-          >
-            <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={1.8} />
-            Comparar
-          </button>
+        <div className="flex items-center gap-2">
+          <FavoriteButton product={product} showLabel />
+          <CompareButton product={product} />
         </div>
       </div>
 
       {/* Share row */}
-      <div className="flex items-center gap-3 pt-1">
-        <span className="text-[12px] text-cc-muted">Compartir:</span>
-        <div className="flex items-center gap-2">
-          {[
-            { label: "Facebook", glyph: "f" },
-            { label: "Twitter", glyph: "𝕏" },
-            { label: "Copiar enlace", glyph: "⎘" },
-          ].map((s) => (
-            <button
-              key={s.label}
-              type="button"
-              aria-label={s.label}
-              className="h-7 w-7 rounded-full border border-cc-border flex items-center justify-center text-[11px] font-bold text-cc-muted hover:text-cc-primary hover:border-cc-primary-border transition-colors duration-[140ms] cc-focus-ring"
-            >
-              {s.glyph}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ShareRow name={product.name} />
     </div>
   );
 }

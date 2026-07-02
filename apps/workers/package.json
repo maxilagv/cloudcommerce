@@ -1,0 +1,31 @@
+{
+  "name": "@cloudcommerce/workers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -b tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "tsc -b tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@cloudcommerce/database": "workspace:*",
+    "@cloudcommerce/types": "workspace:*",
+    "@cloudcommerce/validators": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "pino": "^10.1.0",
+    "postgres": "^3.4.7",
+    "sharp": "^0.35.3",
+    "uuid": "^13.0.0",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.16"
+  }
+}

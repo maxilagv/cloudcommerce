@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Format a value as Colombian pesos: 5299900 -> "$ 5.299.900". */
+/** Format a value as Argentine pesos: 5299900 -> "$ 5.299.900". */
 export function formatCOP(value: number) {
-  return new Intl.NumberFormat("es-CO", {
+  return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "COP",
+    currency: "ARS",
     maximumFractionDigits: 0,
   })
     .format(value)
