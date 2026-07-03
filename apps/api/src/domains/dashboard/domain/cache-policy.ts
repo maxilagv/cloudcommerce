@@ -17,9 +17,9 @@ export const dashboardCacheKey = {
 } as const;
 
 export const dashboardInvalidationPrefixes = {
-  ordersChanged: ["dash:overview:", "dash:series:", "dash:category:", "dash:top-products:", "dash:top-customers:"],
+  ordersChanged: ["dash:overview:", "dash:series:", "dash:category:", "dash:top-products:"],
   financeChanged: ["dash:overview:", "dash:series:"],
   catalogChanged: ["dash:overview:", "dash:published-count", "dash:category:", "dash:top-products:"],
-  customersChanged: ["dash:overview:", "dash:top-customers:"],
+  customersChanged: ["dash:overview:"],
   stockChanged: ["dash:overview:"],
 } as const;

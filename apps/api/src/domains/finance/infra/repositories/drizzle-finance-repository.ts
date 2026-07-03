@@ -148,7 +148,7 @@ export class DrizzleFinanceRepository implements FinanceRepository, NumberSequen
           pdfStorageKey: input.pdfStorageKey,
           pdfChecksum: input.pdfChecksum,
           contentHash: input.contentHash,
-          relatedDocumentId: null,
+          relatedDocumentId: input.relatedDocumentId,
           createdBy: input.createdBy,
         })
         .returning();
@@ -199,6 +199,25 @@ export class DrizzleFinanceRepository implements FinanceRepository, NumberSequen
       throw new Error("Created document could not be loaded");
     }
     return { type: result.type, document };
+  }
+
+  public async replaceDocumentFile(input: {
+    documentId: string;
+    pdfStorageKey: string;
+    pdfChecksum: string;
+    contentHash: string;
+  }): Promise<FinanceDocumentEntity | null> {
+    const [row] = await this.db
+      .update(commercialDocument)
+      .set({
+        pdfStorageKey: input.pdfStorageKey,
+        pdfChecksum: input.pdfChecksum,
+        contentHash: input.contentHash,
+        updatedAt: new Date(),
+      })
+      .where(eq(commercialDocument.id, input.documentId))
+      .returning();
+    return row ? this.mapDocument(row) : null;
   }
 
   public async getDocument(documentId: string): Promise<FinanceDocumentEntity | null> {

@@ -11,6 +11,7 @@ export const GenerateDocumentSchema = z.object({
   type: z.nativeEnum(DocumentType),
   orderId: UuidSchema,
   series: z.string().trim().min(1).max(8).optional(),
+  relatedDocumentId: UuidSchema.optional(),
 });
 
 export const RegenerateDocumentSchema = z.object({

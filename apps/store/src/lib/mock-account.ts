@@ -74,9 +74,9 @@ export type LoyaltyData = {
 // ── Mock data ──────────────────────────────────────────────────────────────
 
 export const mockProfile: CustomerProfile = {
-  name: "Maximiliano Lavagetto",
-  email: "maxilavagetto@gmail.com",
-  initials: "ML",
+  name: "Demo Customer",
+  email: "demo.customer@example.com",
+  initials: "DC",
   memberSince: "Marzo 2023",
   tier: "CloudPrime",
 };
@@ -235,7 +235,7 @@ export const mockAddresses: Address[] = [
   {
     id: "addr-1",
     label: "Casa",
-    name: "Maximiliano Lavagetto",
+    name: "Demo Customer",
     street: "Av. Corrientes 1234, Piso 3 Dpto B",
     city: "Buenos Aires, CP 1043",
     isPrimary: true,
@@ -243,7 +243,7 @@ export const mockAddresses: Address[] = [
   {
     id: "addr-2",
     label: "Oficina",
-    name: "Maximiliano Lavagetto",
+    name: "Demo Customer",
     street: "Maipú 255, Piso 8",
     city: "Buenos Aires, CP 1006",
     isPrimary: false,

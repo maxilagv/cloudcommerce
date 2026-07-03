@@ -198,7 +198,8 @@ export class AiService {
     }
     const targetId = input.seedProductId ?? input.categoryId ?? null;
     const targetType = input.seedProductId ? AiTargetType.PRODUCT : input.categoryId ? AiTargetType.CATEGORY : AiTargetType.NONE;
-    const gate = await this.openGeneration(actor, AiGenerationKind.RECOMMENDATION, targetType, targetId, input, uuidv7());
+    const recommendationKey = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    const gate = await this.openGeneration(actor, AiGenerationKind.RECOMMENDATION, targetType, targetId, input, recommendationKey);
     if (!gate.ok) {
       if (gate.error.type === "DUPLICATE") {
         return err({ type: "AI_UPSTREAM_UNAVAILABLE" });

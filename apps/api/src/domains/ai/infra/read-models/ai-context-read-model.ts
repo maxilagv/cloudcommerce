@@ -54,17 +54,17 @@ export class AiContextReadModel implements AiContextReaderPort {
       .where(and(eq(productVariant.productId, productId), eq(productVariant.isActive, true)));
     return {
       productId: row.id,
-      title: row.title,
-      subtitle: row.subtitle,
-      description: row.description,
-      categoryName: row.categoryName,
-      brandName: row.brandName,
+      title: untrustedText(row.title),
+      subtitle: row.subtitle ? untrustedText(row.subtitle) : null,
+      description: untrustedText(row.description ?? ""),
+      categoryName: untrustedText(row.categoryName),
+      brandName: row.brandName ? untrustedText(row.brandName) : null,
       specs: specs.map((item) => ({
         key: item.key,
-        label: item.label,
-        valueText: item.valueText,
+        label: untrustedText(item.label),
+        valueText: item.valueText ? untrustedText(item.valueText) : null,
         valueNum: item.valueNum === null ? null : Number(item.valueNum),
-        unit: item.unit,
+        unit: item.unit ? untrustedText(item.unit) : null,
       })),
       variantAttributes: variants.map((variant) => sanitizeAttributes(variant.attributes)),
     };
@@ -72,7 +72,7 @@ export class AiContextReadModel implements AiContextReaderPort {
 
   public async getCategoryContext(categoryId: string): Promise<AiCategoryContext | null> {
     const row = await this.db.query.category.findFirst({ where: eq(category.id, categoryId) });
-    return row ? { categoryId: row.id, name: row.name, description: row.description } : null;
+    return row ? { categoryId: row.id, name: untrustedText(row.name), description: row.description ? untrustedText(row.description) : null } : null;
   }
 
   public async listPublishedCandidates(input: {
@@ -99,10 +99,10 @@ export class AiContextReadModel implements AiContextReaderPort {
       .limit(input.limit);
     return rows.map((row) => ({
       productId: row.productId,
-      title: row.title,
+      title: untrustedText(row.title),
       categoryId: row.categoryId,
-      categoryName: row.categoryName,
-      brandName: row.brandName,
+      categoryName: untrustedText(row.categoryName),
+      brandName: row.brandName ? untrustedText(row.brandName) : null,
       attributes: {},
     }));
   }
@@ -189,8 +189,8 @@ export class AiContextReadModel implements AiContextReaderPort {
       .filter((variant) => costByVariant.has(variant.variantId))
       .map((variant) => ({
         variantId: variant.variantId,
-        productTitle: variant.productTitle,
-        categoryName: variant.categoryName,
+        productTitle: untrustedText(variant.productTitle),
+        categoryName: untrustedText(variant.categoryName),
         currentPriceMinor: priceByVariant.get(variant.variantId) ?? null,
         supplierCostMinor: costByVariant.get(variant.variantId) ?? 0,
         currency: "ARS" as const,
@@ -229,8 +229,16 @@ const sanitizeAttributes = (attributes: Record<string, unknown>): Record<string,
       continue;
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean" || value === null) {
-      sanitized[key] = value;
+      sanitized[key] = typeof value === "string" ? untrustedText(value) : value;
     }
   }
   return sanitized;
+};
+
+const untrustedText = (value: string): string => {
+  const neutralized = value
+    .replace(/\b(ignore|disregard|forget)\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?)\b/gi, "[neutralized instruction]")
+    .replace(/\b(system|developer|assistant)\s*:/gi, "[neutralized role]:")
+    .replace(/<\s*\/?\s*(script|system|developer|assistant)\b[^>]*>/gi, "[neutralized tag]");
+  return `<untrusted-product-data>${neutralized}</untrusted-product-data>`;
 };

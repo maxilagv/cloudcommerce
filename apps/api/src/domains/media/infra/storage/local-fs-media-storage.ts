@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import type { MediaStoragePort, StoredMediaObject } from "../../application/ports/media-storage-port.js";
 
 export class LocalFsMediaStorage implements MediaStoragePort {
@@ -71,7 +71,8 @@ export class LocalFsMediaStorage implements MediaStoragePort {
 
   private resolveStorageKey(storageKey: string): string {
     const target = resolve(this.root, storageKey);
-    if (!target.startsWith(this.root)) {
+    const pathFromRoot = relative(this.root, target);
+    if (pathFromRoot === "" || pathFromRoot.startsWith("..") || isAbsolute(pathFromRoot)) {
       throw new Error("Invalid storage key");
     }
     return target;

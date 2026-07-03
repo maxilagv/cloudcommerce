@@ -197,6 +197,15 @@ class FakeFinanceRepository implements FinanceRepository {
     return { type: "CREATED", document: documentEntity(input) };
   }
 
+  public async replaceDocumentFile(input: {
+    documentId: string;
+    pdfStorageKey: string;
+    pdfChecksum: string;
+    contentHash: string;
+  }): Promise<FinanceDocumentEntity | null> {
+    return documentEntity(input);
+  }
+
   public async getDocument(): Promise<FinanceDocumentEntity | null> {
     return documentEntity();
   }

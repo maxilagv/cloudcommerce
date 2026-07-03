@@ -12,7 +12,7 @@ export const CreateCustomerSchema = z.object({
   whatsapp: z.string().trim().regex(/^\+?\d{8,15}$/).optional(),
   email: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
   notes: z.string().trim().max(1_000).optional(),
-});
+}).strict();
 
 export const CustomerAddressSchema = z.object({
   province: z.string().trim().min(1).max(60),
@@ -22,7 +22,7 @@ export const CustomerAddressSchema = z.object({
   betweenStreets: OptionalTrimmedSchema(160),
   postalCode: z.string().trim().regex(/^\d{4,8}$/).optional(),
   isPrimary: z.boolean().default(false),
-});
+}).strict();
 
 export const CreateCustomerInputSchema = CreateCustomerSchema.extend({
   initialAddress: CustomerAddressSchema.optional(),
@@ -81,7 +81,7 @@ export const SetPrimaryCustomerAddressSchema = z.object({
   customerId: UuidSchema,
   addressId: UuidSchema,
   reason: ReasonSchema.optional(),
-});
+}).strict();
 
 export const LogCustomerContactSchema = z
   .object({
@@ -91,6 +91,7 @@ export const LogCustomerContactSchema = z
     note: z.string().trim().max(500).optional(),
     occurredAt: z.coerce.date().default(() => new Date()),
   })
+  .strict()
   .superRefine((value, ctx) => {
     if (value.occurredAt.getTime() > Date.now() + 1_000) {
       ctx.addIssue({ code: "custom", path: ["occurredAt"], message: "occurredAt cannot be in the future" });
@@ -102,11 +103,11 @@ export const SearchCustomersSchema = z.object({
   sort: z.enum(["recent", "name", "last_contact"]).default("recent"),
   cursor: z.string().trim().min(1).max(512).optional(),
   limit: z.number().int().min(1).max(50).default(20),
-});
+}).strict();
 
 export const CustomerIdInputSchema = z.object({
   customerId: UuidSchema,
-});
+}).strict();
 
 export const GetCustomerDetailSchema = CustomerIdInputSchema.extend({
   reason: ReasonSchema.optional(),

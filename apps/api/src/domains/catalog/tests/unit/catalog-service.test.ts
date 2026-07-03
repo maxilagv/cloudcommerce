@@ -114,7 +114,7 @@ describe("CatalogService", () => {
   it("public product detail hides non-published products", async () => {
     class DraftSlugRepository extends FakeCatalogRepository {
       public override async findProductBySlug(_slug: string): Promise<ProductAggregate | null> {
-        return productAggregate;
+        throw new Error("public path must use findPublishedProductBySlug");
       }
     }
     const service = newService(new DraftSlugRepository());
@@ -235,6 +235,10 @@ class FakeCatalogRepository implements CatalogRepository {
   }
 
   public async findProductBySlug(_slug: string): Promise<ProductAggregate | null> {
+    return null;
+  }
+
+  public async findPublishedProductBySlug(_slug: string): Promise<ProductAggregate | null> {
     return null;
   }
 

@@ -7,7 +7,7 @@ const SlugSchema = z.string().trim().min(1).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9
 const CronSchema = z.string().trim().regex(/^(\S+\s+){4}\S+$/, "Cron invalido: se esperan 5 campos.");
 
 export const SupplierContactSchema = z.object({
-  email: z.string().trim().email().optional(),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
   phone: z.string().trim().min(5).max(40).optional(),
   person: z.string().trim().min(1).max(120).optional(),
 }).strict();

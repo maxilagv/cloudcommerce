@@ -153,6 +153,13 @@ export class DrizzleCatalogRepository implements CatalogRepository {
     return row ? this.getProductAggregate(row.id) : null;
   }
 
+  public async findPublishedProductBySlug(slug: string): Promise<ProductAggregate | null> {
+    const row = await this.db.query.product.findFirst({
+      where: and(eq(product.slug, slug), eq(product.status, ProductStatus.PUBLISHED), isNull(product.deletedAt)),
+    });
+    return row ? this.getProductAggregate(row.id) : null;
+  }
+
   public async getProductAggregate(id: string): Promise<ProductAggregate | null> {
     const row = await this.db.query.product.findFirst({ where: and(eq(product.id, id), isNull(product.deletedAt)) });
     if (!row) {

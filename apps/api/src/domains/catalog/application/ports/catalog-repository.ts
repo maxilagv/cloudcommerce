@@ -87,6 +87,7 @@ export interface CatalogRepository {
   findMediaAssetById(id: string): Promise<MediaAssetEntity | null>;
   findProductById(id: string): Promise<ProductEntity | null>;
   findProductBySlug(slug: string): Promise<ProductAggregate | null>;
+  findPublishedProductBySlug(slug: string): Promise<ProductAggregate | null>;
   getProductAggregate(id: string): Promise<ProductAggregate | null>;
   searchProducts(filters: ProductSearchFilters): Promise<ProductSearchResult>;
   createProduct(input: CreateProductRecord): Promise<ProductEntity>;

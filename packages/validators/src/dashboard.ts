@@ -4,7 +4,6 @@ export const DashboardRangeSchema = z.enum(["7d", "30d", "12m"]);
 
 export const GetDashboardOverviewSchema = z.object({
   range: DashboardRangeSchema.default("30d"),
-  compareToPrevious: z.boolean().default(true),
 });
 
 export const GetSalesTimeSeriesSchema = z.object({

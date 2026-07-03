@@ -56,6 +56,7 @@ export type CreateAvailableDocumentRecord = {
   contentHash: string;
   pdfStorageKey: string;
   pdfChecksum: string;
+  relatedDocumentId: string | null;
   createdBy: string;
   issuedAt: Date;
 };
@@ -88,6 +89,12 @@ export interface FinanceRepository {
     orderId: string;
   }): Promise<ExistingDocumentGenerationResult | null>;
   createAvailableDocument(input: CreateAvailableDocumentRecord, audit: RequestAuditContext): Promise<CreateAvailableDocumentResult>;
+  replaceDocumentFile(input: {
+    documentId: string;
+    pdfStorageKey: string;
+    pdfChecksum: string;
+    contentHash: string;
+  }): Promise<FinanceDocumentEntity | null>;
   getDocument(documentId: string): Promise<FinanceDocumentEntity | null>;
   listDocuments(input: ListDocumentsQuery): Promise<{ rows: FinanceDocumentEntity[]; nextCursor: string | null }>;
   recordDownload(input: { documentId: string; actorId: string | null; reason: string | null; ip: string | null; userAgent: string | null }): Promise<void>;

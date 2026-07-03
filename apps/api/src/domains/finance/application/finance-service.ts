@@ -103,6 +103,7 @@ export class FinanceService {
         contentHash: rendered.contentHash,
         pdfStorageKey: stored.storageKey,
         pdfChecksum: stored.checksum,
+        relatedDocumentId: input.relatedDocumentId ?? null,
         createdBy: actorId,
         issuedAt,
       },
@@ -130,7 +131,29 @@ export class FinanceService {
     if (!document) {
       return err({ type: "DOCUMENT_NOT_FOUND" });
     }
-    return ok(this.presentDetail(document));
+    if (!document.orderId || !document.issuedAt) {
+      return err({ type: "DOCUMENT_NOT_READY" });
+    }
+    const order = await this.orders.getOrderForDocument(document.orderId);
+    if (!order) {
+      return err({ type: "ORDER_NOT_FOUND" });
+    }
+    const rendered = await this.renderer.render({
+      type: document.type,
+      series: document.series,
+      order,
+      displayNumber: document.displayNumber,
+      issuedAt: document.issuedAt,
+    });
+    const storageKey = document.pdfStorageKey ?? `documents/${document.type.toLowerCase()}/${document.series}/${document.displayNumber}.ccdoc`;
+    const stored = await this.storage.putDocument({ storageKey, bytes: rendered.bytes });
+    const updated = await this.repository.replaceDocumentFile({
+      documentId: document.id,
+      pdfStorageKey: stored.storageKey,
+      pdfChecksum: stored.checksum,
+      contentHash: rendered.contentHash,
+    });
+    return updated ? ok(this.presentDetail(updated)) : err({ type: "DOCUMENT_NOT_FOUND" });
   }
 
   public async getDocument(
@@ -347,7 +370,7 @@ export class FinanceService {
 
   private hashPayload(input: GenerateDocumentInput): string {
     return createHash("sha256")
-      .update(JSON.stringify({ type: input.type, orderId: input.orderId, series: input.series ?? "A" }))
+      .update(JSON.stringify({ type: input.type, orderId: input.orderId, series: input.series ?? "A", relatedDocumentId: input.relatedDocumentId ?? null }))
       .digest("hex");
   }
 

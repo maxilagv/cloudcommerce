@@ -30,6 +30,7 @@ import type {
 import { v7 as uuidv7 } from "uuid";
 import { err, ok, type Result } from "../../../../shared/domain/result.js";
 import type { CatalogDomainError } from "../../../../shared/errors/domain-error.js";
+import type { InMemoryEventBus } from "../../../../shared/events/event-bus.js";
 import type {
   BrandEntity,
   CategoryEntity,
@@ -61,6 +62,7 @@ export class CatalogService {
     private readonly repository: CatalogRepository,
     private readonly priceReader: PriceReaderPort,
     private readonly stockReader: StockReaderPort,
+    private readonly eventBus?: InMemoryEventBus,
   ) {}
 
   public async listCategoryTree(actor: Actor, includeInactive: boolean): Promise<Result<CategoryNode[], CatalogDomainError>> {
@@ -362,8 +364,8 @@ export class CatalogService {
   }
 
   public async publicGetProductBySlug(slug: string): Promise<Result<ProductAdminDetail, CatalogDomainError>> {
-    const aggregate = await this.repository.findProductBySlug(slug);
-    if (!aggregate || aggregate.product.status !== ProductStatus.PUBLISHED) {
+    const aggregate = await this.repository.findPublishedProductBySlug(slug);
+    if (!aggregate) {
       return err({ type: "PRODUCT_NOT_FOUND" });
     }
     return ok(await this.presentDetail(aggregate));
@@ -449,6 +451,14 @@ export class CatalogService {
       aggregateId: productId,
       eventType: "catalog.product_published",
       payload: { productId },
+    });
+    await this.eventBus?.publish({
+      id: uuidv7(),
+      type: "catalog.product_published",
+      aggregateType: "product",
+      aggregateId: productId,
+      payload: { productId },
+      occurredAt: new Date(),
     });
     const published = await this.repository.getProductAggregate(productId);
     if (!published) {

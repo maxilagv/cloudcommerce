@@ -27,7 +27,7 @@ describe("DashboardService", () => {
     const finance = new FakeFinancePort();
     const service = newService({ finance });
 
-    const result = await service.getOverview(admin(AdminRole.CATALOG_MANAGER), { range: "30d", compareToPrevious: true });
+    const result = await service.getOverview(admin(AdminRole.CATALOG_MANAGER), { range: "30d" });
 
     expect(result.ok).toBe(true);
     expect(finance.calls).toBe(0);
@@ -49,7 +49,7 @@ describe("DashboardService", () => {
       customers: new FakeCustomersPort({ newCustomers: 0 }),
     });
 
-    const overview = await service.getOverview(admin(AdminRole.OWNER), { range: "30d", compareToPrevious: true });
+    const overview = await service.getOverview(admin(AdminRole.OWNER), { range: "30d" });
     const series = await service.getSalesTimeSeries(admin(AdminRole.OWNER), { range: "30d", metric: "revenue" });
 
     expect(overview.ok).toBe(true);
