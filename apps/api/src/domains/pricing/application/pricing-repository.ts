@@ -100,6 +100,13 @@ export type SetManualPriceRecord = {
 
 export type CreateDiscountRecord = Omit<DiscountEntity, "id" | "usedCount" | "isActive">;
 
+export class PricingWriteConflictError extends Error {
+  public constructor() {
+    super("Concurrent pricing write conflict");
+    this.name = "PricingWriteConflictError";
+  }
+}
+
 export interface PricingRepository {
   findVariantContext(variantId: string): Promise<VariantPricingContext | null>;
   findPrimaryVariantByProductId(productId: string): Promise<VariantPricingContext | null>;

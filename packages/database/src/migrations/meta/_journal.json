@@ -64,6 +64,20 @@
       "when": 1783555200000,
       "tag": "0008_suppliers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783641600000,
+      "tag": "0009_security_audit_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783728000000,
+      "tag": "0010_supplier_cost_currency_unique",
+      "breakpoints": true
     }
   ]
 }
