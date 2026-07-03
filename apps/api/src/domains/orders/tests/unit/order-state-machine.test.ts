@@ -30,4 +30,21 @@ describe("order state machine", () => {
       expect(result.failure).toBe("INVALID_ORDER_STATE");
     }
   });
+
+  it("allows a delivered order to request a return with a reason", () => {
+    const result = canTransitionOrder({
+      from: OrderStatus.DELIVERED,
+      to: OrderStatus.RETURN_REQUESTED,
+      reason: "Cliente solicita devolucion",
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("requires a reason when requesting a return after delivery", () => {
+    const result = canTransitionOrder({ from: OrderStatus.DELIVERED, to: OrderStatus.RETURN_REQUESTED });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.failure).toBe("TRANSITION_REASON_REQUIRED");
+    }
+  });
 });

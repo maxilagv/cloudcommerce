@@ -273,18 +273,17 @@ export class DrizzleInventoryRepository implements InventoryRepository {
         .insert(stockItem)
         .values({ id: uuidv7(), variantId: input.variantId, onHand: 0, reserved: 0 })
         .onConflictDoNothing({ target: stockItem.variantId });
-      const current = await tx.query.stockItem.findFirst({ where: eq(stockItem.variantId, input.variantId) });
-      if (!current) {
-        return null;
-      }
-      const nextOnHand = current.onHand + input.delta;
-      if (nextOnHand < 0 || nextOnHand < current.reserved) {
-        return null;
-      }
+      const before = await tx.query.stockItem.findFirst({ where: eq(stockItem.variantId, input.variantId) });
       const [updated] = await tx
         .update(stockItem)
-        .set({ onHand: nextOnHand, updatedAt: new Date() })
-        .where(eq(stockItem.variantId, input.variantId))
+        .set({ onHand: sql`${stockItem.onHand} + ${input.delta}`, updatedAt: new Date() })
+        .where(
+          and(
+            eq(stockItem.variantId, input.variantId),
+            sql`${stockItem.onHand} + ${input.delta} >= 0`,
+            sql`${stockItem.onHand} + ${input.delta} >= ${stockItem.reserved}`,
+          ),
+        )
         .returning();
       if (!updated) {
         return null;
@@ -305,7 +304,7 @@ export class DrizzleInventoryRepository implements InventoryRepository {
         action: "stock.adjust",
         resourceType: "product_variant",
         resourceId: input.variantId,
-        before: { onHand: current.onHand, reserved: current.reserved },
+        before: before ? { onHand: before.onHand, reserved: before.reserved } : null,
         after: { onHand: updated.onHand, reserved: updated.reserved },
         ip: audit.ip,
         userAgent: audit.userAgent,

@@ -20,6 +20,7 @@ export type OrderLineView = {
   lineTotal: Money;
   supplierCost?: Money;
   lineMargin?: Money;
+  costUnknown?: boolean;
 };
 
 /** Un cambio de estado registrado (`order_status_event`). */

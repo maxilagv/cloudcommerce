@@ -11,5 +11,8 @@ if (!databaseUrl) {
 const sql = postgres(databaseUrl, { max: 1 });
 const db = drizzle(sql);
 
-await migrate(db, { migrationsFolder: "src/migrations" });
-await sql.end();
+try {
+  await migrate(db, { migrationsFolder: "src/migrations" });
+} finally {
+  await sql.end();
+}

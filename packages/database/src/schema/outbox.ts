@@ -13,12 +13,14 @@ export const outboxEvent = pgTable(
     status: outboxStatusEnum("status").notNull().default("pending"),
     attempts: integer("attempts").notNull().default(0),
     availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
     processedAt: timestamp("processed_at", { withTimezone: true }),
     lastError: text("last_error"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     pendingIdx: index("outbox_event_pending_idx").on(table.status, table.availableAt),
+    processingLockedIdx: index("outbox_event_processing_locked_idx").on(table.status, table.lockedAt),
     aggregateIdx: index("outbox_event_aggregate_idx").on(table.aggregateType, table.aggregateId),
   }),
 );

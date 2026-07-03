@@ -27,6 +27,7 @@ export type OrderEntity = {
   confirmedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  version: number;
 };
 
 export type OrderLineEntity = {

@@ -58,6 +58,9 @@ export const supplierCost = pgTable(
   },
   (table) => ({
     variantValidityIdx: index("idx_supplier_cost_variant_valid").on(table.variantId, table.validFrom, table.validTo),
+    oneOpenSupplierCostPerVariant: uniqueIndex("supplier_cost_one_open_per_variant_unique")
+      .on(table.variantId)
+      .where(sql`${table.validTo} IS NULL`),
     costNonNegative: check("supplier_cost_non_negative", sql`${table.costAmountMinor} >= 0`),
     validityCheck: check("supplier_cost_validity_order", sql`${table.validTo} IS NULL OR ${table.validTo} > ${table.validFrom}`),
   }),
@@ -111,6 +114,9 @@ export const price = pgTable(
   },
   (table) => ({
     variantListValidityIdx: index("idx_price_variant_list_valid").on(table.variantId, table.listId, table.validFrom, table.validTo),
+    oneOpenPricePerVariantList: uniqueIndex("price_one_open_per_variant_list_unique")
+      .on(table.variantId, table.listId)
+      .where(sql`${table.validTo} IS NULL`),
     amountNonNegative: check("price_amount_non_negative", sql`${table.amountMinor} >= 0`),
     compareAtCheck: check(
       "price_compare_at_greater",

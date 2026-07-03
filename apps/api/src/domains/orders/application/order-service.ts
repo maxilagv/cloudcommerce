@@ -1,7 +1,7 @@
 import {
   OrderStatus,
+  ShipmentStatus,
   ShippingMethod,
-  type ShipmentStatus,
   type Actor,
   type Currency,
   type Money,
@@ -21,8 +21,10 @@ import type {
   TransitionOrderInput,
 } from "@cloudcommerce/validators";
 import { createHash } from "node:crypto";
+import { v7 as uuidv7 } from "uuid";
 import { err, ok, type Result } from "../../../shared/domain/result.js";
 import type { OrderDomainError } from "../../../shared/errors/domain-error.js";
+import type { InMemoryEventBus } from "../../../shared/events/event-bus.js";
 import {
   canCancelOrders,
   canCreateManualOrder,
@@ -59,6 +61,7 @@ export class OrderService {
   public constructor(
     private readonly repository: OrderRepository,
     private readonly pricing: OrderPricingPort,
+    private readonly eventBus?: InMemoryEventBus,
   ) {}
 
   public async createManualOrder(
@@ -112,6 +115,18 @@ export class OrderService {
 
     switch (result.type) {
       case "CREATED":
+        await this.publishOrderEvent("OrderCreated", result.aggregate.order.id, {
+          orderId: result.aggregate.order.id,
+          orderNumber: result.aggregate.order.orderNumber,
+          status: result.aggregate.order.status,
+        });
+        if (result.aggregate.order.status === OrderStatus.CONFIRMED) {
+          await this.publishOrderEvent("OrderConfirmed", result.aggregate.order.id, {
+            orderId: result.aggregate.order.id,
+            orderNumber: result.aggregate.order.orderNumber,
+          });
+        }
+        return ok(this.presentDetail(result.aggregate, canViewOrderCost(actor)));
       case "REUSED":
         return ok(this.presentDetail(result.aggregate, canViewOrderCost(actor)));
       case "IDEMPOTENCY_CONFLICT":
@@ -210,8 +225,17 @@ export class OrderService {
       actorId: actor.kind === "admin" ? actor.userId : null,
     });
     if (!updated) {
+      const latest = await this.repository.getOrderAggregate(input.orderId);
+      if (latest) {
+        return err({ type: "INVALID_ORDER_STATE" });
+      }
       return err({ type: "ORDER_NOT_FOUND" });
     }
+    await this.publishOrderEvent(input.toStatus === OrderStatus.CANCELLED ? "OrderCancelled" : "OrderStatusChanged", updated.order.id, {
+      orderId: updated.order.id,
+      fromStatus: current.order.status,
+      toStatus: updated.order.status,
+    });
     return ok(this.presentDetail(updated, canViewOrderCost(actor)));
   }
 
@@ -234,8 +258,17 @@ export class OrderService {
       actorId: actor.kind === "admin" ? actor.userId : null,
     });
     if (!updated) {
+      const latest = await this.repository.getOrderAggregate(input.orderId);
+      if (latest) {
+        return err({ type: "INVALID_ORDER_STATE" });
+      }
       return err({ type: "ORDER_NOT_FOUND" });
     }
+    await this.publishOrderEvent("OrderCancelled", updated.order.id, {
+      orderId: updated.order.id,
+      fromStatus: current.order.status,
+      toStatus: updated.order.status,
+    });
     return ok(this.presentDetail(updated, canViewOrderCost(actor)));
   }
 
@@ -264,6 +297,47 @@ export class OrderService {
       return err({ type: "ORDER_NOT_FOUND" });
     }
     return ok(this.presentShipment(shipment));
+  }
+
+  private async advanceOrderFromShipment(actor: Actor, orderId: string, shipmentStatus: ShipmentStatus): Promise<void> {
+    const nextStatus = shipmentStatusToOrderStatus(shipmentStatus);
+    if (!nextStatus) {
+      return;
+    }
+    const current = await this.repository.getOrderAggregate(orderId);
+    if (!current) {
+      return;
+    }
+    const transition = canTransitionOrder({
+      from: current.order.status,
+      to: nextStatus,
+      hasShipment: current.shipments.length > 0,
+    });
+    if (!transition.ok) {
+      return;
+    }
+    await this.repository.transitionOrder({
+      orderId,
+      toStatus: nextStatus,
+      reason: `supplier_shipment_${shipmentStatus.toLowerCase()}`,
+      actorId: actor.kind === "admin" ? actor.userId : null,
+    });
+    await this.publishOrderEvent("OrderStatusChanged", orderId, {
+      orderId,
+      fromStatus: current.order.status,
+      toStatus: nextStatus,
+    });
+  }
+
+  private async publishOrderEvent(type: string, orderId: string, payload: Record<string, unknown>): Promise<void> {
+    await this.eventBus?.publish({
+      id: uuidv7(),
+      type,
+      aggregateType: "orders",
+      aggregateId: orderId,
+      payload,
+      occurredAt: new Date(),
+    });
   }
 
   /**
@@ -296,6 +370,12 @@ export class OrderService {
     if (!shipment) {
       return err({ type: "ORDER_NOT_FOUND" });
     }
+    await this.publishOrderEvent("ShipmentStatusChanged", input.orderId, {
+      orderId: input.orderId,
+      shipmentId: shipment.id,
+      status: input.status,
+    });
+    await this.advanceOrderFromShipment(actor, input.orderId, input.status);
     return ok(this.presentShipment(shipment));
   }
 
@@ -354,10 +434,13 @@ export class OrderService {
     if (!includeCost) {
       return base;
     }
+    if (aggregate.lines.some((line) => line.supplierCostSnapshotMinor === null)) {
+      return base;
+    }
     return {
       ...base,
       totalMargin: money(
-        aggregate.lines.reduce((sum, line) => sum + line.lineTotalMinor - (line.supplierCostSnapshotMinor ?? 0) * line.quantity, 0),
+        aggregate.lines.reduce((sum, line) => sum + line.lineTotalMinor - line.supplierCostSnapshotMinor! * line.quantity, 0),
         aggregate.order.currency,
       ),
     };
@@ -373,8 +456,11 @@ export class OrderService {
       unitPrice: money(line.unitPriceMinor, currency),
       lineTotal: money(line.lineTotalMinor, currency),
     };
-    if (!includeCost || line.supplierCostSnapshotMinor === null) {
+    if (!includeCost) {
       return base;
+    }
+    if (line.supplierCostSnapshotMinor === null) {
+      return { ...base, costUnknown: true };
     }
     return {
       ...base,
@@ -449,3 +535,20 @@ const shippingAmount = (method: ShippingMethod): number => {
 };
 
 const money = (amountMinor: number, currency: Currency): Money => ({ amountMinor, currency });
+
+const shipmentStatusToOrderStatus = (status: ShipmentStatus): OrderStatus | null => {
+  switch (status) {
+    case ShipmentStatus.PREPARED:
+      return OrderStatus.READY_TO_SHIP;
+    case ShipmentStatus.DISPATCHED:
+    case ShipmentStatus.IN_TRANSIT:
+    case ShipmentStatus.OUT_FOR_DELIVERY:
+      return OrderStatus.SHIPPED;
+    case ShipmentStatus.DELIVERED:
+      return OrderStatus.DELIVERED;
+    case ShipmentStatus.CREATED:
+    case ShipmentStatus.DELAYED:
+    case ShipmentStatus.FAILED_ATTEMPT:
+      return null;
+  }
+};

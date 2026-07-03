@@ -106,6 +106,58 @@ describe("OrderService", () => {
       expect(result.error.type).toBe("FORBIDDEN");
     }
   });
+
+  it("only allows one concurrent transition from the same stale state", async () => {
+    const repository = new FakeOrderRepository({ transitionDelayMs: 10 });
+    const service = newService(repository);
+    const actor = admin(AdminRole.ADMIN);
+
+    const [first, second] = await Promise.all([
+      service.transition(actor, { orderId, toStatus: OrderStatus.PREPARING }),
+      service.transition(actor, { orderId, toStatus: OrderStatus.PREPARING }),
+    ]);
+
+    const successes = [first, second].filter((result) => result.ok);
+    const failures = [first, second].filter((result) => !result.ok);
+    expect(successes.length).toBe(1);
+    expect(failures.length).toBe(1);
+    expect(repository.current.order.status).toBe(OrderStatus.PREPARING);
+    expect(repository.transitionCalls).toBe(2);
+    const failed = failures[0];
+    if (failed?.ok === false) {
+      expect(failed.error.type).toBe("INVALID_ORDER_STATE");
+    }
+  });
+
+  it("advances order status when a supplier shipment is delivered", async () => {
+    const repository = new FakeOrderRepository({
+      current: aggregate({
+        status: OrderStatus.SHIPPED,
+      }, [
+        {
+          id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1",
+          orderId,
+          carrier: "OCA",
+          trackingCode: "TRACK",
+          status: ShipmentStatus.IN_TRANSIT,
+          eta: null,
+          createdAt: now,
+          updatedAt: now,
+          events: [],
+        },
+      ]),
+    });
+    const service = newService(repository);
+
+    const result = await service.applySupplierShipmentUpdate(system, {
+      orderId,
+      status: ShipmentStatus.DELIVERED,
+      occurredAt: now,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(repository.current.order.status).toBe(OrderStatus.DELIVERED);
+  });
 });
 
 const newService = (repository: OrderRepository): OrderService => new OrderService(repository, new FakePricingPort());
@@ -123,6 +175,8 @@ const admin = (role: AdminRole): Actor => ({
   role,
   sessionId: "session",
 });
+
+const system: Actor = { kind: "system", service: "supplier-webhook" };
 
 const requestContext = {
   ip: "127.0.0.1",
@@ -145,9 +199,13 @@ class FakePricingPort implements OrderPricingPort {
 class FakeOrderRepository implements OrderRepository {
   public createdCount = 0;
   public lastCreate: CreateManualOrderRecord | null = null;
+  public current: OrderAggregate;
+  public transitionCalls = 0;
   private readonly idempotency = new Map<string, { requestHash: string; aggregate: OrderAggregate }>();
 
-  public constructor(private readonly options: { insufficientStock?: boolean } = {}) {}
+  public constructor(private readonly options: { insufficientStock?: boolean; transitionDelayMs?: number; current?: OrderAggregate } = {}) {
+    this.current = options.current ?? aggregate();
+  }
 
   public async createManualOrder(input: CreateManualOrderRecord): Promise<CreateManualOrderResult> {
     this.lastCreate = input;
@@ -171,15 +229,28 @@ class FakeOrderRepository implements OrderRepository {
   }
 
   public async getOrderAggregate(id: string): Promise<OrderAggregate | null> {
-    return id === orderId ? aggregate() : null;
+    return id === orderId ? cloneAggregate(this.current) : null;
   }
 
   public async listOrders(): Promise<{ rows: OrderSummaryEntity[]; nextCursor: string | null }> {
-    return { rows: [{ ...aggregate().order, itemCount: 2 }], nextCursor: null };
+    return { rows: [{ ...this.current.order, itemCount: 2 }], nextCursor: null };
   }
 
-  public async transitionOrder(): Promise<OrderAggregate | null> {
-    return aggregate();
+  public async transitionOrder(input: {
+    orderId: string;
+    toStatus: OrderStatus;
+    reason: string | null;
+    actorId: string | null;
+  }): Promise<OrderAggregate | null> {
+    this.transitionCalls += 1;
+    if (this.options.transitionDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, this.options.transitionDelayMs));
+    }
+    if (this.current.order.status !== OrderStatus.CONFIRMED && input.toStatus === OrderStatus.PREPARING) {
+      return null;
+    }
+    this.current = aggregate({ status: input.toStatus, version: this.current.order.version + 1 }, this.current.shipments);
+    return cloneAggregate(this.current);
   }
 
   public async createShipment(): Promise<ShipmentEntity | null> {
@@ -208,7 +279,7 @@ class FakeOrderRepository implements OrderRepository {
     description: string | null;
     occurredAt: Date;
   }): Promise<ShipmentEntity | null> {
-    return {
+    const updatedShipment = {
       id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2",
       orderId: input.orderId,
       carrier: input.carrier,
@@ -219,6 +290,8 @@ class FakeOrderRepository implements OrderRepository {
       updatedAt: now,
       events: [],
     };
+    this.current = aggregate(this.current.order, [updatedShipment]);
+    return updatedShipment;
   }
 
   public async recordSensitiveAccess(_input: { orderId: string; action: string }, _audit: RequestAuditContext): Promise<void> {}
@@ -229,7 +302,7 @@ const aggregateFromCreate = (input: CreateManualOrderRecord): OrderAggregate => 
   return aggregate({ subtotalMinor: subtotal, shippingMinor: input.shippingMinor, totalMinor: subtotal + input.shippingMinor });
 };
 
-const aggregate = (override: Partial<OrderAggregate["order"]> = {}): OrderAggregate => ({
+const aggregate = (override: Partial<OrderAggregate["order"]> = {}, shipments: ShipmentEntity[] = []): OrderAggregate => ({
   order: {
     id: orderId,
     orderNumber: "ORD-2026-000001",
@@ -249,6 +322,7 @@ const aggregate = (override: Partial<OrderAggregate["order"]> = {}): OrderAggreg
     confirmedAt: now,
     createdAt: now,
     updatedAt: now,
+    version: 1,
     ...override,
   },
   lines: [
@@ -265,5 +339,15 @@ const aggregate = (override: Partial<OrderAggregate["order"]> = {}): OrderAggreg
     },
   ],
   statusHistory: [],
-  shipments: [],
+  shipments,
+});
+
+const cloneAggregate = (value: OrderAggregate): OrderAggregate => ({
+  order: { ...value.order },
+  lines: value.lines.map((line) => ({ ...line })),
+  statusHistory: value.statusHistory.map((event) => ({ ...event })),
+  shipments: value.shipments.map((shipment) => ({
+    ...shipment,
+    events: shipment.events.map((event) => ({ ...event })),
+  })),
 });

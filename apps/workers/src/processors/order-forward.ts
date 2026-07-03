@@ -2,7 +2,7 @@ import * as schema from "@cloudcommerce/database";
 import { customerAddress, order, orderLine, outboxEvent, supplier, supplierOrderRef, supplierProductMap } from "@cloudcommerce/database";
 import { SupplierForwardStatus } from "@cloudcommerce/types";
 import { SupplierApiConfigSchema, SupplierForwardResponseSchema, type SupplierApiConfigInput } from "@cloudcommerce/validators";
-import { and, eq, inArray, lte, sql as drizzleSql } from "drizzle-orm";
+import { and, eq, inArray, lt, lte, sql as drizzleSql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { createDecipheriv, createHash, createHmac } from "node:crypto";
 import pino from "pino";
@@ -25,9 +25,11 @@ const db = drizzle(sql, { schema });
 
 const MAX_EVENT_ATTEMPTS = 5;
 const MAX_FORWARD_ATTEMPTS = 5;
+const OUTBOX_LOCK_TIMEOUT_MS = 15 * 60 * 1000;
 const RETRY_BACKOFF_MS = [60_000, 300_000, 900_000, 3_600_000] as const;
 
-const cipherKey = createHash("sha256").update(`supplier-api-config:${env.COOKIE_SECRET}`).digest();
+const supplierCipherSecret = createHmac("sha256", env.COOKIE_SECRET).update("cloudcommerce:supplier-api-config").digest("base64url");
+const cipherKey = createHash("sha256").update(`supplier-api-config:${supplierCipherSecret}`).digest();
 
 const payloadSchema = z.object({ orderId: z.string().uuid() });
 
@@ -37,6 +39,7 @@ const payloadSchema = z.object({ orderId: z.string().uuid() });
  * garantiza que los reintentos de cola no dupliquen pedidos al proveedor.
  */
 export async function processOrderForwardBatch(batchSize = env.ORDER_FORWARD_BATCH_SIZE): Promise<void> {
+  await recoverStaleProcessingEvents("OrderConfirmed");
   const events = await db
     .select()
     .from(outboxEvent)
@@ -53,13 +56,13 @@ async function processEvent(eventId: string, attempts: number, payload: Record<s
   if (!parsed.success) {
     await db
       .update(outboxEvent)
-      .set({ status: "failed", lastError: "invalid_payload", processedAt: new Date() })
+      .set({ status: "failed", lastError: "invalid_payload", lockedAt: null, processedAt: new Date() })
       .where(eq(outboxEvent.id, eventId));
     return;
   }
   await db
     .update(outboxEvent)
-    .set({ status: "processing", attempts: drizzleSql`${outboxEvent.attempts} + 1` })
+    .set({ status: "processing", lockedAt: new Date(), attempts: drizzleSql`${outboxEvent.attempts} + 1` })
     .where(eq(outboxEvent.id, eventId));
   try {
     const pendingRetry = await forwardOrder(parsed.data.orderId);
@@ -67,13 +70,13 @@ async function processEvent(eventId: string, attempts: number, payload: Record<s
       const backoff = RETRY_BACKOFF_MS[Math.min(attempts, RETRY_BACKOFF_MS.length - 1)] ?? 3_600_000;
       await db
         .update(outboxEvent)
-        .set({ status: "pending", availableAt: new Date(Date.now() + backoff), lastError: "supplier_unavailable" })
+        .set({ status: "pending", lockedAt: null, availableAt: new Date(Date.now() + backoff), lastError: "supplier_unavailable" })
         .where(eq(outboxEvent.id, eventId));
       return;
     }
     await db
       .update(outboxEvent)
-      .set({ status: "processed", processedAt: new Date(), lastError: null })
+      .set({ status: "processed", lockedAt: null, processedAt: new Date(), lastError: null })
       .where(eq(outboxEvent.id, eventId));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message.slice(0, 300) : "unknown_error";
@@ -82,11 +85,23 @@ async function processEvent(eventId: string, attempts: number, payload: Record<s
       .update(outboxEvent)
       .set({
         status: attempts + 1 >= MAX_EVENT_ATTEMPTS ? "failed" : "pending",
+        lockedAt: null,
         availableAt: new Date(Date.now() + (RETRY_BACKOFF_MS[Math.min(attempts, RETRY_BACKOFF_MS.length - 1)] ?? 3_600_000)),
         lastError: message,
       })
       .where(eq(outboxEvent.id, eventId));
   }
+}
+
+async function recoverStaleProcessingEvents(eventType: string): Promise<void> {
+  await db
+    .update(outboxEvent)
+    .set({ status: "pending", lockedAt: null, lastError: "stale_processing_lock_recovered" })
+    .where(and(
+      eq(outboxEvent.status, "processing"),
+      eq(outboxEvent.eventType, eventType),
+      lt(outboxEvent.lockedAt, new Date(Date.now() - OUTBOX_LOCK_TIMEOUT_MS)),
+    ));
 }
 
 /** Devuelve true si algún proveedor quedó pendiente por indisponibilidad (reintentable). */

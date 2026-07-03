@@ -17,6 +17,7 @@ const transitionEntries: Array<[OrderStatus | "initial", ReadonlySet<OrderStatus
   [OrderStatus.PREPARING, statusSet(OrderStatus.READY_TO_SHIP, OrderStatus.CANCELLED)],
   [OrderStatus.READY_TO_SHIP, statusSet(OrderStatus.SHIPPED)],
   [OrderStatus.SHIPPED, statusSet(OrderStatus.DELIVERED, OrderStatus.RETURN_REQUESTED)],
+  [OrderStatus.DELIVERED, statusSet(OrderStatus.RETURN_REQUESTED)],
   [OrderStatus.RETURN_REQUESTED, statusSet(OrderStatus.RETURNED)],
 ];
 
@@ -45,7 +46,7 @@ export const requiresTransitionReason = (from: OrderStatus | null, to: OrderStat
 };
 
 export const isOrderTerminal = (status: OrderStatus): boolean =>
-  [OrderStatus.CANCELLED, OrderStatus.DELIVERED, OrderStatus.RETURNED].includes(status);
+  [OrderStatus.CANCELLED, OrderStatus.RETURNED].includes(status);
 
 export const isOrderConfirmedOrLater = (status: OrderStatus): boolean =>
   [

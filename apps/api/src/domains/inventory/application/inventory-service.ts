@@ -18,6 +18,8 @@ import type {
 } from "@cloudcommerce/validators";
 import { err, ok, type Result } from "../../../shared/domain/result.js";
 import type { InventoryDomainError } from "../../../shared/errors/domain-error.js";
+import type { InMemoryEventBus } from "../../../shared/events/event-bus.js";
+import { v7 as uuidv7 } from "uuid";
 import { canManageInventory, canReadInventory, canUseReservationWorkflow } from "../domain/inventory-permissions.js";
 import { assertStockAdjustmentReason, deriveStockStatus } from "../domain/stock-policy.js";
 import type {
@@ -35,7 +37,10 @@ type RequestContext = {
 };
 
 export class InventoryService {
-  public constructor(private readonly repository: InventoryRepository) {}
+  public constructor(
+    private readonly repository: InventoryRepository,
+    private readonly eventBus?: InMemoryEventBus,
+  ) {}
 
   public async getStockItem(actor: Actor, input: VariantInventoryInput): Promise<Result<StockItemResponse, InventoryDomainError>> {
     if (!canReadInventory(actor)) {
@@ -105,6 +110,11 @@ export class InventoryService {
     if (result.insufficientVariantId) {
       return err({ type: "INSUFFICIENT_STOCK", variantId: result.insufficientVariantId });
     }
+    await Promise.all(result.reservations.map((reservation) => this.publishStockEvent("StockReserved", reservation.variantId, {
+      variantId: reservation.variantId,
+      orderId: reservation.orderId,
+      quantity: reservation.quantity,
+    })));
     return ok(result.reservations.map((reservation) => this.presentReservation(reservation)));
   }
 
@@ -124,6 +134,11 @@ export class InventoryService {
     if (!reservation) {
       return err({ type: "RESERVATION_NOT_FOUND" });
     }
+    await this.publishStockEvent("StockReleased", reservation.variantId, {
+      variantId: reservation.variantId,
+      orderId: reservation.orderId,
+      quantity: reservation.quantity,
+    });
     return ok(this.presentReservation(reservation));
   }
 
@@ -208,7 +223,23 @@ export class InventoryService {
 
   public async expireReservations(input: ExpireReservationsInput): Promise<Result<{ expired: number }, InventoryDomainError>> {
     const expired = await this.repository.expireReservations(input);
+    await Promise.all(expired.map((reservation) => this.publishStockEvent("StockReservationExpired", reservation.variantId, {
+      variantId: reservation.variantId,
+      orderId: reservation.orderId,
+      quantity: reservation.quantity,
+    })));
     return ok({ expired: expired.filter((reservation) => reservation.status === ReservationStatus.EXPIRED).length });
+  }
+
+  private async publishStockEvent(type: string, variantId: string, payload: Record<string, unknown>): Promise<void> {
+    await this.eventBus?.publish({
+      id: uuidv7(),
+      type,
+      aggregateType: "inventory",
+      aggregateId: variantId,
+      payload,
+      occurredAt: new Date(),
+    });
   }
 
   private presentStockItem(item: StockItemEntity): StockItemResponse {

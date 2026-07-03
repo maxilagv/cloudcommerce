@@ -21,6 +21,7 @@ import { and, asc, desc, eq, gte, isNull, lt, lte, or, sql, type SQL } from "dri
 import { v7 as uuidv7 } from "uuid";
 import type { Database } from "../../../../infrastructure/database/client.js";
 import { formatOrderNumber } from "../../domain/value-objects.js";
+import { canTransitionOrder } from "../../domain/order-state-machine.js";
 import type {
   CreateManualOrderRecord,
   CreateManualOrderResult,
@@ -212,6 +213,7 @@ export class DrizzleOrderRepository implements OrderRepository {
             placedBy: input.placedBy,
             notes: input.notes,
             confirmedAt: input.initialStatus === OrderStatus.CONFIRMED ? now : null,
+            version: 1,
           })
           .returning();
         if (!createdOrder) {
@@ -395,14 +397,33 @@ export class DrizzleOrderRepository implements OrderRepository {
       if (!current) {
         return null;
       }
+      const shipmentRows = await tx
+        .select({ id: shipment.id })
+        .from(shipment)
+        .where(eq(shipment.orderId, input.orderId))
+        .limit(1);
+      const transition = canTransitionOrder({
+        from: current.status,
+        to: input.toStatus,
+        reason: input.reason,
+        hasShipment: shipmentRows.length > 0,
+      });
+      if (!transition.ok) {
+        return null;
+      }
       const patch: Partial<typeof orderTable.$inferInsert> = {
         status: input.toStatus,
         updatedAt: new Date(),
+        version: sql`${orderTable.version} + 1` as unknown as number,
       };
       if (input.toStatus === OrderStatus.CONFIRMED && current.confirmedAt === null) {
         patch.confirmedAt = new Date();
       }
-      const [updated] = await tx.update(orderTable).set(patch).where(eq(orderTable.id, input.orderId)).returning();
+      const [updated] = await tx
+        .update(orderTable)
+        .set(patch)
+        .where(and(eq(orderTable.id, input.orderId), eq(orderTable.version, current.version)))
+        .returning();
       if (!updated) {
         return null;
       }
@@ -593,6 +614,7 @@ export class DrizzleOrderRepository implements OrderRepository {
   private async nextOrderNumber(tx: Tx, now: Date): Promise<string> {
     const year = now.getUTCFullYear();
     const prefix = `ORD-${year}-`;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`order-number:${year}`}))`);
     const [row] = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(orderTable)
@@ -632,6 +654,7 @@ export class DrizzleOrderRepository implements OrderRepository {
       placedBy: orderTable.placedBy,
       notes: orderTable.notes,
       confirmedAt: orderTable.confirmedAt,
+      version: orderTable.version,
       createdAt: orderTable.createdAt,
       updatedAt: orderTable.updatedAt,
     };
@@ -657,6 +680,7 @@ export class DrizzleOrderRepository implements OrderRepository {
       confirmedAt: row.confirmedAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      version: row.version,
     };
   }
 

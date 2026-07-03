@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { productVariant } from "./catalog.js";
 import { adminUser } from "./identity.js";
+import { order } from "./orders.js";
 
 export const reservationStatusEnum = pgEnum("reservation_status", [
   ReservationStatus.ACTIVE,
@@ -58,7 +59,7 @@ export const stockReservation = pgTable(
     variantId: uuid("variant_id")
       .notNull()
       .references(() => productVariant.id, { onDelete: "cascade" }),
-    orderId: uuid("order_id"),
+    orderId: uuid("order_id").references(() => order.id, { onDelete: "restrict" }),
     quantity: integer("quantity").notNull(),
     status: reservationStatusEnum("status").notNull().default(ReservationStatus.ACTIVE),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
@@ -105,6 +106,10 @@ export const stockReservationRelations = relations(stockReservation, ({ one }) =
   variant: one(productVariant, {
     fields: [stockReservation.variantId],
     references: [productVariant.id],
+  }),
+  order: one(order, {
+    fields: [stockReservation.orderId],
+    references: [order.id],
   }),
 }));
 

@@ -22,6 +22,8 @@ import type {
 } from "@cloudcommerce/validators";
 import { ok, err, type Result } from "../../../shared/domain/result.js";
 import type { PricingDomainError } from "../../../shared/errors/domain-error.js";
+import type { InMemoryEventBus } from "../../../shared/events/event-bus.js";
+import { v7 as uuidv7 } from "uuid";
 import { applyMarkup, applyMinimumMargin, marginBps, minSalePriceForMargin } from "../domain/money.js";
 import {
   canManagePricePolicy,
@@ -60,7 +62,10 @@ type ComputedPrice = {
 };
 
 export class PricingService {
-  public constructor(private readonly repository: PricingRepository) {}
+  public constructor(
+    private readonly repository: PricingRepository,
+    private readonly eventBus?: InMemoryEventBus,
+  ) {}
 
   public async computeSalePrice(
     actor: Actor,
@@ -117,6 +122,7 @@ export class PricingService {
       },
       this.audit(actor, context, "Supplier cost updated"),
     );
+    await this.publishPriceChanged(input.variantId);
     return ok(this.presentSupplierCost(saved));
   }
 
@@ -177,6 +183,7 @@ export class PricingService {
       },
       this.audit(actor, context, "Manual sale price updated"),
     );
+    await this.publishPriceChanged(input.variantId);
     const computed = await this.computeVariantPrice(input.variantId, input.currency, input.validFrom);
     if (!computed.ok) {
       return computed;
@@ -397,5 +404,16 @@ export class PricingService {
       requestId: context.requestId,
       reason: context.reason ?? reason,
     };
+  }
+
+  private async publishPriceChanged(variantId: string): Promise<void> {
+    await this.eventBus?.publish({
+      id: uuidv7(),
+      type: "PriceChanged",
+      aggregateType: "pricing",
+      aggregateId: variantId,
+      payload: { variantId },
+      occurredAt: new Date(),
+    });
   }
 }

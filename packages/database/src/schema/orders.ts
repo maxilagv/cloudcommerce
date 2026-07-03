@@ -103,6 +103,7 @@ export const order = pgTable(
     placedBy: uuid("placed_by").references(() => adminUser.id, { onDelete: "set null" }),
     notes: text("notes"),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    version: integer("version").notNull().default(1),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -123,6 +124,7 @@ export const order = pgTable(
       "order_shipping_address_required",
       sql`${table.shippingMethod} = 'PICKUP' OR ${table.shippingAddressId} IS NOT NULL`,
     ),
+    versionPositive: check("order_version_positive", sql`${table.version} >= 1`),
   }),
 );
 
