@@ -1,23 +1,9 @@
-import { initTRPC, TRPCError } from "@trpc/server";
+import { createCloudTRPC } from "@cloudcommerce/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import type { TRPCContext } from "../context.js";
 
-const t = initTRPC.context<TRPCContext>().create({
-  errorFormatter({ shape, error }) {
-    const cause = error.cause;
-    if (cause && typeof cause === "object" && "code" in cause && "status" in cause) {
-      return {
-        ...shape,
-        data: {
-          ...shape.data,
-          appCode: String(cause.code),
-          status: Number(cause.status),
-        },
-      };
-    }
-    return shape;
-  },
-});
+const t = createCloudTRPC<TRPCContext>();
 
 export const router = t.router;
 export const publicProcedure = t.procedure;

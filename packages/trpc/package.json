@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@trpc/client": "^11.7.2",
-    "@trpc/server": "^11.7.2"
+    "@trpc/server": "^11.7.2",
+    "superjson": "^2.2.2"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
