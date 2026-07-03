@@ -7,7 +7,7 @@ const privateDns = async (): Promise<string[]> => ["10.0.0.5"];
 describe("ssrf-guard", () => {
   it("permite URL https publica", async () => {
     const verdict = await validateExternalUrl("https://feeds.proveedor.com/products.csv", publicDns);
-    expect(verdict.allowed).toBe(true);
+    expect(verdict).toEqual({ allowed: true, resolvedIp: "93.184.216.34" });
   });
 
   it.each([

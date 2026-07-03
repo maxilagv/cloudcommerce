@@ -1,6 +1,6 @@
 import { isIP } from "node:net";
 
-export type SsrfVerdict = { allowed: true } | { allowed: false; reason: string };
+export type SsrfVerdict = { allowed: true; resolvedIp: string } | { allowed: false; reason: string };
 
 export type DnsResolver = (hostname: string) => Promise<string[]>;
 
@@ -60,7 +60,7 @@ export const validateExternalUrl = async (rawUrl: string, resolveDns: DnsResolve
     return { allowed: false, reason: "host_bloqueado" };
   }
   if (isIP(hostname)) {
-    return isPrivateIp(hostname) ? { allowed: false, reason: "ip_privada" } : { allowed: true };
+    return isPrivateIp(hostname) ? { allowed: false, reason: "ip_privada" } : { allowed: true, resolvedIp: hostname };
   }
   let addresses: string[];
   try {
@@ -76,5 +76,5 @@ export const validateExternalUrl = async (rawUrl: string, resolveDns: DnsResolve
       return { allowed: false, reason: "resuelve_a_red_privada" };
     }
   }
-  return { allowed: true };
+  return { allowed: true, resolvedIp: addresses[0] ?? hostname };
 };

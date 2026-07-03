@@ -2,8 +2,10 @@ import { SupplierForwardResponseSchema, type SupplierApiConfigInput, type Suppli
 import { createHmac } from "node:crypto";
 import { err, ok, type Result } from "../../../../shared/domain/result.js";
 import type { ForwardOrderPayload, SupplierForwarderPort } from "../../application/ports.js";
+import { requestPinned } from "./pinned-http-client.js";
 
 const FORWARD_TIMEOUT_MS = 15_000;
+const MAX_FORWARD_RESPONSE_BYTES = 1024 * 1024;
 
 /**
  * Capa anticorrupción de salida: publica el pedido en la API del proveedor y
@@ -13,6 +15,7 @@ const FORWARD_TIMEOUT_MS = 15_000;
 export class HttpSupplierForwarder implements SupplierForwarderPort {
   public async forwardOrder(input: {
     apiConfig: SupplierApiConfigInput;
+    resolvedIp: string;
     idempotencyKey: string;
     payload: ForwardOrderPayload;
   }): Promise<Result<SupplierForwardResponse, { type: "UPSTREAM_UNAVAILABLE" }>> {
@@ -32,21 +35,23 @@ export class HttpSupplierForwarder implements SupplierForwarderPort {
       headers["x-signature"] = createHmac("sha256", input.apiConfig.apiKey).update(`${timestamp}.${body}`).digest("hex");
     }
     try {
-      const response = await fetch(url, {
+      const response = await requestPinned({
+        url,
+        resolvedIp: input.resolvedIp,
         method: "POST",
-        redirect: "error",
         headers,
         body,
-        signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS),
+        timeoutMs: FORWARD_TIMEOUT_MS,
+        maxBodyBytes: MAX_FORWARD_RESPONSE_BYTES,
       });
-      if (response.status >= 500) {
+      if (response.statusCode >= 500 || (response.statusCode >= 300 && response.statusCode < 400)) {
         return err({ type: "UPSTREAM_UNAVAILABLE" });
       }
-      const parsed = SupplierForwardResponseSchema.safeParse(await response.json());
+      const parsed = SupplierForwardResponseSchema.safeParse(JSON.parse(response.body));
       if (!parsed.success) {
         return err({ type: "UPSTREAM_UNAVAILABLE" });
       }
-      if (!response.ok) {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
         return ok({ accepted: false, ...(parsed.data.reason !== undefined ? { reason: parsed.data.reason } : {}) });
       }
       return ok(parsed.data);

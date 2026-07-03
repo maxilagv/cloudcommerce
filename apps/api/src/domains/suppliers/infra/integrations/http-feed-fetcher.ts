@@ -1,6 +1,7 @@
 import { SupplierFeedKind } from "@cloudcommerce/types";
 import { err, ok, type Result } from "../../../../shared/domain/result.js";
 import type { FeedFetcherPort } from "../../application/ports.js";
+import { requestPinned } from "./pinned-http-client.js";
 
 const FETCH_TIMEOUT_MS = 60_000;
 const MAX_BODY_BYTES = 20 * 1024 * 1024;
@@ -16,26 +17,27 @@ export class HttpFeedFetcher implements FeedFetcherPort {
   public async fetchRows(input: {
     kind: SupplierFeedKind;
     sourceUrl: string;
+    resolvedIp: string;
   }): Promise<Result<Array<Record<string, unknown>>, { type: "UPSTREAM_UNAVAILABLE" } | { type: "INVALID_FORMAT" }>> {
     let body: string;
     try {
-      const response = await fetch(input.sourceUrl, {
+      const response = await requestPinned({
+        url: input.sourceUrl,
+        resolvedIp: input.resolvedIp,
         method: "GET",
-        redirect: "error",
         headers: { accept: input.kind === SupplierFeedKind.CSV ? "text/csv" : "application/json" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        timeoutMs: FETCH_TIMEOUT_MS,
+        maxBodyBytes: MAX_BODY_BYTES,
       });
-      if (!response.ok) {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
         return err({ type: "UPSTREAM_UNAVAILABLE" });
       }
-      const contentLength = Number(response.headers.get("content-length") ?? 0);
+      const contentLengthHeader = response.headers["content-length"];
+      const contentLength = Number(Array.isArray(contentLengthHeader) ? contentLengthHeader[0] : contentLengthHeader ?? 0);
       if (contentLength > MAX_BODY_BYTES) {
         return err({ type: "INVALID_FORMAT" });
       }
-      body = await response.text();
-      if (Buffer.byteLength(body, "utf8") > MAX_BODY_BYTES) {
-        return err({ type: "INVALID_FORMAT" });
-      }
+      body = response.body;
     } catch {
       return err({ type: "UPSTREAM_UNAVAILABLE" });
     }

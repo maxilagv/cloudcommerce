@@ -118,6 +118,7 @@ export interface FeedFetcherPort {
   fetchRows(input: {
     kind: SupplierFeedKind;
     sourceUrl: string;
+    resolvedIp: string;
   }): Promise<Result<Array<Record<string, unknown>>, { type: "UPSTREAM_UNAVAILABLE" } | { type: "INVALID_FORMAT" }>>;
 }
 
@@ -138,6 +139,7 @@ export type ForwardOrderPayload = {
 export interface SupplierForwarderPort {
   forwardOrder(input: {
     apiConfig: SupplierApiConfigInput;
+    resolvedIp: string;
     idempotencyKey: string;
     payload: ForwardOrderPayload;
   }): Promise<Result<SupplierForwardResponse, { type: "UPSTREAM_UNAVAILABLE" }>>;

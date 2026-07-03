@@ -52,19 +52,28 @@ class FakeCipher implements ApiConfigCipherPort {
 }
 
 class FakeUrlGuard implements UrlGuardPort {
-  public constructor(private readonly blocked: boolean = false) {}
+  public calls: string[] = [];
 
-  public async validate(): ReturnType<UrlGuardPort["validate"]> {
-    return this.blocked ? { allowed: false, reason: "ip_privada" } : { allowed: true };
+  public constructor(
+    private readonly blocked: boolean = false,
+    private readonly resolvedIp = "203.0.113.10",
+  ) {}
+
+  public async validate(url: string): ReturnType<UrlGuardPort["validate"]> {
+    this.calls.push(url);
+    return this.blocked ? { allowed: false, reason: "ip_privada" } : { allowed: true, resolvedIp: this.resolvedIp };
   }
 }
 
 class FakeFetcher implements FeedFetcherPort {
+  public inputs: Array<{ sourceUrl: string; resolvedIp: string }> = [];
+
   public constructor(
     private readonly rows: Array<Record<string, unknown>> | null,
   ) {}
 
-  public async fetchRows(): ReturnType<FeedFetcherPort["fetchRows"]> {
+  public async fetchRows(input: { sourceUrl: string; resolvedIp: string }): ReturnType<FeedFetcherPort["fetchRows"]> {
+    this.inputs.push(input);
     if (this.rows === null) {
       return { ok: false, error: { type: "UPSTREAM_UNAVAILABLE" } };
     }
@@ -74,11 +83,13 @@ class FakeFetcher implements FeedFetcherPort {
 
 class FakeForwarder implements SupplierForwarderPort {
   public calls = 0;
+  public inputs: Array<{ resolvedIp: string }> = [];
 
   public constructor(private readonly mode: "accept" | "reject" | "down" = "accept") {}
 
-  public async forwardOrder(): ReturnType<SupplierForwarderPort["forwardOrder"]> {
+  public async forwardOrder(input: { resolvedIp: string }): ReturnType<SupplierForwarderPort["forwardOrder"]> {
     this.calls += 1;
+    this.inputs.push(input);
     if (this.mode === "down") return { ok: false, error: { type: "UPSTREAM_UNAVAILABLE" } };
     if (this.mode === "reject") return { ok: true, value: { accepted: false, reason: "sin stock" } };
     return { ok: true, value: { accepted: true, externalOrderId: "EXT-001" } };
@@ -588,6 +599,20 @@ describe("SupplierService.runFeedImport", () => {
     if (result.ok) return;
     expect(result.error.type).toBe("SSRF_BLOCKED");
   });
+
+  it("pasa al fetcher la IP publica validada para evitar DNS rebinding", async () => {
+    const repository = new FakeRepository();
+    const fetcher = new FakeFetcher([row("NUEVO-1", 5000, 10)]);
+    await seedSupplier(repository);
+    await seedFeed(repository);
+    const service = newService({ repository, urlGuard: new FakeUrlGuard(false, "203.0.113.77"), fetcher });
+    const result = await service.runFeedImport(owner, { feedId, dryRun: false });
+    expect(result.ok).toBe(true);
+    expect(fetcher.inputs[0]).toMatchObject({
+      sourceUrl: "https://feed.proveedor.example/products.csv",
+      resolvedIp: "203.0.113.77",
+    });
+  });
 });
 
 describe("SupplierService.linkProduct", () => {
@@ -642,6 +667,38 @@ describe("SupplierService.forwardOrder", () => {
     expect(result.value[0]?.externalOrderId).toBe("EXT-001");
     expect(forwarder.calls).toBe(1);
     expect(repository.outbox.some((event) => event.eventType === "SupplierOrderForwarded")).toBe(true);
+  });
+
+  it("re-valida SSRF y usa la IP validada al reenviar al proveedor", async () => {
+    const repository = new FakeRepository();
+    const forwarder = new FakeForwarder("accept");
+    const urlGuard = new FakeUrlGuard(false, "203.0.113.88");
+    await seedSupplier(repository);
+    await seedLinkedMap(repository);
+    const service = newService({ repository, forwarder, urlGuard, orders: new FakeOrders(forwardableOrder) });
+    const result = await service.forwardOrder(system, { orderId });
+    expect(result.ok).toBe(true);
+    expect(urlGuard.calls).toContain(apiConfig.baseUrl);
+    expect(forwarder.inputs[0]?.resolvedIp).toBe("203.0.113.88");
+  });
+
+  it("bloquea el reenvio si la URL base guardada ahora resuelve a una IP privada", async () => {
+    const repository = new FakeRepository();
+    const forwarder = new FakeForwarder("accept");
+    await seedSupplier(repository);
+    await seedLinkedMap(repository);
+    const service = newService({
+      repository,
+      forwarder,
+      urlGuard: new FakeUrlGuard(true),
+      orders: new FakeOrders(forwardableOrder),
+    });
+    const result = await service.forwardOrder(system, { orderId });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value[0]?.status).toBe(SupplierForwardStatus.FAILED);
+    expect(result.value[0]?.lastError).toBe("ssrf_blocked");
+    expect(forwarder.calls).toBe(0);
   });
 
   it("es idempotente: un ref ACCEPTED no se reenvia", async () => {

@@ -249,7 +249,7 @@ export class SupplierService {
       if (!input.dryRun) {
         await this.repository.setFeedStatus(feed.id, SupplierFeedStatus.RUNNING);
       }
-      const fetched = await this.feedFetcher.fetchRows({ kind: feed.kind, sourceUrl: feed.sourceUrl });
+      const fetched = await this.feedFetcher.fetchRows({ kind: feed.kind, sourceUrl: feed.sourceUrl, resolvedIp: verdict.resolvedIp });
       if (!fetched.ok) {
         if (!input.dryRun) {
           await this.repository.setFeedRunResult({
@@ -526,9 +526,16 @@ export class SupplierService {
         (await this.repository.updateOrderRef({ id: ref.id, status: SupplierForwardStatus.FAILED, lastError: "api_not_configured" })) ?? ref
       );
     }
+    const verdict = await this.urlGuard.validate(apiConfig.baseUrl);
+    if (!verdict.allowed) {
+      return (
+        (await this.repository.updateOrderRef({ id: ref.id, status: SupplierForwardStatus.FAILED, lastError: "ssrf_blocked" })) ?? ref
+      );
+    }
 
     const response = await this.forwarder.forwardOrder({
       apiConfig,
+      resolvedIp: verdict.resolvedIp,
       idempotencyKey,
       payload: {
         orderNumber: order.orderNumber,
