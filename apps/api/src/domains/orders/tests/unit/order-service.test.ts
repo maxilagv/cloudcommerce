@@ -4,6 +4,7 @@ import type { OrderPricingPort } from "../../application/order-pricing-port.js";
 import type {
   CreateManualOrderRecord,
   CreateManualOrderResult,
+  AppliedSupplierShipmentUpdate,
   ListOrdersQuery,
   OrderAggregate,
   OrderRepository,
@@ -158,6 +159,37 @@ describe("OrderService", () => {
     expect(result.ok).toBe(true);
     expect(repository.current.order.status).toBe(OrderStatus.DELIVERED);
   });
+
+  it("rolls back a supplier shipment update when the paired order transition fails", async () => {
+    const repository = new FakeOrderRepository({
+      failAtomicShipmentTransition: true,
+      current: aggregate({ status: OrderStatus.SHIPPED }, [
+        {
+          id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1",
+          orderId,
+          carrier: "OCA",
+          trackingCode: "TRACK",
+          status: ShipmentStatus.IN_TRANSIT,
+          eta: null,
+          createdAt: now,
+          updatedAt: now,
+          events: [],
+        },
+      ]),
+    });
+    const service = newService(repository);
+
+    await expect(
+      service.applySupplierShipmentUpdate(system, {
+        orderId,
+        status: ShipmentStatus.DELIVERED,
+        occurredAt: now,
+      }),
+    ).rejects.toThrow("transition failed");
+
+    expect(repository.current.order.status).toBe(OrderStatus.SHIPPED);
+    expect(repository.current.shipments[0]?.status).toBe(ShipmentStatus.IN_TRANSIT);
+  });
 });
 
 const newService = (repository: OrderRepository): OrderService => new OrderService(repository, new FakePricingPort());
@@ -203,7 +235,14 @@ class FakeOrderRepository implements OrderRepository {
   public transitionCalls = 0;
   private readonly idempotency = new Map<string, { requestHash: string; aggregate: OrderAggregate }>();
 
-  public constructor(private readonly options: { insufficientStock?: boolean; transitionDelayMs?: number; current?: OrderAggregate } = {}) {
+  public constructor(
+    private readonly options: {
+      insufficientStock?: boolean;
+      transitionDelayMs?: number;
+      current?: OrderAggregate;
+      failAtomicShipmentTransition?: boolean;
+    } = {},
+  ) {
     this.current = options.current ?? aggregate();
   }
 
@@ -278,7 +317,11 @@ class FakeOrderRepository implements OrderRepository {
     trackingCode: string | null;
     description: string | null;
     occurredAt: Date;
-  }): Promise<ShipmentEntity | null> {
+    orderTransition: { toStatus: OrderStatus; reason: string; actorId: string | null } | null;
+  }): Promise<AppliedSupplierShipmentUpdate | null> {
+    if (this.options.failAtomicShipmentTransition && input.orderTransition) {
+      throw new Error("transition failed");
+    }
     const updatedShipment = {
       id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2",
       orderId: input.orderId,
@@ -290,8 +333,15 @@ class FakeOrderRepository implements OrderRepository {
       updatedAt: now,
       events: [],
     };
-    this.current = aggregate(this.current.order, [updatedShipment]);
-    return updatedShipment;
+    let orderTransition: AppliedSupplierShipmentUpdate["orderTransition"] = null;
+    const order = { ...this.current.order };
+    if (input.orderTransition) {
+      orderTransition = { fromStatus: order.status, toStatus: input.orderTransition.toStatus };
+      order.status = input.orderTransition.toStatus;
+      order.version += 1;
+    }
+    this.current = aggregate(order, [updatedShipment]);
+    return { shipment: updatedShipment, orderTransition };
   }
 
   public async recordSensitiveAccess(_input: { orderId: string; action: string }, _audit: RequestAuditContext): Promise<void> {}

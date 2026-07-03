@@ -299,36 +299,6 @@ export class OrderService {
     return ok(this.presentShipment(shipment));
   }
 
-  private async advanceOrderFromShipment(actor: Actor, orderId: string, shipmentStatus: ShipmentStatus): Promise<void> {
-    const nextStatus = shipmentStatusToOrderStatus(shipmentStatus);
-    if (!nextStatus) {
-      return;
-    }
-    const current = await this.repository.getOrderAggregate(orderId);
-    if (!current) {
-      return;
-    }
-    const transition = canTransitionOrder({
-      from: current.order.status,
-      to: nextStatus,
-      hasShipment: current.shipments.length > 0,
-    });
-    if (!transition.ok) {
-      return;
-    }
-    await this.repository.transitionOrder({
-      orderId,
-      toStatus: nextStatus,
-      reason: `supplier_shipment_${shipmentStatus.toLowerCase()}`,
-      actorId: actor.kind === "admin" ? actor.userId : null,
-    });
-    await this.publishOrderEvent("OrderStatusChanged", orderId, {
-      orderId,
-      fromStatus: current.order.status,
-      toStatus: nextStatus,
-    });
-  }
-
   private async publishOrderEvent(type: string, orderId: string, payload: Record<string, unknown>): Promise<void> {
     await this.eventBus?.publish({
       id: uuidv7(),
@@ -359,24 +329,38 @@ export class OrderService {
     if (actor.kind !== "system" && !canManageShipments(actor)) {
       return err(actor.kind === "public" ? { type: "UNAUTHENTICATED" } : { type: "FORBIDDEN" });
     }
-    const shipment = await this.repository.applySupplierShipmentUpdate({
+    const nextOrderStatus = shipmentStatusToOrderStatus(input.status);
+    const result = await this.repository.applySupplierShipmentUpdate({
       orderId: input.orderId,
       status: input.status,
       carrier: input.carrier ?? null,
       trackingCode: input.trackingCode ?? null,
       description: input.description ?? null,
       occurredAt: input.occurredAt,
+      orderTransition: nextOrderStatus
+        ? {
+            toStatus: nextOrderStatus,
+            reason: `supplier_shipment_${input.status.toLowerCase()}`,
+            actorId: actor.kind === "admin" ? actor.userId : null,
+          }
+        : null,
     });
-    if (!shipment) {
+    if (!result) {
       return err({ type: "ORDER_NOT_FOUND" });
     }
     await this.publishOrderEvent("ShipmentStatusChanged", input.orderId, {
       orderId: input.orderId,
-      shipmentId: shipment.id,
+      shipmentId: result.shipment.id,
       status: input.status,
     });
-    await this.advanceOrderFromShipment(actor, input.orderId, input.status);
-    return ok(this.presentShipment(shipment));
+    if (result.orderTransition) {
+      await this.publishOrderEvent("OrderStatusChanged", input.orderId, {
+        orderId: input.orderId,
+        fromStatus: result.orderTransition.fromStatus,
+        toStatus: result.orderTransition.toStatus,
+      });
+    }
+    return ok(this.presentShipment(result.shipment));
   }
 
   public async refreshTracking(

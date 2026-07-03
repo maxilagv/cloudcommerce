@@ -28,6 +28,7 @@ import type {
   ListOrdersQuery,
   OrderAggregate,
   OrderEntity,
+  AppliedSupplierShipmentUpdate,
   OrderLineEntity,
   OrderRepository,
   OrderStatusEventEntity,
@@ -514,9 +515,10 @@ export class DrizzleOrderRepository implements OrderRepository {
     trackingCode: string | null;
     description: string | null;
     occurredAt: Date;
-  }): Promise<ShipmentEntity | null> {
-    const shipmentId = await this.db.transaction(async (tx) => {
-      const current = await tx.query.order.findFirst({ where: eq(orderTable.id, input.orderId), columns: { id: true } });
+    orderTransition: { toStatus: OrderStatus; reason: string; actorId: string | null } | null;
+  }): Promise<AppliedSupplierShipmentUpdate | null> {
+    const result = await this.db.transaction(async (tx) => {
+      const current = await tx.query.order.findFirst({ where: eq(orderTable.id, input.orderId) });
       if (!current) {
         return null;
       }
@@ -567,9 +569,55 @@ export class DrizzleOrderRepository implements OrderRepository {
         eventType: "ShipmentStatusChanged",
         payload: { orderId: input.orderId, shipmentId: targetId, status: input.status },
       });
-      return targetId;
+      let orderTransition: AppliedSupplierShipmentUpdate["orderTransition"] = null;
+      if (input.orderTransition) {
+        const transition = canTransitionOrder({
+          from: current.status,
+          to: input.orderTransition.toStatus,
+          reason: input.orderTransition.reason,
+          hasShipment: true,
+        });
+        if (transition.ok) {
+          const [updated] = await tx
+            .update(orderTable)
+            .set({
+              status: input.orderTransition.toStatus,
+              updatedAt: new Date(),
+              version: sql`${orderTable.version} + 1` as unknown as number,
+            })
+            .where(and(eq(orderTable.id, input.orderId), eq(orderTable.version, current.version)))
+            .returning();
+          if (!updated) {
+            throw new Error("Failed to advance order from supplier shipment");
+          }
+          await tx.insert(orderStatusEvent).values({
+            id: uuidv7(),
+            orderId: input.orderId,
+            fromStatus: current.status,
+            toStatus: input.orderTransition.toStatus,
+            reason: input.orderTransition.reason,
+            actorId: input.orderTransition.actorId,
+          });
+          await tx.insert(outboxEvent).values({
+            id: uuidv7(),
+            aggregateType: "orders",
+            aggregateId: input.orderId,
+            eventType: "OrderStatusChanged",
+            payload: { orderId: input.orderId, fromStatus: current.status, toStatus: input.orderTransition.toStatus },
+          });
+          orderTransition = { fromStatus: current.status, toStatus: input.orderTransition.toStatus };
+        }
+      }
+      return { shipmentId: targetId, orderTransition };
     });
-    return shipmentId ? this.getShipmentById(shipmentId) : null;
+    if (!result) {
+      return null;
+    }
+    const updatedShipment = await this.getShipmentById(result.shipmentId);
+    if (!updatedShipment) {
+      throw new Error("Updated shipment could not be loaded");
+    }
+    return { shipment: updatedShipment, orderTransition: result.orderTransition };
   }
 
   public async recordSensitiveAccess(input: { orderId: string; action: string }, audit: RequestAuditContext): Promise<void> {
