@@ -39,12 +39,14 @@ export type AuthenticatedSession = {
 
 export type LoginResult = AuthenticatedSession & {
   sessionId: string;
+  sessionToken: string;
   refreshToken: string;
   refreshExpiresAt: Date;
 };
 
 export type RefreshResult = {
   sessionId: string;
+  sessionToken: string;
   refreshToken: string;
   refreshExpiresAt: Date;
 };
@@ -73,6 +75,14 @@ const loginWindowSeconds = 15 * 60;
 const resetLimit = 3;
 const resetWindowSeconds = 60 * 60;
 const dummyPasswordHash = hash("cloudcommerce-dummy-password", { type: 2 });
+const rateLimitScript = `
+local count = redis.call("INCR", KEYS[1])
+if count == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+local ttl = redis.call("TTL", KEYS[1])
+return { count, ttl }
+`;
 
 export class IdentityService {
   private readonly repository: IdentityRepository;
@@ -120,11 +130,13 @@ export class IdentityService {
       }
     }
 
+    const sessionToken = this.createToken();
     const refreshToken = this.createToken();
     const refreshExpiresAt = addDays(new Date(), 30);
     const session = await this.repository.createSession({
       id: uuidv7(),
       adminUserId: user.id,
+      sessionTokenHash: this.hashToken(sessionToken),
       refreshTokenHash: this.hashToken(refreshToken),
       familyId: uuidv7(),
       deviceLabel: this.deviceLabel(ctx.userAgent),
@@ -151,16 +163,17 @@ export class IdentityService {
       profile: this.toProfile(user),
       permissions,
       sessionId: session.id,
+      sessionToken,
       refreshToken,
       refreshExpiresAt,
     });
   }
 
-  public async resolveSession(sessionId: string | undefined): Promise<Result<AuthenticatedSession, IdentityDomainError>> {
-    if (!sessionId) {
+  public async resolveSession(sessionToken: string | undefined): Promise<Result<AuthenticatedSession, IdentityDomainError>> {
+    if (!sessionToken) {
       return err({ type: "UNAUTHENTICATED" });
     }
-    const session = await this.repository.findSessionById(sessionId);
+    const session = await this.repository.findSessionByTokenHash(this.hashToken(sessionToken));
     if (!session || !isSessionActive(session)) {
       return err({ type: "UNAUTHENTICATED" });
     }
@@ -183,9 +196,10 @@ export class IdentityService {
     const currentHash = this.hashToken(input.refreshToken);
     const session = await this.repository.findSessionByRefreshHash(currentHash);
     if (session && isSessionActive(session)) {
+      const nextSessionToken = this.createToken();
       const nextRefreshToken = this.createToken();
       const expiresAt = addDays(new Date(), 30);
-      const rotated = await this.repository.rotateSession(session.id, this.hashToken(nextRefreshToken), currentHash, expiresAt);
+      const rotated = await this.repository.rotateSession(session.id, this.hashToken(nextSessionToken), this.hashToken(nextRefreshToken), currentHash, expiresAt);
       if (!rotated) {
         return err({ type: "UNAUTHENTICATED" });
       }
@@ -199,7 +213,7 @@ export class IdentityService {
         userAgent: ctx.userAgent,
         requestId: ctx.requestId,
       });
-      return ok({ sessionId: session.id, refreshToken: nextRefreshToken, refreshExpiresAt: expiresAt });
+      return ok({ sessionId: session.id, sessionToken: nextSessionToken, refreshToken: nextRefreshToken, refreshExpiresAt: expiresAt });
     }
 
     const reused = await this.repository.findSessionByPreviousRefreshHash(currentHash);
@@ -268,10 +282,7 @@ export class IdentityService {
 
   public async revokeSession(actor: Actor, input: RevokeSessionInput, ctx: RequestContext): Promise<Result<{ revoked: true }, IdentityDomainError>> {
     const session = await this.repository.findSessionById(input.sessionId);
-    if (!session) {
-      return err({ type: "SESSION_NOT_FOUND" });
-    }
-    if (!canRevokeSession(actor, session.adminUserId)) {
+    if (!session || !canRevokeSession(actor, session.adminUserId)) {
       return err({ type: "FORBIDDEN" });
     }
     await this.repository.revokeSession(input.sessionId, new Date());
@@ -484,12 +495,10 @@ export class IdentityService {
   }
 
   private async checkRateLimit(key: string, limit: number, windowSeconds: number): Promise<{ allowed: true } | { allowed: false; retryAfterSeconds: number }> {
-    const count = await this.cache.incr(key);
-    if (count === 1) {
-      await this.cache.expire(key, windowSeconds);
-    }
+    const [countRaw, ttlRaw] = (await this.cache.eval(rateLimitScript, 1, key, windowSeconds.toString())) as [number, number];
+    const count = Number(countRaw);
+    const ttl = Number(ttlRaw);
     if (count > limit) {
-      const ttl = await this.cache.ttl(key);
       return { allowed: false, retryAfterSeconds: ttl > 0 ? ttl : windowSeconds };
     }
     return { allowed: true };

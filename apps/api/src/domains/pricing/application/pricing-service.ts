@@ -31,6 +31,7 @@ import {
   canReadPricing,
   canViewSensitivePricing,
 } from "../domain/pricing-permissions.js";
+import { PricingWriteConflictError } from "./pricing-repository.js";
 import type {
   DiscountEntity,
   MarkupRuleEntity,
@@ -112,16 +113,24 @@ export class PricingService {
     if (!variant) {
       return err({ type: "VARIANT_NOT_FOUND" });
     }
-    const saved = await this.repository.setSupplierCost(
-      {
-        variantId: input.variantId,
-        supplierId: input.supplierId ?? null,
-        costAmountMinor: input.costAmountMinor,
-        currency: input.currency,
-        validFrom: input.validFrom,
-      },
-      this.audit(actor, context, "Supplier cost updated"),
-    );
+    let saved: SupplierCostEntity;
+    try {
+      saved = await this.repository.setSupplierCost(
+        {
+          variantId: input.variantId,
+          supplierId: input.supplierId ?? null,
+          costAmountMinor: input.costAmountMinor,
+          currency: input.currency,
+          validFrom: input.validFrom,
+        },
+        this.audit(actor, context, "Supplier cost updated"),
+      );
+    } catch (error) {
+      if (error instanceof PricingWriteConflictError) {
+        return err({ type: "PRICE_CHANGED" });
+      }
+      throw error;
+    }
     await this.publishPriceChanged(input.variantId);
     return ok(this.presentSupplierCost(saved));
   }
@@ -170,19 +179,26 @@ export class PricingService {
     if (minMarginBpsValue !== null && input.amountMinor < minSalePriceForMargin(cost.costAmountMinor, minMarginBpsValue)) {
       return err({ type: "MARGIN_BELOW_MINIMUM", minMarginBps: minMarginBpsValue });
     }
-    await this.repository.setManualPrice(
-      {
-        variantId: input.variantId,
-        listId: priceList.id,
-        amountMinor: input.amountMinor,
-        currency: input.currency,
-        compareAtAmountMinor: input.compareAtAmountMinor ?? null,
-        validFrom: input.validFrom,
-        validTo: input.validTo ?? null,
-        createdBy: actor.kind === "admin" ? actor.userId : null,
-      },
-      this.audit(actor, context, "Manual sale price updated"),
-    );
+    try {
+      await this.repository.setManualPrice(
+        {
+          variantId: input.variantId,
+          listId: priceList.id,
+          amountMinor: input.amountMinor,
+          currency: input.currency,
+          compareAtAmountMinor: input.compareAtAmountMinor ?? null,
+          validFrom: input.validFrom,
+          validTo: input.validTo ?? null,
+          createdBy: actor.kind === "admin" ? actor.userId : null,
+        },
+        this.audit(actor, context, "Manual sale price updated"),
+      );
+    } catch (error) {
+      if (error instanceof PricingWriteConflictError) {
+        return err({ type: "PRICE_CHANGED" });
+      }
+      throw error;
+    }
     await this.publishPriceChanged(input.variantId);
     const computed = await this.computeVariantPrice(input.variantId, input.currency, input.validFrom);
     if (!computed.ok) {

@@ -124,7 +124,7 @@ export const createContainer = (config: AppConfig) => {
   const settings = new SettingsService(settingsRepository, new EnvSecretProbe(process.env));
   const suppliers = new SupplierService(
     new DrizzleSupplierRepository(database.db),
-    new AesApiConfigCipher(derivePurposeSecret(config.COOKIE_SECRET, "supplier-api-config")),
+    new AesApiConfigCipher(config.COOKIE_SECRET),
     new DnsUrlGuard(),
     new HttpFeedFetcher(),
     new HttpSupplierForwarder(),

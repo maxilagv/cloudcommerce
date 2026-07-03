@@ -168,6 +168,7 @@ export enum DocumentType {
 export enum DocumentStatus {
   PROCESSING = "PROCESSING",
   AVAILABLE = "AVAILABLE",
+  VOID = "VOID",
 }
 
 // ---------------------------------------------------------------------------

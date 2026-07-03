@@ -14,6 +14,7 @@ export const documentTypeEnum = pgEnum("document_type", [
 export const documentStatusEnum = pgEnum("document_status", [
   DocumentStatus.PROCESSING,
   DocumentStatus.AVAILABLE,
+  DocumentStatus.VOID,
 ]);
 
 export const documentSequence = pgTable(

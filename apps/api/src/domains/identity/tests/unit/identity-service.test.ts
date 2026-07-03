@@ -1,4 +1,4 @@
-import { AdminRole } from "@cloudcommerce/types";
+import { AdminRole, type Actor } from "@cloudcommerce/types";
 import type { LoginInput } from "@cloudcommerce/validators";
 import { hash } from "argon2";
 import type { Redis } from "ioredis";
@@ -22,20 +22,35 @@ import type {
 class FakeRedis {
   private readonly counts = new Map<string, number>();
   private readonly expiries = new Map<string, number>();
+  public evalCalls = 0;
+  public incrCalls = 0;
+  public expireCalls = 0;
 
   public async incr(key: string): Promise<number> {
+    this.incrCalls += 1;
     const next = (this.counts.get(key) ?? 0) + 1;
     this.counts.set(key, next);
     return next;
   }
 
   public async expire(key: string, seconds: number): Promise<number> {
+    this.expireCalls += 1;
     this.expiries.set(key, seconds);
     return 1;
   }
 
   public async ttl(key: string): Promise<number> {
     return this.expiries.get(key) ?? -1;
+  }
+
+  public async eval(_script: string, _keyCount: number, key: string, windowSeconds: string): Promise<[number, number]> {
+    this.evalCalls += 1;
+    const next = (this.counts.get(key) ?? 0) + 1;
+    this.counts.set(key, next);
+    if (next === 1) {
+      this.expiries.set(key, Number(windowSeconds));
+    }
+    return [next, this.expiries.get(key) ?? -1];
   }
 }
 
@@ -122,6 +137,10 @@ class FakeIdentityRepository implements IdentityRepository {
     return this.sessions.get(id) ?? null;
   }
 
+  public async findSessionByTokenHash(sessionTokenHash: string): Promise<AdminSession | null> {
+    return [...this.sessions.values()].find((session) => session.sessionTokenHash === sessionTokenHash) ?? null;
+  }
+
   public async findSessionByRefreshHash(refreshTokenHash: string): Promise<AdminSession | null> {
     return [...this.sessions.values()].find((session) => session.refreshTokenHash === refreshTokenHash) ?? null;
   }
@@ -132,6 +151,7 @@ class FakeIdentityRepository implements IdentityRepository {
 
   public async rotateSession(
     sessionId: string,
+    nextSessionTokenHash: string,
     nextRefreshTokenHash: string,
     previousRefreshTokenHash: string,
     expiresAt: Date,
@@ -142,6 +162,7 @@ class FakeIdentityRepository implements IdentityRepository {
     }
     const updated = {
       ...session,
+      sessionTokenHash: nextSessionTokenHash,
       refreshTokenHash: nextRefreshTokenHash,
       previousRefreshTokenHash,
       expiresAt,
@@ -214,11 +235,13 @@ const loginInput: LoginInput = {
 
 describe("IdentityService", () => {
   let repository: FakeIdentityRepository;
+  let cache: FakeRedis;
   let service: IdentityService;
   let owner: AdminUser;
 
   beforeEach(async () => {
     repository = new FakeIdentityRepository();
+    cache = new FakeRedis();
     owner = await repository.createUser({
       id: uuidv7(),
       email: "owner@cloudcommerce.local",
@@ -228,7 +251,7 @@ describe("IdentityService", () => {
     });
     service = new IdentityService({
       repository,
-      cache: new FakeRedis() as unknown as Redis,
+      cache: cache as unknown as Redis,
       unitOfWork: {} as unknown as UnitOfWork,
       eventBus: new InMemoryEventBus(),
       logger: pino({ level: "silent" }),
@@ -244,7 +267,30 @@ describe("IdentityService", () => {
       expect(result.value.profile.email).toBe("owner@cloudcommerce.local");
       expect(result.value.actor.kind).toBe("admin");
       expect(result.value.permissions).toContainEqual({ resource: "*", action: "*" });
+      expect(result.value.sessionToken.length).toBeGreaterThan(32);
       expect(result.value.refreshToken.length).toBeGreaterThan(32);
+    }
+  });
+
+  it("stores only a hash of the session bearer and does not resolve raw database ids", async () => {
+    const login = await service.login(loginInput, context);
+    expect(login.ok).toBe(true);
+    if (!login.ok) {
+      return;
+    }
+
+    const storedSession = repository.sessions.get(login.value.sessionId);
+    expect(storedSession?.sessionTokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(storedSession?.sessionTokenHash).not.toBe(login.value.sessionToken);
+    expect(login.value.sessionToken).not.toBe(login.value.sessionId);
+
+    const resolvedByToken = await service.resolveSession(login.value.sessionToken);
+    const resolvedByRawId = await service.resolveSession(login.value.sessionId);
+
+    expect(resolvedByToken.ok).toBe(true);
+    expect(resolvedByRawId.ok).toBe(false);
+    if (!resolvedByRawId.ok) {
+      expect(resolvedByRawId.error.type).toBe("UNAUTHENTICATED");
     }
   });
 
@@ -299,6 +345,14 @@ describe("IdentityService", () => {
     }
   });
 
+  it("uses one atomic Redis script for login rate limit increments and expiry", async () => {
+    await service.login({ ...loginInput, password: "WrongPassword123" }, context);
+
+    expect(cache.evalCalls).toBe(1);
+    expect(cache.incrCalls).toBe(0);
+    expect(cache.expireCalls).toBe(0);
+  });
+
   it("does not let unauthenticated clients bypass login limits by changing device fingerprint", async () => {
     for (let index = 0; index < 5; index += 1) {
       await service.login(
@@ -336,5 +390,58 @@ describe("IdentityService", () => {
 
     const storedSession = repository.sessions.get(login.value.sessionId);
     expect(storedSession?.revokedAt).toBeInstanceOf(Date);
+  });
+
+  it("rejects demoting a peer admin whose current role is not below the actor", async () => {
+    const peer = await repository.createUser({
+      id: uuidv7(),
+      email: "peer-admin@cloudcommerce.local",
+      fullName: "Peer Admin",
+      role: AdminRole.ADMIN,
+      passwordHash: await hash("CorrectOwnerPassword123", { type: 2 }),
+    });
+
+    const result = await service.updateRole(
+      { kind: "admin", userId: owner.id, role: AdminRole.ADMIN, sessionId: "internal-session" },
+      { userId: peer.id, role: AdminRole.SUPPORT },
+      context,
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.type).toBe("FORBIDDEN");
+    }
+    expect(repository.users.get(peer.id)?.role).toBe(AdminRole.ADMIN);
+  });
+
+  it("does not reveal whether another user's session id exists during revocation", async () => {
+    const otherUser = await repository.createUser({
+      id: uuidv7(),
+      email: "other-admin@cloudcommerce.local",
+      fullName: "Other Admin",
+      role: AdminRole.SUPPORT,
+      passwordHash: await hash("CorrectOwnerPassword123", { type: 2 }),
+    });
+    const otherSession = await repository.createSession({
+      id: uuidv7(),
+      adminUserId: otherUser.id,
+      sessionTokenHash: "session-token-hash",
+      refreshTokenHash: "refresh-token-hash",
+      familyId: uuidv7(),
+      deviceLabel: "vitest",
+      deviceFingerprintHash: null,
+      ip: "127.0.0.1",
+      userAgent: "vitest",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    const probe: Actor = { kind: "admin", userId: owner.id, role: AdminRole.CATALOG_MANAGER, sessionId: "probe-session" };
+
+    const missing = await service.revokeSession(probe, { sessionId: uuidv7(), reason: "probe" }, context);
+    const existingOtherUser = await service.revokeSession(probe, { sessionId: otherSession.id, reason: "probe" }, context);
+
+    expect(missing.ok).toBe(false);
+    expect(existingOtherUser.ok).toBe(false);
+    if (!missing.ok) expect(missing.error.type).toBe("FORBIDDEN");
+    if (!existingOtherUser.ok) expect(existingOtherUser.error.type).toBe("FORBIDDEN");
   });
 });

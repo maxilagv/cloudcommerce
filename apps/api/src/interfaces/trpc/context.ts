@@ -1,4 +1,4 @@
-import type { Actor } from "@cloudcommerce/types";
+import type { Actor, AdminProfile } from "@cloudcommerce/types";
 import type { CreateFastifyContextOptions } from "@trpc/server/adapters/fastify";
 import { appErrorToTrpcError, identityErrorToAppError } from "../../shared/errors/http-error.js";
 import type { AppContainer } from "../../app/container.js";
@@ -10,6 +10,7 @@ export type TRPCContext = {
   ip: string;
   userAgent: string;
   actor: Actor;
+  profile: AdminProfile | null;
   permissions: Array<{ resource: string; action: string }>;
   reply: CreateFastifyContextOptions["res"];
   request: CreateFastifyContextOptions["req"];
@@ -20,8 +21,8 @@ export const createTRPCContext = async (
 ): Promise<TRPCContext> => {
   const signedSession = opts.req.cookies[adminSessionCookie];
   const unsignedSession = signedSession ? opts.req.unsignCookie(signedSession) : null;
-  const sessionId = unsignedSession?.valid ? unsignedSession.value : undefined;
-  const session = await opts.container.identity.resolveSession(sessionId);
+  const sessionToken = unsignedSession?.valid ? unsignedSession.value : undefined;
+  const session = await opts.container.identity.resolveSession(sessionToken);
   if (!session.ok && session.error.type !== "UNAUTHENTICATED") {
     throw appErrorToTrpcError(identityErrorToAppError(session.error));
   }
@@ -32,6 +33,7 @@ export const createTRPCContext = async (
     ip: opts.req.ip,
     userAgent: opts.req.headers["user-agent"] ?? "unknown",
     actor: session.ok ? session.value.actor : { kind: "public" },
+    profile: session.ok ? session.value.profile : null,
     permissions: session.ok ? session.value.permissions : [],
     reply: opts.res,
     request: opts.req,

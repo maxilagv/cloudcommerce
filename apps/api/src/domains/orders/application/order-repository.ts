@@ -79,6 +79,11 @@ export type OrderAggregate = {
   shipments: ShipmentEntity[];
 };
 
+export type AppliedSupplierShipmentUpdate = {
+  shipment: ShipmentEntity;
+  orderTransition: { fromStatus: OrderStatus; toStatus: OrderStatus } | null;
+};
+
 export type OrderSummaryEntity = OrderEntity & {
   itemCount: number;
 };
@@ -151,6 +156,7 @@ export interface OrderRepository {
     trackingCode: string | null;
     description: string | null;
     occurredAt: Date;
-  }): Promise<ShipmentEntity | null>;
+    orderTransition: { toStatus: OrderStatus; reason: string; actorId: string | null } | null;
+  }): Promise<AppliedSupplierShipmentUpdate | null>;
   recordSensitiveAccess(input: { orderId: string; action: string }, audit: RequestAuditContext): Promise<void>;
 }

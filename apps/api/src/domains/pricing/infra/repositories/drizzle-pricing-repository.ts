@@ -13,6 +13,7 @@ import { PriceOrigin, PricingScope, type Currency } from "@cloudcommerce/types";
 import { and, desc, eq, gt, isNull, lte, or, type SQL } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { Database } from "../../../../infrastructure/database/client.js";
+import { PricingWriteConflictError } from "../../application/pricing-repository.js";
 import type {
   CreateDiscountRecord,
   DiscountEntity,
@@ -109,6 +110,10 @@ export class DrizzlePricingRepository implements PricingRepository {
   }
 
   public async setSupplierCost(input: SetSupplierCostRecord, audit: RequestAuditContext): Promise<SupplierCostEntity> {
+    return this.retryOpenRowWrite(() => this.insertSupplierCost(input, audit));
+  }
+
+  private async insertSupplierCost(input: SetSupplierCostRecord, audit: RequestAuditContext): Promise<SupplierCostEntity> {
     return this.db.transaction(async (tx) => {
       const previous = await tx.query.supplierCost.findFirst({
         where: and(eq(supplierCost.variantId, input.variantId), eq(supplierCost.currency, input.currency), isNull(supplierCost.validTo)),
@@ -246,6 +251,10 @@ export class DrizzlePricingRepository implements PricingRepository {
   }
 
   public async setManualPrice(input: SetManualPriceRecord, audit: RequestAuditContext): Promise<PriceEntity> {
+    return this.retryOpenRowWrite(() => this.insertManualPrice(input, audit));
+  }
+
+  private async insertManualPrice(input: SetManualPriceRecord, audit: RequestAuditContext): Promise<PriceEntity> {
     return this.db.transaction(async (tx) => {
       const previous = await tx.query.price.findFirst({
         where: and(eq(price.variantId, input.variantId), eq(price.listId, input.listId), eq(price.currency, input.currency), isNull(price.validTo)),
@@ -424,4 +433,41 @@ export class DrizzlePricingRepository implements PricingRepository {
   private currency(value: string): Currency {
     return value === "USD" ? "USD" : "ARS";
   }
+
+  private async retryOpenRowWrite<T>(operation: () => Promise<T>): Promise<T> {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error) {
+        if (!isOpenPricingRowUniqueViolation(error)) {
+          throw error;
+        }
+        if (attempt === 1) {
+          throw new PricingWriteConflictError();
+        }
+      }
+    }
+    throw new PricingWriteConflictError();
+  }
 }
+
+const openPricingRowUniqueConstraints = new Set([
+  "supplier_cost_one_open_per_variant_currency_unique",
+  "supplier_cost_one_open_per_variant_unique",
+  "price_one_open_per_variant_list_unique",
+]);
+
+const isOpenPricingRowUniqueViolation = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const candidate = error as { code?: unknown; constraint?: unknown; message?: unknown; detail?: unknown };
+  if (candidate.code !== "23505") {
+    return false;
+  }
+  if (typeof candidate.constraint === "string" && openPricingRowUniqueConstraints.has(candidate.constraint)) {
+    return true;
+  }
+  const text = `${typeof candidate.message === "string" ? candidate.message : ""} ${typeof candidate.detail === "string" ? candidate.detail : ""}`;
+  return [...openPricingRowUniqueConstraints].some((constraint) => text.includes(constraint));
+};

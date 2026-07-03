@@ -1,5 +1,6 @@
 import { AdminRole, PriceOrigin, PricingScope, PricingValueKind, type Actor } from "@cloudcommerce/types";
 import { describe, expect, it } from "vitest";
+import { PricingWriteConflictError } from "../../application/pricing-repository.js";
 import { PricingService } from "../../application/pricing-service.js";
 import type {
   CreateDiscountRecord,
@@ -65,6 +66,56 @@ describe("PricingService", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error.type).toBe("FORBIDDEN");
+    }
+  });
+
+  it("maps concurrent supplier cost writes for the same variant and currency to a domain conflict", async () => {
+    const repository = new ConcurrentSupplierCostRepository();
+    const service = new PricingService(repository);
+
+    const results = await Promise.all([
+      service.setSupplierCost(admin(AdminRole.ADMIN), { variantId, supplierId: null, costAmountMinor: 1_100_000, currency: "ARS", validFrom: now }, requestContext),
+      service.setSupplierCost(admin(AdminRole.ADMIN), { variantId, supplierId: null, costAmountMinor: 1_250_000, currency: "ARS", validFrom: now }, requestContext),
+    ]);
+
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok && result.error.type === "PRICE_CHANGED")).toHaveLength(1);
+    expect(repository.openSupplierCostsFor(variantId, "ARS")).toHaveLength(1);
+  });
+
+  it("allows concurrent supplier cost writes for different currencies on the same variant", async () => {
+    const repository = new ConcurrentSupplierCostRepository();
+    const service = new PricingService(repository);
+
+    const results = await Promise.all([
+      service.setSupplierCost(admin(AdminRole.ADMIN), { variantId, supplierId: null, costAmountMinor: 1_100_000, currency: "ARS", validFrom: now }, requestContext),
+      service.setSupplierCost(admin(AdminRole.ADMIN), { variantId, supplierId: null, costAmountMinor: 900_000, currency: "USD", validFrom: now }, requestContext),
+    ]);
+
+    expect(results.every((result) => result.ok)).toBe(true);
+    expect(repository.openSupplierCostsFor(variantId, "ARS")).toHaveLength(1);
+    expect(repository.openSupplierCostsFor(variantId, "USD")).toHaveLength(1);
+  });
+
+  it("maps manual price open-row write conflicts to PRICE_CHANGED", async () => {
+    const service = new PricingService(new ManualPriceConflictRepository());
+
+    const result = await service.setManualPrice(
+      admin(AdminRole.ADMIN),
+      {
+        variantId,
+        amountMinor: 1_900_000,
+        currency: "ARS",
+        compareAtAmountMinor: null,
+        validFrom: now,
+        validTo: null,
+      },
+      requestContext,
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.type).toBe("PRICE_CHANGED");
     }
   });
 });
@@ -147,6 +198,54 @@ class FakePricingRepository implements PricingRepository {
 
   public async deactivateDiscount(_id: string): Promise<DiscountEntity | null> {
     return null;
+  }
+}
+
+class ConcurrentSupplierCostRepository extends FakePricingRepository {
+  private readonly activeWriteKeys = new Set<string>();
+  private readonly supplierCosts: SupplierCostEntity[] = [];
+
+  public override async getActiveSupplierCost(id = variantId, currency: "ARS" | "USD" = "ARS"): Promise<SupplierCostEntity | null> {
+    return this.openSupplierCostsFor(id, currency)[0] ?? null;
+  }
+
+  public override async setSupplierCost(input: SetSupplierCostRecord): Promise<SupplierCostEntity> {
+    const key = `${input.variantId}:${input.currency}`;
+    if (this.activeWriteKeys.has(key)) {
+      throw new PricingWriteConflictError();
+    }
+    this.activeWriteKeys.add(key);
+    await Promise.resolve();
+    try {
+      for (const cost of this.supplierCosts) {
+        if (cost.variantId === input.variantId && cost.currency === input.currency && cost.validTo === null) {
+          cost.validTo = input.validFrom;
+        }
+      }
+      const saved: SupplierCostEntity = {
+        id: `supplier-cost-${this.supplierCosts.length + 1}`,
+        variantId: input.variantId,
+        supplierId: input.supplierId,
+        costAmountMinor: input.costAmountMinor,
+        currency: input.currency,
+        validFrom: input.validFrom,
+        validTo: null,
+      };
+      this.supplierCosts.push(saved);
+      return saved;
+    } finally {
+      this.activeWriteKeys.delete(key);
+    }
+  }
+
+  public openSupplierCostsFor(id: string, currency: "ARS" | "USD"): SupplierCostEntity[] {
+    return this.supplierCosts.filter((cost) => cost.variantId === id && cost.currency === currency && cost.validTo === null);
+  }
+}
+
+class ManualPriceConflictRepository extends FakePricingRepository {
+  public override async setManualPrice(): Promise<PriceEntity> {
+    throw new PricingWriteConflictError();
   }
 }
 

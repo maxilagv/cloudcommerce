@@ -22,6 +22,7 @@ export const mapAdminUser = (row: AdminUserRow): AdminUser => ({
 export const mapAdminSession = (row: AdminSessionRow): AdminSession => ({
   id: row.id,
   adminUserId: row.adminUserId,
+  sessionTokenHash: row.sessionTokenHash,
   refreshTokenHash: row.refreshTokenHash,
   previousRefreshTokenHash: row.previousRefreshTokenHash,
   familyId: row.familyId,

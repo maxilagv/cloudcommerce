@@ -8,6 +8,7 @@ import {
   outboxEvent,
 } from "@cloudcommerce/database";
 import { DocumentStatus, type Currency, type DocumentType } from "@cloudcommerce/types";
+import { createHash } from "node:crypto";
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { Database } from "../../../../infrastructure/database/client.js";
@@ -20,6 +21,7 @@ import type {
   FinanceRepository,
   ListDocumentsQuery,
   RequestAuditContext,
+  VoidDocumentNumberRecord,
 } from "../../application/finance-repository.js";
 import type { NumberSequencePort } from "../../application/ports.js";
 
@@ -199,6 +201,53 @@ export class DrizzleFinanceRepository implements FinanceRepository, NumberSequen
       throw new Error("Created document could not be loaded");
     }
     return { type: result.type, document };
+  }
+
+  public async voidDocumentNumber(
+    input: VoidDocumentNumberRecord,
+    audit: RequestAuditContext,
+  ): Promise<FinanceDocumentEntity | null> {
+    const [created] = await this.db
+      .insert(commercialDocument)
+      .values({
+        id: uuidv7(),
+        type: input.type,
+        series: input.series,
+        number: input.number,
+        displayNumber: input.displayNumber,
+        orderId: input.orderId,
+        customerId: input.customerId,
+        status: DocumentStatus.VOID,
+        issuedAt: input.issuedAt,
+        totalMinor: input.totalMinor,
+        currency: input.currency,
+        pdfStorageKey: null,
+        pdfChecksum: null,
+        contentHash: voidContentHash(input),
+        relatedDocumentId: input.relatedDocumentId,
+        createdBy: input.createdBy,
+      })
+      .onConflictDoNothing({
+        target: [commercialDocument.type, commercialDocument.series, commercialDocument.number],
+      })
+      .returning();
+    if (!created) {
+      return null;
+    }
+    await this.db.insert(auditLog).values({
+      id: uuidv7(),
+      actorId: audit.actorId,
+      action: "finance.document.void",
+      resourceType: "commercial_document",
+      resourceId: created.id,
+      before: null,
+      after: { type: input.type, orderId: input.orderId, displayNumber: input.displayNumber, reason: input.reason },
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+      requestId: audit.requestId,
+      reason: audit.reason ?? input.reason,
+    });
+    return this.mapDocument(created);
   }
 
   public async replaceDocumentFile(input: {
@@ -387,3 +436,16 @@ export class DrizzleFinanceRepository implements FinanceRepository, NumberSequen
     return value === "USD" ? "USD" : "ARS";
   }
 }
+
+const voidContentHash = (input: VoidDocumentNumberRecord): string =>
+  `void:${createHash("sha256")
+    .update(
+      JSON.stringify({
+        type: input.type,
+        series: input.series,
+        number: input.number,
+        orderId: input.orderId,
+        reason: input.reason,
+      }),
+    )
+    .digest("hex")}`;

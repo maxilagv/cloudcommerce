@@ -9,6 +9,7 @@ import type {
   FinanceRepository,
   ListDocumentsQuery,
   RequestAuditContext,
+  VoidDocumentNumberRecord,
 } from "../../application/finance-repository.js";
 import { FinanceService } from "../../application/finance-service.js";
 import type { DocumentStoragePort, NumberSequencePort, OrdersReadModelPort, PdfRendererPort, RenderedDocument } from "../../application/ports.js";
@@ -57,6 +58,23 @@ describe("FinanceService", () => {
     }
   });
 
+  it("records a void document number when rendering fails after reservation", async () => {
+    const repository = new FakeFinanceRepository();
+    const sequence = new FakeSequence();
+    const service = newService(repository, { renderer: new FailingRenderer(), sequence });
+
+    const result = await service.generateDocument(admin(AdminRole.FINANCE), { type: DocumentType.REMITO, orderId }, requestContext);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.type).toBe("UPSTREAM_UNAVAILABLE");
+    }
+    expect(sequence.reservedNumbers).toEqual([1]);
+    expect(repository.created).toBeNull();
+    expect(repository.voided?.displayNumber).toBe("R-0001");
+    expect(repository.voided?.reason).toBe("render_or_storage_failed");
+  });
+
   it("computes period revenue, cost, margin and guards divisions by zero", async () => {
     const service = newService(new FakeFinanceRepository(), {
       aggregate: {
@@ -97,14 +115,20 @@ describe("FinanceService", () => {
 
 const newService = (
   repository: FinanceRepository,
-  options: { orderStatus?: OrderStatus; aggregate?: PeriodAggregate } = {},
+  options: {
+    orderStatus?: OrderStatus;
+    aggregate?: PeriodAggregate;
+    renderer?: PdfRendererPort;
+    storage?: DocumentStoragePort;
+    sequence?: NumberSequencePort;
+  } = {},
 ): FinanceService =>
   new FinanceService(
     repository,
     new FakeOrdersReadModel(options.orderStatus ?? OrderStatus.CONFIRMED, options.aggregate),
-    new FakeRenderer(),
-    new FakeStorage(),
-    new FakeSequence(),
+    options.renderer ?? new FakeRenderer(),
+    options.storage ?? new FakeStorage(),
+    options.sequence ?? new FakeSequence(),
   );
 
 const admin = (role: AdminRole): Actor => ({
@@ -169,6 +193,12 @@ class FakeRenderer implements PdfRendererPort {
   }
 }
 
+class FailingRenderer implements PdfRendererPort {
+  public async render(): Promise<RenderedDocument> {
+    throw new Error("render failed");
+  }
+}
+
 class FakeStorage implements DocumentStoragePort {
   public async putDocument(input: { storageKey: string; bytes: Buffer }): Promise<{ storageKey: string; checksum: string }> {
     return { storageKey: input.storageKey, checksum: "checksum" };
@@ -180,13 +210,17 @@ class FakeStorage implements DocumentStoragePort {
 }
 
 class FakeSequence implements NumberSequencePort {
+  public readonly reservedNumbers: number[] = [];
+
   public async nextNumber(): Promise<number> {
+    this.reservedNumbers.push(1);
     return 1;
   }
 }
 
 class FakeFinanceRepository implements FinanceRepository {
   public created: CreateAvailableDocumentRecord | null = null;
+  public voided: VoidDocumentNumberRecord | null = null;
 
   public async findExistingGeneration(): Promise<null> {
     return null;
@@ -195,6 +229,11 @@ class FakeFinanceRepository implements FinanceRepository {
   public async createAvailableDocument(input: CreateAvailableDocumentRecord): Promise<CreateAvailableDocumentResult> {
     this.created = input;
     return { type: "CREATED", document: documentEntity(input) };
+  }
+
+  public async voidDocumentNumber(input: VoidDocumentNumberRecord): Promise<FinanceDocumentEntity | null> {
+    this.voided = input;
+    return documentEntity({ ...input, status: DocumentStatus.VOID });
   }
 
   public async replaceDocumentFile(input: {
@@ -229,7 +268,7 @@ class FakeFinanceRepository implements FinanceRepository {
   }
 }
 
-const documentEntity = (input?: Partial<CreateAvailableDocumentRecord>): FinanceDocumentEntity => ({
+const documentEntity = (input?: Partial<CreateAvailableDocumentRecord> & { status?: DocumentStatus }): FinanceDocumentEntity => ({
   id: documentId,
   type: input?.type ?? DocumentType.REMITO,
   series: input?.series ?? "A",
@@ -237,7 +276,7 @@ const documentEntity = (input?: Partial<CreateAvailableDocumentRecord>): Finance
   displayNumber: input?.displayNumber ?? "R-0001",
   orderId: input?.orderId ?? orderId,
   customerId: input?.customerId ?? customerId,
-  status: DocumentStatus.AVAILABLE,
+  status: input?.status ?? DocumentStatus.AVAILABLE,
   issuedAt: input?.issuedAt ?? now,
   totalMinor: input?.totalMinor ?? 224_900,
   currency: input?.currency ?? "ARS",
