@@ -24,6 +24,7 @@ export type CreateAdminUserInput = {
 export type CreateSessionInput = {
   id: string;
   adminUserId: string;
+  sessionTokenHash: string;
   refreshTokenHash: string;
   familyId: string;
   deviceLabel: string;
@@ -58,9 +59,16 @@ export interface IdentityRepository {
   listPermissions(role: AdminRole): Promise<Permission[]>;
   createSession(input: CreateSessionInput): Promise<AdminSession>;
   findSessionById(id: string): Promise<AdminSession | null>;
+  findSessionByTokenHash(sessionTokenHash: string): Promise<AdminSession | null>;
   findSessionByRefreshHash(refreshTokenHash: string): Promise<AdminSession | null>;
   findSessionByPreviousRefreshHash(previousRefreshTokenHash: string): Promise<AdminSession | null>;
-  rotateSession(sessionId: string, nextRefreshTokenHash: string, previousRefreshTokenHash: string, expiresAt: Date): Promise<AdminSession | null>;
+  rotateSession(
+    sessionId: string,
+    nextSessionTokenHash: string,
+    nextRefreshTokenHash: string,
+    previousRefreshTokenHash: string,
+    expiresAt: Date,
+  ): Promise<AdminSession | null>;
   listSessions(userId: string): Promise<AdminSession[]>;
   revokeSession(sessionId: string, revokedAt: Date): Promise<void>;
   revokeAllUserSessions(userId: string, revokedAt: Date): Promise<void>;

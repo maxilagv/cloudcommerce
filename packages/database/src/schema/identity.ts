@@ -47,6 +47,7 @@ export const adminSession = pgTable(
     adminUserId: uuid("admin_user_id")
       .notNull()
       .references(() => adminUser.id, { onDelete: "cascade" }),
+    sessionTokenHash: text("session_token_hash").notNull(),
     refreshTokenHash: text("refresh_token_hash").notNull(),
     previousRefreshTokenHash: text("previous_refresh_token_hash"),
     familyId: uuid("family_id").notNull(),
@@ -62,6 +63,7 @@ export const adminSession = pgTable(
   (table) => ({
     userIdx: index("admin_session_user_idx").on(table.adminUserId),
     familyIdx: index("admin_session_family_idx").on(table.familyId),
+    sessionTokenUnique: uniqueIndex("admin_session_token_hash_unique").on(table.sessionTokenHash),
     refreshUnique: uniqueIndex("admin_session_refresh_hash_unique").on(table.refreshTokenHash),
     previousRefreshIdx: index("admin_session_previous_refresh_hash_idx").on(table.previousRefreshTokenHash),
   }),

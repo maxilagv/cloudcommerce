@@ -33,7 +33,7 @@ export const identityRouter = router({
       return throwIdentity(result.error);
     }
     setAdminCookies(ctx.reply, {
-      sessionId: result.value.sessionId,
+      sessionToken: result.value.sessionToken,
       refreshToken: result.value.refreshToken,
       expiresAt: result.value.refreshExpiresAt,
       secure: ctx.container.config.secureCookies,
@@ -60,11 +60,10 @@ export const identityRouter = router({
   }),
 
   me: adminProcedure.query(async ({ ctx }) => {
-    const session = await ctx.container.identity.resolveSession(ctx.actor.kind === "admin" ? ctx.actor.sessionId : undefined);
-    if (!session.ok) {
-      return throwIdentity(session.error);
+    if (!ctx.profile) {
+      return throwIdentity({ type: "UNAUTHENTICATED" });
     }
-    return presentMe(session.value.profile, session.value.permissions);
+    return presentMe(ctx.profile, ctx.permissions);
   }),
 
   refresh: publicProcedure.input(RefreshInputSchema).mutation(async ({ ctx, input }) => {
@@ -80,7 +79,7 @@ export const identityRouter = router({
       return throwIdentity(result.error);
     }
     setAdminCookies(ctx.reply, {
-      sessionId: result.value.sessionId,
+      sessionToken: result.value.sessionToken,
       refreshToken: result.value.refreshToken,
       expiresAt: result.value.refreshExpiresAt,
       secure: ctx.container.config.secureCookies,

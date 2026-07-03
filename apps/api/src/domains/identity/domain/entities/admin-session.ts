@@ -1,6 +1,7 @@
 export type AdminSession = {
   id: string;
   adminUserId: string;
+  sessionTokenHash: string;
   refreshTokenHash: string;
   previousRefreshTokenHash: string | null;
   familyId: string;

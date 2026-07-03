@@ -81,6 +81,11 @@ export class DrizzleIdentityRepository implements IdentityRepository {
     return row ? mapAdminSession(row) : null;
   }
 
+  public async findSessionByTokenHash(sessionTokenHash: string): Promise<AdminSession | null> {
+    const row = await this.db.query.adminSession.findFirst({ where: eq(adminSession.sessionTokenHash, sessionTokenHash) });
+    return row ? mapAdminSession(row) : null;
+  }
+
   public async findSessionByRefreshHash(refreshTokenHash: string): Promise<AdminSession | null> {
     const row = await this.db.query.adminSession.findFirst({ where: eq(adminSession.refreshTokenHash, refreshTokenHash) });
     return row ? mapAdminSession(row) : null;
@@ -95,6 +100,7 @@ export class DrizzleIdentityRepository implements IdentityRepository {
 
   public async rotateSession(
     sessionId: string,
+    nextSessionTokenHash: string,
     nextRefreshTokenHash: string,
     previousRefreshTokenHash: string,
     expiresAt: Date,
@@ -102,6 +108,7 @@ export class DrizzleIdentityRepository implements IdentityRepository {
     const [row] = await this.db
       .update(adminSession)
       .set({
+        sessionTokenHash: nextSessionTokenHash,
         refreshTokenHash: nextRefreshTokenHash,
         previousRefreshTokenHash,
         expiresAt,

@@ -51,8 +51,8 @@ export const registerMediaRoutes = async (app: FastifyInstance, container: AppCo
 const resolveActor = async (request: FastifyRequest, container: AppContainer) => {
   const signedSession = request.cookies[adminSessionCookie];
   const unsignedSession = signedSession ? request.unsignCookie(signedSession) : null;
-  const sessionId = unsignedSession?.valid ? unsignedSession.value : undefined;
-  const session = await container.identity.resolveSession(sessionId);
+  const sessionToken = unsignedSession?.valid ? unsignedSession.value : undefined;
+  const session = await container.identity.resolveSession(sessionToken);
   return session.ok ? session.value.actor : { kind: "public" as const };
 };
 

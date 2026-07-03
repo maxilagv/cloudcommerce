@@ -5,9 +5,9 @@ export const adminRefreshCookie = "cc_admin_refresh";
 
 export const setAdminCookies = (
   reply: FastifyReply,
-  input: { sessionId: string; refreshToken: string; expiresAt: Date; secure: boolean },
+  input: { sessionToken: string; refreshToken: string; expiresAt: Date; secure: boolean },
 ): void => {
-  reply.setCookie(adminSessionCookie, input.sessionId, {
+  reply.setCookie(adminSessionCookie, input.sessionToken, {
     httpOnly: true,
     secure: input.secure,
     sameSite: "lax",
