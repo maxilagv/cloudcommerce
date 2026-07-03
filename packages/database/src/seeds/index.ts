@@ -56,9 +56,15 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is required to seed the database");
 }
+if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "true") {
+  throw new Error("Refusing to run seeds in production without ALLOW_PROD_SEED=true");
+}
+if (!process.env.OWNER_PASSWORD) {
+  throw new Error("OWNER_PASSWORD is required to seed the OWNER user");
+}
 
 const ownerEmail = (process.env.OWNER_EMAIL ?? "owner@cloudcommerce.local").trim().toLowerCase();
-const ownerPassword = process.env.OWNER_PASSWORD ?? "OwnerPassword123";
+const ownerPassword = process.env.OWNER_PASSWORD;
 const ownerFullName = process.env.OWNER_FULL_NAME ?? "CloudCommerce Owner";
 
 const sql = postgres(databaseUrl, { max: 1 });
@@ -467,10 +473,10 @@ for (const item of demoSpecs) {
 const demoCustomers = [
   {
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1",
-    firstName: "Maximiliano",
-    lastName: "Lavagetto",
-    displayName: "Maximiliano Lavagetto",
-    email: "maxilavagetto@gmail.com",
+    firstName: "Demo",
+    lastName: "Customer",
+    displayName: "Demo Customer",
+    email: "demo.customer@example.com",
     whatsapp: "+5491134567890",
     notes: "Cliente demo CloudPrime con historial de contactos.",
     tier: CustomerTier.CloudPrime,
@@ -478,7 +484,7 @@ const demoCustomers = [
       {
         id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1",
         label: "Casa",
-        recipientName: "Maximiliano Lavagetto",
+        recipientName: "Demo Customer",
         province: "Ciudad Autonoma de Buenos Aires",
         city: "CABA",
         street: "Av. Corrientes",
@@ -490,7 +496,7 @@ const demoCustomers = [
       {
         id: "cccccccc-cccc-4ccc-8ccc-ccccccccccc2",
         label: "Oficina",
-        recipientName: "Maximiliano Lavagetto",
+        recipientName: "Demo Customer",
         province: "Ciudad Autonoma de Buenos Aires",
         city: "CABA",
         street: "Maipu",

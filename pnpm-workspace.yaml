@@ -6,3 +6,7 @@ packages:
   - "packages/types"
   - "packages/validators"
   - "packages/trpc"
+allowBuilds:
+  argon2: true
+  esbuild: true
+  sharp: true

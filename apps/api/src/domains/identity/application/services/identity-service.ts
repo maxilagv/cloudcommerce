@@ -65,13 +65,14 @@ type IdentityServiceDeps = {
   unitOfWork: UnitOfWork;
   eventBus: InMemoryEventBus;
   logger: Logger;
-  mfaSecretKey?: string;
+  mfaSecretKey: string;
 };
 
 const loginLimit = 5;
 const loginWindowSeconds = 15 * 60;
 const resetLimit = 3;
 const resetWindowSeconds = 60 * 60;
+const dummyPasswordHash = hash("cloudcommerce-dummy-password", { type: 2 });
 
 export class IdentityService {
   private readonly repository: IdentityRepository;
@@ -87,17 +88,18 @@ export class IdentityService {
     this.unitOfWork = deps.unitOfWork;
     this.eventBus = deps.eventBus;
     this.logger = deps.logger;
-    this.mfaKey = createHash("sha256").update(deps.mfaSecretKey ?? "cloudcommerce-local-mfa-key").digest();
+    this.mfaKey = createHash("sha256").update(deps.mfaSecretKey).digest();
   }
 
   public async login(input: LoginInput, ctx: RequestContext): Promise<Result<LoginResult, IdentityDomainError>> {
-    const rateLimit = await this.checkRateLimit(`login:${ctx.ip}:${input.email}:${input.deviceFingerprint ?? "none"}`, loginLimit, loginWindowSeconds);
+    const rateLimit = await this.checkRateLimit(`login:${ctx.ip}:${input.email}`, loginLimit, loginWindowSeconds);
     if (!rateLimit.allowed) {
       return err({ type: "RATE_LIMITED", retryAfterSeconds: rateLimit.retryAfterSeconds });
     }
 
     const user = await this.repository.findUserByEmail(input.email);
     if (!user || !user.isActive) {
+      await verify(await dummyPasswordHash, input.password).catch(() => false);
       await this.logAuthFailure(null, ctx);
       return err({ type: "INVALID_CREDENTIALS" });
     }
@@ -112,7 +114,7 @@ export class IdentityService {
       if (!input.otp) {
         return err({ type: "MFA_REQUIRED" });
       }
-      const secret = user.mfaSecretEnc ? this.decrypt(user.mfaSecretEnc) : null;
+      const secret = user.mfaSecretEnc ? this.safeDecrypt(user.mfaSecretEnc) : null;
       if (!secret || !authenticator.check(input.otp, secret)) {
         return err({ type: "INVALID_MFA_CODE" });
       }
@@ -294,13 +296,21 @@ export class IdentityService {
     if (existing) {
       return err({ type: "USER_ALREADY_EXISTS" });
     }
-    const user = await this.repository.createUser({
-      id: uuidv7(),
-      email: input.email,
-      fullName: input.fullName,
-      role: input.role,
-      passwordHash: await hash(input.password, { type: 2 }),
-    });
+    let user: AdminUser;
+    try {
+      user = await this.repository.createUser({
+        id: uuidv7(),
+        email: input.email,
+        fullName: input.fullName,
+        role: input.role,
+        passwordHash: await hash(input.password, { type: 2 }),
+      });
+    } catch (error) {
+      if (isUniqueConstraintViolation(error)) {
+        return err({ type: "USER_ALREADY_EXISTS" });
+      }
+      throw error;
+    }
     await this.repository.logAccess({
       actorId: actor.kind === "admin" ? actor.userId : null,
       resourceType: "admin_user",
@@ -315,12 +325,12 @@ export class IdentityService {
   }
 
   public async updateRole(actor: Actor, input: UpdateAdminRoleInput, ctx: RequestContext): Promise<Result<AdminProfile, IdentityDomainError>> {
-    if (!canAssignRole(actor, input.role)) {
-      return err({ type: "FORBIDDEN" });
-    }
     const target = await this.repository.findUserById(input.userId);
     if (!target) {
       return err({ type: "USER_NOT_FOUND" });
+    }
+    if (!canAssignRole(actor, input.role, target.role)) {
+      return err({ type: "FORBIDDEN" });
     }
     if (target.role === AdminRole.OWNER) {
       return err({ type: "OWNER_ROLE_IMMUTABLE" });
@@ -343,7 +353,7 @@ export class IdentityService {
   }
 
   public async startPasswordReset(input: StartPasswordResetInput, ctx: RequestContext): Promise<Result<{ accepted: true }, IdentityDomainError>> {
-    const rateLimit = await this.checkRateLimit(`reset:${ctx.ip}:${input.email}:${input.deviceFingerprint ?? "none"}`, resetLimit, resetWindowSeconds);
+    const rateLimit = await this.checkRateLimit(`reset:${ctx.ip}:${input.email}`, resetLimit, resetWindowSeconds);
     if (!rateLimit.allowed) {
       return err({ type: "RATE_LIMITED", retryAfterSeconds: rateLimit.retryAfterSeconds });
     }
@@ -416,7 +426,7 @@ export class IdentityService {
       return err({ type: "UNAUTHENTICATED" });
     }
     const user = await this.repository.findUserById(actor.userId);
-    const secret = user?.mfaSecretEnc ? this.decrypt(user.mfaSecretEnc) : null;
+    const secret = user?.mfaSecretEnc ? this.safeDecrypt(user.mfaSecretEnc) : null;
     if (!user || !secret || !authenticator.check(code, secret)) {
       return err({ type: "INVALID_MFA_CODE" });
     }
@@ -442,7 +452,7 @@ export class IdentityService {
     if (!user) {
       return err({ type: "USER_NOT_FOUND" });
     }
-    const secret = user.mfaSecretEnc ? this.decrypt(user.mfaSecretEnc) : null;
+    const secret = user.mfaSecretEnc ? this.safeDecrypt(user.mfaSecretEnc) : null;
     if (!(await verify(user.passwordHash, password)) || !secret || !authenticator.check(code, secret)) {
       return err({ type: "INVALID_CREDENTIALS" });
     }
@@ -539,4 +549,20 @@ export class IdentityService {
     const decrypted = Buffer.concat([decipher.update(Buffer.from(encryptedText, "base64url")), decipher.final()]);
     return decrypted.toString("utf8");
   }
+
+  private safeDecrypt(value: string): string | null {
+    try {
+      return this.decrypt(value);
+    } catch {
+      return null;
+    }
+  }
 }
+
+const isUniqueConstraintViolation = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const candidate = error as { code?: unknown; constraint?: unknown };
+  return candidate.code === "23505" || candidate.constraint === "admin_user_email_unique";
+};

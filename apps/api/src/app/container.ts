@@ -1,4 +1,5 @@
 import { StockStatus } from "@cloudcommerce/types";
+import { createHmac } from "node:crypto";
 import { InMemoryEventBus } from "../shared/events/event-bus.js";
 import { createLogger } from "../shared/observability/logger.js";
 import { createCacheClient } from "../infrastructure/cache/client.js";
@@ -77,11 +78,11 @@ export const createContainer = (config: AppConfig) => {
   const settingsRepository = new DrizzleSettingsRepository(database.db);
   const mediaStorage = new LocalFsMediaStorage({
     root: config.STORAGE_LOCAL_ROOT,
-    signedUrlSecret: config.COOKIE_SECRET,
+    signedUrlSecret: derivePurposeSecret(config.COOKIE_SECRET, "media-signed-url"),
   });
-  const documentStorage = new LocalDocumentStorage(config.STORAGE_LOCAL_ROOT, config.COOKIE_SECRET);
-  const pricing = new PricingService(pricingRepository);
-  const inventory = new InventoryService(inventoryRepository);
+  const documentStorage = new LocalDocumentStorage(config.STORAGE_LOCAL_ROOT, derivePurposeSecret(config.COOKIE_SECRET, "document-download-url"));
+  const pricing = new PricingService(pricingRepository, eventBus);
+  const inventory = new InventoryService(inventoryRepository, eventBus);
   const orderPricing = new PricingOrderPricingPort(pricing);
   const ordersFinanceReadModel = new OrdersFinanceReadModel(database.db);
   const customerPurchaseAnalytics = new OrdersCustomerAnalyticsReadModel(database.db);
@@ -103,9 +104,9 @@ export const createContainer = (config: AppConfig) => {
     unitOfWork,
     eventBus,
     logger,
-    mfaSecretKey: config.COOKIE_SECRET,
+    mfaSecretKey: config.MFA_SECRET_KEY,
   });
-  const catalog = new CatalogService(catalogRepository, priceReader, stockReader);
+  const catalog = new CatalogService(catalogRepository, priceReader, stockReader, eventBus);
   const ai = new AiService(
     new AiHttpGateway(config.AI_SERVICE_URL, config.AI_SERVICE_TOKEN),
     new DrizzleAiRepository(database.db),
@@ -117,13 +118,13 @@ export const createContainer = (config: AppConfig) => {
     },
   );
   const media = new MediaService(mediaRepository, mediaStorage, config.MEDIA_MAX_FILE_BYTES);
-  const orders = new OrderService(orderRepository, orderPricing);
+  const orders = new OrderService(orderRepository, orderPricing, eventBus);
   const finance = new FinanceService(financeRepository, ordersFinanceReadModel, new DeterministicDocumentRenderer(), documentStorage, financeRepository);
   const customers = new CustomerService(customerRepository, customerPurchaseAnalytics);
   const settings = new SettingsService(settingsRepository, new EnvSecretProbe(process.env));
   const suppliers = new SupplierService(
     new DrizzleSupplierRepository(database.db),
-    new AesApiConfigCipher(config.COOKIE_SECRET),
+    new AesApiConfigCipher(derivePurposeSecret(config.COOKIE_SECRET, "supplier-api-config")),
     new DnsUrlGuard(),
     new HttpFeedFetcher(),
     new HttpSupplierForwarder(),
@@ -169,3 +170,6 @@ export const createContainer = (config: AppConfig) => {
     },
   };
 };
+
+const derivePurposeSecret = (secret: string, purpose: string): string =>
+  createHmac("sha256", secret).update(`cloudcommerce:${purpose}`).digest("base64url");

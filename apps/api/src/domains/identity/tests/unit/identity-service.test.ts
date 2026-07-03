@@ -208,7 +208,7 @@ const context: RequestContext = {
 
 const loginInput: LoginInput = {
   email: "owner@cloudcommerce.local",
-  password: "OwnerPassword123",
+  password: "CorrectOwnerPassword123",
   deviceFingerprint: "device-12345678",
 };
 
@@ -224,7 +224,7 @@ describe("IdentityService", () => {
       email: "owner@cloudcommerce.local",
       fullName: "Owner",
       role: AdminRole.OWNER,
-      passwordHash: await hash("OwnerPassword123", { type: 2 }),
+      passwordHash: await hash("CorrectOwnerPassword123", { type: 2 }),
     });
     service = new IdentityService({
       repository,
@@ -284,7 +284,7 @@ describe("IdentityService", () => {
     }
   });
 
-  it("rate limits repeated login attempts by ip email and device fingerprint", async () => {
+  it("rate limits repeated login attempts by ip and email", async () => {
     for (let index = 0; index < 5; index += 1) {
       await service.login({ ...loginInput, password: "WrongPassword123" }, context);
     }
@@ -296,6 +296,25 @@ describe("IdentityService", () => {
       expect(result.error.retryAfterSeconds).toBeGreaterThan(0);
     } else {
       expect.unreachable("Expected RATE_LIMITED");
+    }
+  });
+
+  it("does not let unauthenticated clients bypass login limits by changing device fingerprint", async () => {
+    for (let index = 0; index < 5; index += 1) {
+      await service.login(
+        { ...loginInput, password: "WrongPassword123", deviceFingerprint: `device-${index}-changed` },
+        { ...context, deviceFingerprint: `device-${index}-changed` },
+      );
+    }
+
+    const result = await service.login(
+      { ...loginInput, password: "WrongPassword123", deviceFingerprint: "another-device" },
+      { ...context, deviceFingerprint: "another-device" },
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.type).toBe("RATE_LIMITED");
     }
   });
 

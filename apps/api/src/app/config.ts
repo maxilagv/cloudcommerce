@@ -1,14 +1,16 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "staging", "production"]).default("development"),
+  NODE_ENV: z.enum(["development", "test", "production"]),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   HOST: z.string().default("0.0.0.0"),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   COOKIE_SECRET: z.string().min(32),
+  MFA_SECRET_KEY: z.string().min(32),
   CORS_ALLOWED_ORIGINS: z.string().min(1),
+  TRUST_PROXY: z.coerce.boolean().default(false),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   AI_SERVICE_URL: z.string().url(),
   AI_SERVICE_TOKEN: z.string().min(16),

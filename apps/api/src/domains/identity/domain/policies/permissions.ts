@@ -11,14 +11,17 @@ const roleRank: Record<AdminRole, number> = {
 export const canManageAdminUsers = (actor: Actor): boolean =>
   actor.kind === "admin" && (actor.role === AdminRole.OWNER || actor.role === AdminRole.ADMIN);
 
-export const canAssignRole = (actor: Actor, targetRole: AdminRole): boolean => {
+export const canAssignRole = (actor: Actor, targetRole: AdminRole, currentTargetRole?: AdminRole): boolean => {
   if (!canManageAdminUsers(actor)) {
     return false;
   }
   if (targetRole === AdminRole.OWNER) {
     return actor.kind === "admin" && actor.role === AdminRole.OWNER;
   }
-  return actor.kind === "admin" && (roleRank[actor.role] ?? 0) > (roleRank[targetRole] ?? 0);
+  if (actor.kind !== "admin" || (roleRank[actor.role] ?? 0) <= (roleRank[targetRole] ?? 0)) {
+    return false;
+  }
+  return currentTargetRole === undefined || (roleRank[actor.role] ?? 0) > (roleRank[currentTargetRole] ?? 0);
 };
 
 export const canRevokeSession = (actor: Actor, sessionUserId: string): boolean =>

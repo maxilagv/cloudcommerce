@@ -19,7 +19,7 @@ export const setAdminCookies = (
     httpOnly: true,
     secure: input.secure,
     sameSite: "lax",
-    path: "/trpc/identity.refresh",
+    path: "/trpc",
     expires: input.expiresAt,
     signed: true,
   });
@@ -27,5 +27,5 @@ export const setAdminCookies = (
 
 export const clearAdminCookies = (reply: FastifyReply): void => {
   reply.clearCookie(adminSessionCookie, { path: "/" });
-  reply.clearCookie(adminRefreshCookie, { path: "/trpc/identity.refresh" });
+  reply.clearCookie(adminRefreshCookie, { path: "/trpc" });
 };

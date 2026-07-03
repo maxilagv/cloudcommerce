@@ -2,8 +2,11 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
+import rateLimit from "@fastify/rate-limit";
 import { fastifyTRPCPlugin } from "@trpc/server/adapters/fastify";
 import type { CreateFastifyContextOptions } from "@trpc/server/adapters/fastify";
+import { trpcTransformer } from "@cloudcommerce/trpc";
+import type { FastifyBaseLogger } from "fastify";
 import Fastify from "fastify";
 import { checkCacheHealth } from "../infrastructure/cache/client.js";
 import { checkDatabaseHealth } from "../infrastructure/database/health.js";
@@ -26,7 +29,8 @@ declare module "fastify" {
 
 export const buildServer = async (container: AppContainer) => {
   const app = Fastify({
-    logger: false,
+    loggerInstance: container.logger as unknown as FastifyBaseLogger,
+    trustProxy: container.config.TRUST_PROXY,
     requestTimeout: 30_000,
     bodyLimit: container.config.MEDIA_MAX_REQUEST_BYTES,
   });
@@ -52,6 +56,11 @@ export const buildServer = async (container: AppContainer) => {
   });
 
   await app.register(helmet);
+  await app.register(rateLimit, {
+    max: 300,
+    timeWindow: "1 minute",
+    keyGenerator: (request) => request.ip,
+  });
   await app.register(cookie, { secret: container.config.COOKIE_SECRET });
   await app.register(multipart, {
     limits: {
@@ -91,6 +100,7 @@ export const buildServer = async (container: AppContainer) => {
     prefix: "/trpc",
     trpcOptions: {
       router: appRouter,
+      transformer: trpcTransformer,
       createContext: (opts: CreateFastifyContextOptions) => createTRPCContext({ ...opts, container }),
     },
   });
