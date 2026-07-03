@@ -28,7 +28,7 @@ import { formatDocumentDisplayNumber } from "../domain/document-number.js";
 import { canManageFinance, canReadFinanceDocuments, canViewMargin, requiresDocumentReason } from "../domain/finance-permissions.js";
 import { parseArgentinaMonthPeriod, periodsBetween, previousPeriod } from "../domain/period.js";
 import type { FinanceDocumentEntity, FinanceRepository, RequestAuditContext } from "./finance-repository.js";
-import type { DocumentStoragePort, NumberSequencePort, OrdersReadModelPort, PdfRendererPort, PeriodAggregate } from "./ports.js";
+import type { DocumentStoragePort, NumberSequencePort, OrderDocumentSource, OrdersReadModelPort, PdfRendererPort, PeriodAggregate } from "./ports.js";
 
 type RequestContext = {
   ip: string;
@@ -85,9 +85,27 @@ export class FinanceService {
     const issuedAt = new Date();
     const number = await this.sequence.nextNumber({ type: input.type, series });
     const displayNumber = formatDocumentDisplayNumber(input.type, number);
-    const rendered = await this.renderer.render({ type: input.type, series, order, displayNumber, issuedAt });
     const storageKey = `documents/${input.type.toLowerCase()}/${series}/${displayNumber}.ccdoc`;
-    const stored = await this.storage.putDocument({ storageKey, bytes: rendered.bytes });
+    let rendered: Awaited<ReturnType<PdfRendererPort["render"]>>;
+    let stored: Awaited<ReturnType<DocumentStoragePort["putDocument"]>>;
+    try {
+      rendered = await this.renderer.render({ type: input.type, series, order, displayNumber, issuedAt });
+      stored = await this.storage.putDocument({ storageKey, bytes: rendered.bytes });
+    } catch {
+      await this.voidReservedDocumentNumber({
+        type: input.type,
+        series,
+        number,
+        displayNumber,
+        order,
+        relatedDocumentId: input.relatedDocumentId ?? null,
+        createdBy: actorId,
+        issuedAt,
+        reason: "render_or_storage_failed",
+        audit: this.audit(actor, context, "finance.document.generate_failed"),
+      });
+      return err({ type: "UPSTREAM_UNAVAILABLE" });
+    }
     const result = await this.repository.createAvailableDocument(
       {
         idempotencyKey: context.idempotencyKey ?? null,
@@ -114,8 +132,32 @@ export class FinanceService {
       case "REUSED":
         return ok(this.presentDetail(result.document));
       case "IDEMPOTENCY_CONFLICT":
+        await this.voidReservedDocumentNumber({
+          type: input.type,
+          series,
+          number,
+          displayNumber,
+          order,
+          relatedDocumentId: input.relatedDocumentId ?? null,
+          createdBy: actorId,
+          issuedAt,
+          reason: "idempotency_conflict",
+          audit: this.audit(actor, context, "finance.document.generate_rejected"),
+        });
         return err({ type: "IDEMPOTENCY_CONFLICT" });
       case "DOCUMENT_ALREADY_ISSUED":
+        await this.voidReservedDocumentNumber({
+          type: input.type,
+          series,
+          number,
+          displayNumber,
+          order,
+          relatedDocumentId: input.relatedDocumentId ?? null,
+          createdBy: actorId,
+          issuedAt,
+          reason: "document_already_issued",
+          audit: this.audit(actor, context, "finance.document.generate_rejected"),
+        });
         return err({ type: "DOCUMENT_ALREADY_ISSUED" });
     }
   }
@@ -372,6 +414,37 @@ export class FinanceService {
     return createHash("sha256")
       .update(JSON.stringify({ type: input.type, orderId: input.orderId, series: input.series ?? "A", relatedDocumentId: input.relatedDocumentId ?? null }))
       .digest("hex");
+  }
+
+  private async voidReservedDocumentNumber(input: {
+    type: GenerateDocumentInput["type"];
+    series: string;
+    number: number;
+    displayNumber: string;
+    order: OrderDocumentSource;
+    relatedDocumentId: string | null;
+    createdBy: string;
+    issuedAt: Date;
+    reason: string;
+    audit: RequestAuditContext;
+  }): Promise<void> {
+    await this.repository.voidDocumentNumber(
+      {
+        type: input.type,
+        series: input.series,
+        number: input.number,
+        displayNumber: input.displayNumber,
+        orderId: input.order.id,
+        customerId: input.order.customerId,
+        totalMinor: input.order.totalMinor,
+        currency: input.order.currency,
+        relatedDocumentId: input.relatedDocumentId,
+        createdBy: input.createdBy,
+        issuedAt: input.issuedAt,
+        reason: input.reason,
+      },
+      input.audit,
+    );
   }
 
   private audit(actor: Actor, context: RequestContext, reason: string): RequestAuditContext {

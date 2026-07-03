@@ -61,6 +61,21 @@ export type CreateAvailableDocumentRecord = {
   issuedAt: Date;
 };
 
+export type VoidDocumentNumberRecord = {
+  type: DocumentType;
+  series: string;
+  number: number;
+  displayNumber: string;
+  orderId: string;
+  customerId: string;
+  totalMinor: number;
+  currency: Currency;
+  relatedDocumentId: string | null;
+  createdBy: string;
+  issuedAt: Date;
+  reason: string;
+};
+
 export type CreateAvailableDocumentResult =
   | { type: "CREATED"; document: FinanceDocumentEntity }
   | { type: "REUSED"; document: FinanceDocumentEntity }
@@ -89,6 +104,7 @@ export interface FinanceRepository {
     orderId: string;
   }): Promise<ExistingDocumentGenerationResult | null>;
   createAvailableDocument(input: CreateAvailableDocumentRecord, audit: RequestAuditContext): Promise<CreateAvailableDocumentResult>;
+  voidDocumentNumber(input: VoidDocumentNumberRecord, audit: RequestAuditContext): Promise<FinanceDocumentEntity | null>;
   replaceDocumentFile(input: {
     documentId: string;
     pdfStorageKey: string;

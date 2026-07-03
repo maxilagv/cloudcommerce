@@ -78,6 +78,13 @@
       "when": 1783728000000,
       "tag": "0010_supplier_cost_currency_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783814400000,
+      "tag": "0011_finance_void_documents",
+      "breakpoints": true
     }
   ]
 }
