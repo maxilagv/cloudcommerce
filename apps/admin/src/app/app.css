@@ -134,3 +134,32 @@
 .admin-session__m { font-size: 11.5px; color: var(--admin-text-faint); margin-top: 2px; }
 
 .admin-mono { font-family: var(--admin-font-numeric); font-variant-numeric: tabular-nums; }
+
+/* ============================= DASHBOARD (Fase 2) ============================= */
+.admin-grid--12 { grid-template-columns: 1.4fr 1fr; }
+.admin-grid--3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1000px) { .admin-grid--12, .admin-grid--3 { grid-template-columns: 1fr; } }
+
+.admin-segs { display: flex; gap: 3px; background: var(--admin-bg-surface-soft); border: 1px solid var(--admin-border-default); padding: 3px; border-radius: 99px; }
+.admin-segs button { border: none; background: none; font-size: 11.5px; font-weight: 600; color: var(--admin-text-muted); padding: 5px 12px; border-radius: 99px; cursor: pointer; transition: background 0.16s, color 0.16s; }
+.admin-segs button[data-on="true"] { background: var(--admin-accent); color: #fff; }
+
+.admin-panel__link { font-size: 12px; color: var(--admin-accent); cursor: pointer; text-decoration: none; }
+
+.admin-rank-row { display: flex; align-items: center; gap: 11px; padding: 9px 0; }
+.admin-rank-row__n { width: 16px; font-size: 11px; color: var(--admin-text-faint); font-weight: 700; text-align: center; }
+.admin-rank-row__thumb { width: 34px; height: 34px; border-radius: 9px; background: var(--admin-bg-inset); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-text-muted); }
+.admin-rank-row__info { flex: 1; min-width: 0; }
+.admin-rank-row__nm { font-size: 12.5px; font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-rank-row__bar { height: 5px; border-radius: 3px; background: var(--admin-bg-inset); margin-top: 6px; overflow: hidden; }
+.admin-rank-row__bar span { display: block; height: 100%; border-radius: 3px; background: var(--chart-1); transition: width 0.8s var(--admin-ease-out); }
+.admin-rank-row__amt { font-size: 12.5px; font-weight: 700; }
+
+.admin-mini-prod { display: flex; align-items: center; gap: 10px; }
+.admin-mini-prod__mp { width: 32px; height: 32px; border-radius: 8px; background: var(--admin-bg-inset); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-text-muted); }
+.admin-cell-str { display: block; font-weight: 600; color: var(--admin-text-primary); }
+.admin-cell-sub { display: block; font-size: 11.5px; color: var(--admin-text-faint); margin-top: 2px; }
+
+.admin-activity__h { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--admin-text-faint); font-weight: 650; margin-bottom: 10px; }
+.admin-activity__row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--admin-border-subtle); }
+.admin-activity__row:last-child { border-bottom: none; }
