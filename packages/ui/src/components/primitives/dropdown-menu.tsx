@@ -2,7 +2,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import type { ReactNode } from "react";
-import { cn } from "../../lib/cn.js";
+import { cn } from "../../lib/cn";
 
 export const DropdownMenu = Menu.Root;
 export const DropdownMenuTrigger = Menu.Trigger;

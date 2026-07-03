@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { cn } from "../../lib/cn.js";
+import { cn } from "../../lib/cn";
 
 export interface SkeletonProps {
   width?: string | number;

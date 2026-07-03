@@ -1,7 +1,7 @@
 "use client";
 
 import * as SwitchPrimitive from "@radix-ui/react-switch";
-import { cn } from "../../lib/cn.js";
+import { cn } from "../../lib/cn";
 
 export interface SwitchProps extends SwitchPrimitive.SwitchProps {
   className?: string;

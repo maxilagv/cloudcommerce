@@ -1,4 +1,4 @@
-import { Badge, type BadgeTone } from "../primitives/badge.js";
+import { Badge, type BadgeTone } from "../primitives/badge";
 
 /**
  * Centralized enum -> (tone, label) mapping. A new backend status must be added

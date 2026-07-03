@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { Check, Info, TriangleAlert, X } from "lucide-react";
-import { cn } from "../../lib/cn.js";
+import { cn } from "../../lib/cn";
 
 export type ToastTone = "success" | "info" | "warning" | "error";
 

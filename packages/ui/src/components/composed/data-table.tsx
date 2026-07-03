@@ -10,8 +10,8 @@ import {
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { cn } from "../../lib/cn.js";
-import { Skeleton } from "../primitives/skeleton.js";
+import { cn } from "../../lib/cn";
+import { Skeleton } from "../primitives/skeleton";
 
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData, unknown>[];

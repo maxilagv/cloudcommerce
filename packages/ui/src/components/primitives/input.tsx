@@ -1,5 +1,5 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
-import { cn } from "../../lib/cn.js";
+import { cn } from "../../lib/cn";
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Icon rendered inside the left edge (e.g. a search glass). */

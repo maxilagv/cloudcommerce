@@ -1,20 +1,20 @@
-export { cn } from "./lib/cn.js";
+export { cn } from "./lib/cn";
 
-export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/primitives/button.js";
-export { Input, type InputProps } from "./components/primitives/input.js";
-export { Select, type SelectProps, type SelectOption } from "./components/primitives/select.js";
-export { Badge, type BadgeProps, type BadgeTone } from "./components/primitives/badge.js";
-export { Skeleton, type SkeletonProps } from "./components/primitives/skeleton.js";
-export { Spinner, type SpinnerProps } from "./components/primitives/spinner.js";
-export { Switch, type SwitchProps } from "./components/primitives/switch.js";
-export { Tooltip, TooltipProvider, type TooltipProps } from "./components/primitives/tooltip.js";
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/primitives/button";
+export { Input, type InputProps } from "./components/primitives/input";
+export { Select, type SelectProps, type SelectOption } from "./components/primitives/select";
+export { Badge, type BadgeProps, type BadgeTone } from "./components/primitives/badge";
+export { Skeleton, type SkeletonProps } from "./components/primitives/skeleton";
+export { Spinner, type SpinnerProps } from "./components/primitives/spinner";
+export { Switch, type SwitchProps } from "./components/primitives/switch";
+export { Tooltip, TooltipProvider, type TooltipProps } from "./components/primitives/tooltip";
 export {
   Dialog,
   DialogTrigger,
   DialogClose,
   DialogContent,
   type DialogContentProps,
-} from "./components/primitives/dialog.js";
+} from "./components/primitives/dialog";
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,13 +22,13 @@ export {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-} from "./components/primitives/dropdown-menu.js";
+} from "./components/primitives/dropdown-menu";
 export {
   ToastProvider,
   useToast,
   type ToastOptions,
   type ToastTone,
-} from "./components/primitives/toast.js";
+} from "./components/primitives/toast";
 
-export { StatusBadge, type StatusBadgeProps } from "./components/composed/status-badge.js";
-export { DataTable, type DataTableProps, type ColumnDef } from "./components/composed/data-table.js";
+export { StatusBadge, type StatusBadgeProps } from "./components/composed/status-badge";
+export { DataTable, type DataTableProps, type ColumnDef } from "./components/composed/data-table";
