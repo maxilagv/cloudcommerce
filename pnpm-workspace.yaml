@@ -1,11 +1,13 @@
 packages:
   - "apps/store"
+  - "apps/admin"
   - "apps/api"
   - "apps/workers"
   - "packages/database"
   - "packages/types"
   - "packages/validators"
   - "packages/trpc"
+  - "packages/ui"
 allowBuilds:
   argon2: true
   esbuild: true
