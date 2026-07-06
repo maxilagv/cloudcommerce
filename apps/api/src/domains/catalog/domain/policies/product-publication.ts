@@ -8,7 +8,14 @@ export const allowedProductStatusTransitions: Record<ProductStatus, ProductStatu
   [ProductStatus.READY_FOR_REVIEW]: [ProductStatus.DRAFT, ProductStatus.PUBLISHED, ProductStatus.ARCHIVED],
   [ProductStatus.PUBLISHED]: [ProductStatus.PAUSED, ProductStatus.ARCHIVED],
   [ProductStatus.PAUSED]: [ProductStatus.PUBLISHED, ProductStatus.ARCHIVED],
-  [ProductStatus.ARCHIVED]: [],
+  // Archiving is reversible (restore / undo). Going back to PUBLISHED still
+  // runs the full publication checklist via publishProduct.
+  [ProductStatus.ARCHIVED]: [
+    ProductStatus.DRAFT,
+    ProductStatus.READY_FOR_REVIEW,
+    ProductStatus.PUBLISHED,
+    ProductStatus.PAUSED,
+  ],
 };
 
 export const canTransitionProductStatus = (from: ProductStatus, to: ProductStatus): boolean =>

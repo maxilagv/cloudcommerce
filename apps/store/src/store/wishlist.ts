@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ProductCardData } from '@/lib/mock-products'
+import type { ProductCardData } from '@/lib/catalog-types'
 
 type WishlistStore = {
   items: ProductCardData[]

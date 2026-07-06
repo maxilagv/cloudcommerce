@@ -1,20 +1,43 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { mockSpending, type SpendingPoint } from "@/lib/mock-account";
-import { formatCOP } from "@/lib/utils";
+import { useMemo, useRef, useState } from "react";
+import { useMyOrders } from "@/hooks/use-my-orders";
+import { mapOrderStatus, type StoreOrderSummary } from "@/lib/api/orders";
+import type { SpendingPoint } from "@/lib/account-types";
+import { formatPrice } from "@/lib/utils";
 
 const PERIODS = ["3M", "6M", "12M"] as const;
 type Period = (typeof PERIODS)[number];
+const MONTHS_BY_PERIOD: Record<Period, number> = { "3M": 3, "6M": 6, "12M": 12 };
 
 const W = 600;
 const H = 180;
 const PAD = { top: 16, right: 16, bottom: 32, left: 8 };
 
+/** Aggregate real (non-cancelled) orders into month buckets, oldest → newest. */
+function buildSpendingSeries(orders: StoreOrderSummary[], months: number): SpendingPoint[] {
+  const now = new Date();
+  const buckets: { key: string; month: string; amount: number }[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const label = d.toLocaleDateString("es-AR", { month: "short" }).replace(".", "");
+    buckets.push({ key, month: label.charAt(0).toUpperCase() + label.slice(1), amount: 0 });
+  }
+  const byKey = new Map(buckets.map((b) => [b.key, b]));
+  for (const order of orders) {
+    if (mapOrderStatus(order.status) === "cancelled") continue;
+    const d = new Date(order.createdAt);
+    const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`);
+    if (bucket) bucket.amount += Math.round(order.total.amountMinor / 100);
+  }
+  return buckets.map(({ month, amount }) => ({ month, amount }));
+}
+
 function buildPath(points: SpendingPoint[]) {
   const max = Math.max(...points.map((p) => p.amount), 1);
   const xs = points.map((_, i) =>
-    PAD.left + (i / (points.length - 1)) * (W - PAD.left - PAD.right)
+    PAD.left + (i / Math.max(points.length - 1, 1)) * (W - PAD.left - PAD.right)
   );
   const ys = points.map(
     (p) => PAD.top + (1 - p.amount / max) * (H - PAD.top - PAD.bottom)
@@ -35,6 +58,7 @@ function buildPath(points: SpendingPoint[]) {
 }
 
 export function SpendingChart() {
+  const { orders, loading } = useMyOrders();
   const [period, setPeriod] = useState<Period>("6M");
   const [tooltip, setTooltip] = useState<{
     x: number;
@@ -43,7 +67,10 @@ export function SpendingChart() {
   } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const points = mockSpending[period];
+  const points = useMemo(
+    () => buildSpendingSeries(orders, MONTHS_BY_PERIOD[period]),
+    [orders, period],
+  );
   const { linePath, areaPath, xs, ys, max } = buildPath(points);
 
   const gridLines = 4;
@@ -56,7 +83,7 @@ export function SpendingChart() {
         <div>
           <p className="text-[12px] font-medium text-cc-muted">Total gastado</p>
           <p className="text-[22px] font-black text-cc-text tracking-tight leading-tight">
-            {formatCOP(total)}
+            {loading ? "—" : formatPrice(total)}
           </p>
         </div>
         <div className="flex items-center gap-1 bg-cc-bg-page rounded-full p-0.5">
@@ -80,98 +107,102 @@ export function SpendingChart() {
 
       {/* SVG chart */}
       <div className="relative">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${W} ${H}`}
-          className="w-full"
-          style={{ height: 180 }}
-          onMouseLeave={() => setTooltip(null)}
-        >
-          <defs>
-            <linearGradient id="spending-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0B6BFF" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#0B6BFF" stopOpacity="0.01" />
-            </linearGradient>
-          </defs>
+        {loading ? (
+          <div className="cc-skeleton h-[180px] w-full rounded-cc-md" />
+        ) : (
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${W} ${H}`}
+            className="w-full"
+            style={{ height: 180 }}
+            onMouseLeave={() => setTooltip(null)}
+          >
+            <defs>
+              <linearGradient id="spending-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0B6BFF" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#0B6BFF" stopOpacity="0.01" />
+              </linearGradient>
+            </defs>
 
-          {/* Gridlines */}
-          {Array.from({ length: gridLines }).map((_, i) => {
-            const y = PAD.top + (i / (gridLines - 1)) * (H - PAD.top - PAD.bottom);
-            const val = max * (1 - i / (gridLines - 1));
-            return (
-              <g key={i}>
-                <line
-                  x1={PAD.left}
-                  y1={y}
-                  x2={W - PAD.right}
-                  y2={y}
-                  stroke="#E5EAF2"
-                  strokeWidth="1"
-                />
-                {i > 0 && (
-                  <text
-                    x={PAD.left}
-                    y={y - 4}
-                    fontSize="10"
-                    fill="#98A2B3"
-                    textAnchor="start"
-                  >
-                    {val >= 1_000_000
-                      ? `$${(val / 1_000_000).toFixed(1)}M`
-                      : `$${(val / 1_000).toFixed(0)}K`}
-                  </text>
-                )}
-              </g>
-            );
-          })}
+            {/* Gridlines */}
+            {Array.from({ length: gridLines }).map((_, i) => {
+              const y = PAD.top + (i / (gridLines - 1)) * (H - PAD.top - PAD.bottom);
+              const val = max * (1 - i / (gridLines - 1));
+              return (
+                <g key={i}>
+                  <line
+                    x1={PAD.left}
+                    y1={y}
+                    x2={W - PAD.right}
+                    y2={y}
+                    stroke="#E5EAF2"
+                    strokeWidth="1"
+                  />
+                  {i > 0 && (
+                    <text
+                      x={PAD.left}
+                      y={y - 4}
+                      fontSize="10"
+                      fill="#98A2B3"
+                      textAnchor="start"
+                    >
+                      {val >= 1_000_000
+                        ? `$${(val / 1_000_000).toFixed(1)}M`
+                        : `$${(val / 1_000).toFixed(0)}K`}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
 
-          {/* Area fill */}
-          <path d={areaPath} fill="url(#spending-gradient)" />
+            {/* Area fill */}
+            <path d={areaPath} fill="url(#spending-gradient)" />
 
-          {/* Line */}
-          <path
-            d={linePath}
-            fill="none"
-            stroke="#0B6BFF"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Data points */}
-          {xs.map((x, i) => (
-            <circle
-              key={i}
-              cx={x}
-              cy={ys[i]}
-              r="4"
-              fill="white"
+            {/* Line */}
+            <path
+              d={linePath}
+              fill="none"
               stroke="#0B6BFF"
-              strokeWidth="2"
-              className="cursor-pointer"
-              onMouseEnter={() =>
-                setTooltip({ x, y: ys[i], point: points[i] })
-              }
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          ))}
 
-          {/* X-axis labels */}
-          {xs.map((x, i) => (
-            <text
-              key={i}
-              x={x}
-              y={H - 4}
-              fontSize="10"
-              fill="#98A2B3"
-              textAnchor="middle"
-            >
-              {points[i].month}
-            </text>
-          ))}
-        </svg>
+            {/* Data points */}
+            {xs.map((x, i) => (
+              <circle
+                key={i}
+                cx={x}
+                cy={ys[i]}
+                r="4"
+                fill="white"
+                stroke="#0B6BFF"
+                strokeWidth="2"
+                className="cursor-pointer"
+                onMouseEnter={() =>
+                  setTooltip({ x, y: ys[i], point: points[i] })
+                }
+              />
+            ))}
+
+            {/* X-axis labels */}
+            {xs.map((x, i) => (
+              <text
+                key={i}
+                x={x}
+                y={H - 4}
+                fontSize="10"
+                fill="#98A2B3"
+                textAnchor="middle"
+              >
+                {points[i].month}
+              </text>
+            ))}
+          </svg>
+        )}
 
         {/* Tooltip */}
-        {tooltip && (
+        {tooltip && !loading && (
           <div
             className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full -mt-2 bg-cc-text text-white text-[12px] font-semibold px-2.5 py-1.5 rounded-cc-sm shadow-cc-md whitespace-nowrap"
             style={{
@@ -179,7 +210,7 @@ export function SpendingChart() {
               top: `${(tooltip.y / H) * 100}%`,
             }}
           >
-            {tooltip.point.month}: {formatCOP(tooltip.point.amount)}
+            {tooltip.point.month}: {formatPrice(tooltip.point.amount)}
           </div>
         )}
       </div>

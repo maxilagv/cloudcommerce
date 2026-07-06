@@ -1,12 +1,11 @@
 import { Sparkles } from "lucide-react";
-import { mockProducts } from "@/lib/mock-products";
+import type { ProductCardData } from "@/lib/catalog-types";
 import { ProductCard } from "./card";
 
-const aiPicks = mockProducts
-  .filter((p) => p.rating >= 4.5)
-  .slice(0, 4);
+export function AiRecommendations({ products }: { products: ProductCardData[] }) {
+  const aiPicks = products.slice(0, 4);
+  if (aiPicks.length === 0) return null;
 
-export function AiRecommendations() {
   return (
     <section className="mt-6">
       {/* Header */}

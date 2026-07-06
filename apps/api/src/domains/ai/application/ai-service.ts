@@ -7,6 +7,8 @@ import {
   type Actor,
   type AiAlertListResult,
   type AiAlertRecord,
+  type AiGeneratedImage,
+  type AiImageAnalysis,
   type AiGenerationListResult,
   type AiGenerationSummary,
   type AiPriceSuggestion,
@@ -15,13 +17,16 @@ import {
   type AiSpecGroups,
   type AiText,
   type AiTrendSignal,
+  type AiUsage,
   type AiUsageSummary,
 } from "@cloudcommerce/types";
 import type {
   AcknowledgeAiAlertInput,
+  AnalyzeImageInput,
   AnalyzeTrendsInput,
   DismissAiAlertInput,
   GenerateDescriptionInput,
+  GenerateImageInput,
   GenerateSeoInput,
   GenerateSpecsInput,
   GetGenerationInput,
@@ -43,7 +48,16 @@ import {
   canUseAiTrends,
   canViewAiUsage,
 } from "../domain/ai-permissions.js";
-import type { AiContextReaderPort, AiGatewayPort, AiRateLimiterPort, AiRepository } from "./ports.js";
+import type {
+  AiContextReaderPort,
+  AiGatewayPort,
+  AiImageContext,
+  AiImagePayload,
+  AiMediaPort,
+  AiRateLimiterPort,
+  AiRepository,
+  AiTargetWriterPort,
+} from "./ports.js";
 
 const IDEMPOTENCY_WINDOW_MINUTES = 10;
 
@@ -63,6 +77,11 @@ export type AiQuotaConfig = {
   dailyActorLimitMinor: number;
 };
 
+export type AiImagePorts = {
+  media: AiMediaPort;
+  targetWriter: AiTargetWriterPort;
+};
+
 export class AiService {
   public constructor(
     private readonly gateway: AiGatewayPort,
@@ -70,6 +89,7 @@ export class AiService {
     private readonly rateLimiter: AiRateLimiterPort,
     private readonly contextReader: AiContextReaderPort,
     private readonly quota: AiQuotaConfig,
+    private readonly imagePorts: AiImagePorts | null = null,
   ) {}
 
   public async generateDescription(
@@ -186,6 +206,196 @@ export class AiService {
       costEstimateMinor: result.value.usage.costMinor,
     });
     return ok({ generationId: gate.value, status: AiGenerationStatus.SUCCEEDED, seo: result.value });
+  }
+
+  public async analyzeImage(
+    actor: Actor,
+    input: AnalyzeImageInput,
+    requestId: string,
+  ): Promise<Result<{ generationId: string; status: AiGenerationStatus; analysis: AiImageAnalysis | null }, AiDomainError>> {
+    if (!canUseAiContent(actor)) {
+      return err(actor.kind === "public" ? { type: "UNAUTHENTICATED" } : { type: "FORBIDDEN" });
+    }
+    if (!this.imagePorts) {
+      return err({ type: "AI_UPSTREAM_UNAVAILABLE" });
+    }
+    const targetType = input.productId ? AiTargetType.PRODUCT : AiTargetType.CATEGORY;
+    const targetId = input.productId ?? input.categoryId ?? null;
+    const gate = await this.openGeneration(actor, AiGenerationKind.IMAGE, targetType, targetId, input, input.idempotencyKey);
+    if (!gate.ok) {
+      return gate.error.type === "DUPLICATE"
+        ? ok({ generationId: gate.error.existing.id, status: gate.error.existing.status, analysis: null })
+        : err(gate.error as AiDomainError);
+    }
+    const prepared = await this.prepareImageInput(gate.value, input.productId ?? null, input.categoryId ?? null, input.sourceMediaAssetId ?? null, true);
+    if (!prepared.ok) return prepared;
+    const { context, source, subject } = prepared.value;
+    if (!source) {
+      await this.repository.completeGeneration({ id: gate.value, status: AiGenerationStatus.FAILED, errorCode: "IMAGE_SOURCE_REQUIRED" });
+      return err({ type: "IMAGE_SOURCE_REQUIRED" });
+    }
+    const result = await this.gateway.analyzeImage({ generationId: gate.value, requestId, subject, context, image: source });
+    if (!result.ok) {
+      return this.failGeneration(gate.value, result.error.type);
+    }
+    await this.repository.completeGeneration({
+      id: gate.value,
+      status: AiGenerationStatus.SUCCEEDED,
+      costEstimateMinor: result.value.usage.costMinor,
+    });
+    return ok({
+      generationId: gate.value,
+      status: AiGenerationStatus.SUCCEEDED,
+      analysis: { ...result.value.analysis, model: result.value.model, usage: result.value.usage },
+    });
+  }
+
+  public async generateImage(
+    actor: Actor,
+    input: GenerateImageInput,
+    requestId: string,
+  ): Promise<Result<{ generationId: string; status: AiGenerationStatus; image: AiGeneratedImage | null }, AiDomainError>> {
+    if (!canUseAiContent(actor)) {
+      return err(actor.kind === "public" ? { type: "UNAUTHENTICATED" } : { type: "FORBIDDEN" });
+    }
+    if (!this.imagePorts) {
+      return err({ type: "AI_UPSTREAM_UNAVAILABLE" });
+    }
+    const targetType = input.productId ? AiTargetType.PRODUCT : AiTargetType.CATEGORY;
+    const targetId = input.productId ?? input.categoryId ?? null;
+    const gate = await this.openGeneration(actor, AiGenerationKind.IMAGE, targetType, targetId, input, input.idempotencyKey);
+    if (!gate.ok) {
+      return gate.error.type === "DUPLICATE"
+        ? ok({ generationId: gate.error.existing.id, status: gate.error.existing.status, image: null })
+        : err(gate.error as AiDomainError);
+    }
+    const sourceRequired = input.mode === "enhance";
+    const prepared = await this.prepareImageInput(gate.value, input.productId ?? null, input.categoryId ?? null, input.sourceMediaAssetId ?? null, true);
+    if (!prepared.ok) return prepared;
+    const { context, source, subject } = prepared.value;
+    if (sourceRequired && !source) {
+      await this.repository.completeGeneration({ id: gate.value, status: AiGenerationStatus.FAILED, errorCode: "IMAGE_SOURCE_REQUIRED" });
+      return err({ type: "IMAGE_SOURCE_REQUIRED" });
+    }
+
+    let generated: { image: { data: string; mimeType: string }; promptUsed: string; model: string; usage: AiUsage };
+    let analysis: AiGeneratedImage["analysis"] = null;
+    if (input.mode === "enhance" && source) {
+      const upstream = await this.gateway.enhanceImage({
+        generationId: gate.value,
+        requestId,
+        subject,
+        context,
+        image: source,
+        style: input.style,
+        instructions: input.instructions ?? null,
+      });
+      if (!upstream.ok) {
+        return this.failGeneration(gate.value, upstream.error.type);
+      }
+      generated = upstream.value;
+      analysis = upstream.value.analysis;
+    } else {
+      const upstream = await this.gateway.generateImage({
+        generationId: gate.value,
+        requestId,
+        subject,
+        context,
+        style: input.style,
+        instructions: input.instructions ?? null,
+        referenceImage: source,
+      });
+      if (!upstream.ok) {
+        return this.failGeneration(gate.value, upstream.error.type);
+      }
+      generated = upstream.value;
+    }
+
+    const saved = await this.imagePorts.media.saveGeneratedImage({
+      data: generated.image.data,
+      mimeType: generated.image.mimeType,
+      altText: context.title || null,
+      createdBy: actor.kind === "admin" ? actor.userId : null,
+    });
+    if (!saved) {
+      await this.repository.completeGeneration({ id: gate.value, status: AiGenerationStatus.FAILED, errorCode: "AI_RESPONSE_INVALID" });
+      return err({ type: "AI_RESPONSE_INVALID" });
+    }
+
+    let applied = false;
+    if (input.applyToTarget) {
+      applied = input.productId
+        ? await this.imagePorts.targetWriter.setProductMainImage(input.productId, saved.mediaAssetId)
+        : input.categoryId
+          ? await this.imagePorts.targetWriter.setCategoryImage(input.categoryId, saved.mediaAssetId)
+          : false;
+    }
+
+    await this.repository.completeGeneration({
+      id: gate.value,
+      status: AiGenerationStatus.SUCCEEDED,
+      costEstimateMinor: generated.usage.costMinor,
+    });
+    return ok({
+      generationId: gate.value,
+      status: AiGenerationStatus.SUCCEEDED,
+      image: {
+        mediaAssetId: saved.mediaAssetId,
+        appliedToTarget: applied,
+        analysis,
+        promptUsed: generated.promptUsed,
+        model: generated.model,
+        usage: generated.usage,
+      },
+    });
+  }
+
+  /** Contexto + imagen fuente para operaciones de imagen (producto o categoría). */
+  private async prepareImageInput(
+    generationId: string,
+    productId: string | null,
+    categoryId: string | null,
+    sourceMediaAssetId: string | null,
+    loadSource: boolean,
+  ): Promise<Result<{ context: AiImageContext; source: AiImagePayload | null; subject: "product" | "category" }, AiDomainError>> {
+    const ports = this.imagePorts;
+    if (!ports) {
+      return err({ type: "AI_UPSTREAM_UNAVAILABLE" });
+    }
+    let context: AiImageContext | null = null;
+    let subject: "product" | "category" = "product";
+    let defaultImageId: string | null = null;
+    if (productId) {
+      const product = await this.contextReader.getProductContext(productId);
+      if (product) {
+        context = {
+          title: product.title,
+          categoryName: product.categoryName,
+          brandName: product.brandName,
+          description: product.description || null,
+        };
+        defaultImageId = await ports.targetWriter.getProductMainImageId(productId);
+      }
+    } else if (categoryId) {
+      subject = "category";
+      const category = await this.contextReader.getCategoryContext(categoryId);
+      if (category) {
+        context = { title: category.name, categoryName: category.name, brandName: null, description: category.description };
+        defaultImageId = await ports.targetWriter.getCategoryImageId(categoryId);
+      }
+    }
+    if (!context) {
+      await this.repository.completeGeneration({ id: generationId, status: AiGenerationStatus.FAILED, errorCode: "TARGET_NOT_FOUND" });
+      return err({ type: "TARGET_NOT_FOUND" });
+    }
+    let source: AiImagePayload | null = null;
+    if (loadSource) {
+      const imageId = sourceMediaAssetId ?? defaultImageId;
+      if (imageId) {
+        source = await ports.media.loadImage(imageId);
+      }
+    }
+    return ok({ context, source, subject });
   }
 
   public async getRecommendations(

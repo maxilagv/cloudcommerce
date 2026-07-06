@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Format a value as Argentine pesos: 5299900 -> "$ 5.299.900". */
-export function formatCOP(value: number) {
+export function formatPrice(value: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",

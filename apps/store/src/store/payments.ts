@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { mockPaymentMethods, type PaymentMethod } from "@/lib/mock-account";
+import type { PaymentMethod } from "@/lib/account-types";
 
 type PaymentInput = Omit<PaymentMethod, "id">;
 
@@ -15,11 +15,14 @@ type PaymentsStore = {
 let seq = 0;
 const newId = () => `pm-${Date.now().toString(36)}-${seq++}`;
 
-/** Seeded from mock data via initial state (see addresses store for rationale). */
+/**
+ * Saved payment methods, persisted locally until a real payments provider is
+ * wired. Starts empty — the UI shows a real empty state, never seed data.
+ */
 export const usePayments = create<PaymentsStore>()(
   persist(
     (set) => ({
-      methods: mockPaymentMethods,
+      methods: [],
       add: (m) => set((s) => ({ methods: [...s.methods, { ...m, id: newId() }] })),
       remove: (id) => set((s) => ({ methods: s.methods.filter((x) => x.id !== id) })),
     }),

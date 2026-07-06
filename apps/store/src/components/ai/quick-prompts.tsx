@@ -1,4 +1,4 @@
-import { quickPrompts, type QuickPrompt } from "@/lib/mock-ai";
+import { quickPrompts, type QuickPrompt } from "@/lib/assistant-data";
 
 export function QuickPrompts({ onSelect }: { onSelect: (input: string) => void }) {
   return (

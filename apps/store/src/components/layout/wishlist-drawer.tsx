@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, X } from "lucide-react";
-import { cn, formatCOP } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { useWishlist, useWishlistCount } from "@/store/wishlist";
 import { useCart } from "@/store/cart";
-import type { ProductCardData } from "@/lib/mock-products";
+import { productHref, type ProductCardData } from "@/lib/catalog-types";
 
 function WishlistItem({ product }: { product: ProductCardData }) {
   const remove = useWishlist((s) => s.remove);
@@ -21,7 +21,7 @@ function WishlistItem({ product }: { product: ProductCardData }) {
     <div className="flex gap-3 border-b border-cc-border-subtle py-4 last:border-0">
       {/* Thumbnail */}
       <Link
-        href={`/products/${product.id}`}
+        href={productHref(product)}
         className="h-16 w-16 shrink-0 rounded-cc-sm bg-cc-bg-surface-soft flex items-center justify-center overflow-hidden hover:opacity-90 transition-opacity"
       >
         <Image
@@ -39,13 +39,13 @@ function WishlistItem({ product }: { product: ProductCardData }) {
           {product.brand}
         </p>
         <Link
-          href={`/products/${product.id}`}
+          href={productHref(product)}
           className="text-[13px] font-medium leading-snug text-cc-text line-clamp-2 hover:text-cc-primary transition-colors"
         >
           {product.name}
         </Link>
         <p className="text-[14px] font-extrabold tracking-tight text-cc-text">
-          {formatCOP(product.price)}
+          {formatPrice(product.price)}
         </p>
 
         <div className="mt-1 flex gap-2">

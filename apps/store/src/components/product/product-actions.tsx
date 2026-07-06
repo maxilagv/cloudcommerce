@@ -4,7 +4,7 @@ import { ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompare } from "@/store/compare";
 import { toast } from "@/store/toast";
-import type { ProductCardData } from "@/lib/mock-products";
+import type { ProductCardData } from "@/lib/catalog-types";
 
 export function CompareButton({ product }: { product: ProductCardData }) {
   const toggle = useCompare((s) => s.toggle);

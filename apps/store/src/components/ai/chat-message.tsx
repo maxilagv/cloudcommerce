@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AiMiniCard } from "./ai-mini-card";
-import type { ChatMessage } from "@/lib/mock-ai";
+import type { ChatMessage } from "@/lib/assistant-data";
 
 function parseMarkdown(text: string) {
   return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
@@ -33,11 +33,11 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
           dangerouslySetInnerHTML={{ __html: parseMarkdown(message.text) }}
         />
 
-        {/* Inline product cards */}
-        {message.productIds && message.productIds.length > 0 && (
+        {/* Inline product cards (real catalog data carried on the message) */}
+        {message.products && message.products.length > 0 && (
           <div className="flex flex-col gap-2">
-            {message.productIds.map((id) => (
-              <AiMiniCard key={id} productId={id} />
+            {message.products.map((product) => (
+              <AiMiniCard key={product.id} product={product} />
             ))}
           </div>
         )}

@@ -217,3 +217,81 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
   animation: admin-shimmer 1.35s linear infinite;
   border-radius: 7px;
 }
+
+/* ---------------- Page transition (dashboard template) ---------------- */
+.admin-page-enter {
+  animation: admin-fade-up var(--admin-duration-page) var(--admin-ease-out);
+}
+
+/* ---------------- Command palette (Ctrl/Cmd+K) ---------------- */
+.admin-cmdk__overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(10, 14, 22, 0.42);
+  backdrop-filter: blur(3px);
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 12vh 16px 16px;
+  animation: admin-cmdk-fade var(--admin-duration-fast) var(--admin-ease-out);
+}
+.admin-cmdk {
+  width: 100%; max-width: 560px;
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border-default);
+  border-radius: 16px;
+  box-shadow: 0 32px 90px rgba(6, 12, 24, 0.35);
+  overflow: hidden;
+  animation: admin-cmdk-pop var(--admin-duration-normal) var(--admin-ease-spring);
+}
+.admin-cmdk__input {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--admin-border-subtle);
+  color: var(--admin-text-muted);
+}
+.admin-cmdk__input input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 14.5px; color: var(--admin-text-primary);
+}
+.admin-cmdk__input input::placeholder { color: var(--admin-text-faint); }
+.admin-cmdk__input kbd {
+  font-size: 10.5px; font-weight: 700; color: var(--admin-text-faint);
+  border: 1px solid var(--admin-border-default); border-radius: 6px;
+  padding: 2px 6px; background: var(--admin-bg-surface-soft);
+}
+.admin-cmdk__list { max-height: 46vh; overflow-y: auto; padding: 6px; }
+.admin-cmdk__group {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--admin-text-faint); font-weight: 700; padding: 10px 10px 4px;
+}
+.admin-cmdk__item {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 9px 10px; border: none; background: none; cursor: pointer;
+  border-radius: 10px; text-align: left; color: var(--admin-text-secondary);
+  font-size: 13.5px;
+  transition: background var(--admin-duration-instant) var(--admin-ease-out);
+}
+.admin-cmdk__item[data-active] {
+  background: var(--admin-accent-soft); color: var(--admin-text-primary);
+}
+.admin-cmdk__icon {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--admin-bg-surface-soft); color: var(--admin-text-muted);
+}
+.admin-cmdk__item[data-active] .admin-cmdk__icon {
+  background: var(--admin-accent); color: #fff;
+}
+.admin-cmdk__label { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.admin-cmdk__sub { font-size: 11px; color: var(--admin-text-faint); }
+.admin-cmdk__enter { opacity: 0; flex-shrink: 0; }
+.admin-cmdk__item[data-active] .admin-cmdk__enter { opacity: 0.7; }
+.admin-cmdk__empty { padding: 18px 12px; font-size: 12.5px; color: var(--admin-text-faint); text-align: center; }
+.admin-cmdk__foot {
+  display: flex; gap: 14px; padding: 9px 16px;
+  border-top: 1px solid var(--admin-border-subtle);
+  font-size: 10.5px; color: var(--admin-text-faint); font-weight: 600;
+}
+@keyframes admin-cmdk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes admin-cmdk-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

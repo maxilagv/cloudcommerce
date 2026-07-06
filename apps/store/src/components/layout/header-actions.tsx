@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Heart, ShoppingCart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,14 @@ export function HeaderActions() {
   const openCart = useCart((s) => s.open);
   const openWishlist = useWishlist((s) => s.open);
   const user = useAuth((s) => s.user);
+  const hydrateSession = useAuth((s) => s.hydrateSession);
+
+  // Recover the cookie session once per page load (deduped inside the store)
+  // only when a previous session exists locally, so anonymous visitors don't
+  // fire an UNAUTHORIZED request on every page.
+  useEffect(() => {
+    if (useAuth.getState().user) void hydrateSession();
+  }, [hydrateSession]);
 
   return (
     <div className="flex shrink-0 items-center gap-1">

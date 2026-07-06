@@ -28,6 +28,8 @@ import { AiHttpGateway } from "../domains/ai/infra/http/ai-http-gateway.js";
 import { DrizzleAiRepository } from "../domains/ai/infra/repositories/drizzle-ai-repository.js";
 import { RedisAiRateLimiter } from "../domains/ai/infra/rate-limit/redis-ai-rate-limiter.js";
 import { AiContextReadModel } from "../domains/ai/infra/read-models/ai-context-read-model.js";
+import { AiMediaAdapter } from "../domains/ai/infra/media/ai-media-adapter.js";
+import { AiTargetWriter } from "../domains/ai/infra/catalog/ai-target-writer.js";
 import { DrizzleMediaRepository } from "../domains/media/infra/repositories/drizzle-media-repository.js";
 import { LocalFsMediaStorage } from "../domains/media/infra/storage/local-fs-media-storage.js";
 import { MediaService } from "../domains/media/application/services/media-service.js";
@@ -54,6 +56,16 @@ import { DashboardCatalogReadModel } from "../domains/dashboard/infra/read-model
 import { DashboardCustomersReadModel } from "../domains/dashboard/infra/read-models/dashboard-customers-read-model.js";
 import { DashboardInventoryReadModel } from "../domains/dashboard/infra/read-models/dashboard-inventory-read-model.js";
 import { DashboardOrdersReadModel } from "../domains/dashboard/infra/read-models/dashboard-orders-read-model.js";
+import { EngagementService } from "../domains/engagement/application/engagement-service.js";
+import { EngagementAiGateway } from "../domains/engagement/infra/http/engagement-ai-gateway.js";
+import { WhatsappCloudGateway } from "../domains/engagement/infra/http/whatsapp-cloud-gateway.js";
+import { DrizzleEngagementRepository } from "../domains/engagement/infra/repositories/drizzle-engagement-repository.js";
+import { EngagementContextReadModel } from "../domains/engagement/infra/read-models/engagement-context-read-model.js";
+import { StorefrontService } from "../domains/storefront/application/storefront-service.js";
+import { DrizzleStorefrontRepository } from "../domains/storefront/infra/repositories/drizzle-storefront-repository.js";
+import { LoyaltyEventSubscriber } from "../domains/loyalty/application/loyalty-event-subscriber.js";
+import { LoyaltyService } from "../domains/loyalty/application/loyalty-service.js";
+import { DrizzleLoyaltyRepository } from "../domains/loyalty/infra/repositories/drizzle-loyalty-repository.js";
 import { SettingsService } from "../domains/settings/application/settings-service.js";
 import { DrizzleSettingsRepository } from "../domains/settings/infra/repositories/drizzle-settings-repository.js";
 import { EnvSecretProbe } from "../domains/settings/infra/secrets/env-secret-probe.js";
@@ -95,7 +107,13 @@ export const createContainer = (config: AppConfig) => {
   const stockReader: StockReaderPort = {
     getProductStockStatus: async (productId) => {
       const result = await inventory.getCatalogStockStatusByProductId(productId);
-      return result.ok ? result.value : StockStatus.OUT_OF_STOCK;
+      const status = result.ok ? result.value : StockStatus.OUT_OF_STOCK;
+      if (status !== StockStatus.OUT_OF_STOCK) {
+        return status;
+      }
+      // Modo reventa: con backorder habilitado nada se muestra agotado — la
+      // tienda vende a pedido y el proveedor despacha.
+      return (await pricing.isBackorderEnabled()) ? StockStatus.IN_STOCK : status;
     },
   };
   const identity = new IdentityService({
@@ -116,6 +134,10 @@ export const createContainer = (config: AppConfig) => {
       perOperationLimitMinor: config.AI_OPERATION_COST_LIMIT_MINOR,
       dailyActorLimitMinor: config.AI_DAILY_ACTOR_COST_LIMIT_MINOR,
     },
+    {
+      media: new AiMediaAdapter(mediaRepository, mediaStorage, config.MEDIA_MAX_FILE_BYTES),
+      targetWriter: new AiTargetWriter(database.db),
+    },
   );
   const media = new MediaService(mediaRepository, mediaStorage, config.MEDIA_MAX_FILE_BYTES);
   const orders = new OrderService(orderRepository, orderPricing, eventBus);
@@ -132,6 +154,25 @@ export const createContainer = (config: AppConfig) => {
     new PricingImportAdapter(pricing),
     new InventoryImportAdapter(inventory),
     new OrdersIntegrationAdapter(new OrdersForwardReadModel(database.db), orders),
+  );
+  const storefront = new StorefrontService(
+    new DrizzleStorefrontRepository(database.db),
+    orderRepository,
+    orderPricing,
+    eventBus,
+  );
+  const loyalty = new LoyaltyService(new DrizzleLoyaltyRepository(database.db));
+  new LoyaltyEventSubscriber(loyalty, logger).register(eventBus);
+  const engagement = new EngagementService(
+    new EngagementAiGateway(config.AI_SERVICE_URL, config.AI_SERVICE_TOKEN),
+    new WhatsappCloudGateway(config.WHATSAPP_ACCESS_TOKEN ?? "", config.WHATSAPP_PHONE_NUMBER_ID ?? ""),
+    new DrizzleEngagementRepository(database.db),
+    new EngagementContextReadModel(database.db),
+    {
+      storeName: config.STORE_NAME,
+      outreachCooldownDays: config.ENGAGEMENT_OUTREACH_COOLDOWN_DAYS,
+    },
+    logger,
   );
   const dashboardCache = new RedisDashboardCache(cache);
   const dashboard = new DashboardService(
@@ -161,6 +202,9 @@ export const createContainer = (config: AppConfig) => {
     finance,
     customers,
     suppliers,
+    engagement,
+    storefront,
+    loyalty,
     dashboard,
     settings,
     mediaStorage,

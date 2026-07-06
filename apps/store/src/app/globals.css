@@ -130,6 +130,7 @@
   --animate-cc-shimmer: cc-shimmer 1.35s linear infinite;
   --animate-cc-float: cc-float-soft 3.2s ease-in-out infinite;
   --animate-cc-pulse: cc-assistant-pulse 2.8s ease-in-out infinite;
+  --animate-cc-fade-up: fadeSlideUp 0.5s var(--cc-ease-out) both;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -252,6 +253,20 @@
   background-size: 220% 100%;
   animation: var(--animate-cc-shimmer);
 }
+
+/* Staggered entrance for grids/lists: each child fades up with a small delay. */
+.cc-stagger > * {
+  animation: fadeSlideUp 0.5s var(--cc-ease-out) both;
+}
+.cc-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.cc-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.cc-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.cc-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.cc-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.cc-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.cc-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.cc-stagger > *:nth-child(8) { animation-delay: 280ms; }
+.cc-stagger > *:nth-child(n + 9) { animation-delay: 320ms; }
 
 /* ============================================================
    Accessibility — respect reduced motion (Microanimaciones.md §4)

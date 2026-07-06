@@ -17,6 +17,15 @@ next-env.d.ts
 .env.local
 .env.*.local
 
+# Local agent/session artifacts
+.codex/
+.codex-remote-attachments/
+
+# Local generated media and reference assets
+.cloudcommerce-media/
+packages/database/.cloudcommerce-media/
+Referencia/
+
 # Turbo
 .turbo/
 

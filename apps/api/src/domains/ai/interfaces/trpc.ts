@@ -1,8 +1,10 @@
 import {
   AcknowledgeAiAlertSchema,
+  AnalyzeImageSchema,
   AnalyzeTrendsSchema,
   DismissAiAlertSchema,
   GenerateDescriptionSchema,
+  GenerateImageSchema,
   GenerateSeoSchema,
   GenerateSpecsSchema,
   GetGenerationSchema,
@@ -36,6 +38,18 @@ export const aiRouter = router({
 
   generateSeo: adminProcedure.input(GenerateSeoSchema).mutation(async ({ ctx, input }) => {
     const result = await ctx.container.ai.generateSeo(ctx.actor, input, ctx.requestId);
+    if (!result.ok) return throwAi(result.error);
+    return result.value;
+  }),
+
+  analyzeImage: adminProcedure.input(AnalyzeImageSchema).mutation(async ({ ctx, input }) => {
+    const result = await ctx.container.ai.analyzeImage(ctx.actor, input, ctx.requestId);
+    if (!result.ok) return throwAi(result.error);
+    return result.value;
+  }),
+
+  generateImage: adminProcedure.input(GenerateImageSchema).mutation(async ({ ctx, input }) => {
+    const result = await ctx.container.ai.generateImage(ctx.actor, input, ctx.requestId);
     if (!result.ok) return throwAi(result.error);
     return result.value;
   }),

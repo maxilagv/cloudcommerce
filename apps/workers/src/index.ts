@@ -1,7 +1,9 @@
 import { processPendingDocumentsBatch } from "./processors/document-generation.js";
+import { processEngagementFollowupBatch } from "./processors/engagement-followup.js";
 import { processMediaOutboxBatch } from "./processors/media-outbox.js";
 import { processOrderForwardBatch } from "./processors/order-forward.js";
 import { processExpiredReservationsBatch } from "./processors/reservation-expiration.js";
+import { processWhatsappSendBatch } from "./processors/whatsapp-send.js";
 
 const runOnce = process.env.WORKER_RUN_ONCE === "true";
 const intervalMs = Number(process.env.WORKER_POLL_INTERVAL_MS ?? 5_000);
@@ -12,6 +14,8 @@ const runAll = () =>
     processExpiredReservationsBatch(),
     processPendingDocumentsBatch(),
     processOrderForwardBatch(),
+    processWhatsappSendBatch(),
+    processEngagementFollowupBatch(),
   ]);
 
 if (runOnce) {

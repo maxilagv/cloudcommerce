@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, ShoppingBag, ShoppingCart, Trash2 } from "lucide-react";
-import { formatCOP } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useCart, useCartCount, useCartTotal } from "@/store/cart";
 import { CartItem } from "@/components/cart/item";
@@ -80,7 +80,7 @@ export default function CartPage() {
           <div className="mt-4 space-y-2.5 text-[13px]">
             <div className="flex items-center justify-between">
               <span className="text-cc-secondary">Subtotal</span>
-              <span className="font-semibold text-cc-text">{formatCOP(total)}</span>
+              <span className="font-semibold text-cc-text">{formatPrice(total)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-cc-secondary">Envío</span>
@@ -90,7 +90,7 @@ export default function CartPage() {
             <div className="flex items-center justify-between text-[15px]">
               <span className="font-bold text-cc-text">Total</span>
               <span className="font-extrabold tracking-tight text-cc-text">
-                {formatCOP(total)}
+                {formatPrice(total)}
               </span>
             </div>
           </div>

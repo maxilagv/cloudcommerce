@@ -26,15 +26,6 @@ export function formatExpiry(value: string): string {
   return d.length >= 3 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
 }
 
-export function validatePayment(value: PaymentData): PaymentErrors {
-  const errors: PaymentErrors = {};
-  if (!value.holder.trim()) errors.holder = "Ingresá el titular";
-  if (digits(value.number).length < 15) errors.number = "Número de tarjeta inválido";
-  if (!/^\d{2}\/\d{2}$/.test(value.expiry)) errors.expiry = "MM/AA";
-  if (digits(value.cvc).length < 3) errors.cvc = "CVC inválido";
-  return errors;
-}
-
 function Field({
   label,
   value,
@@ -86,6 +77,15 @@ export function PaymentForm({
 }) {
   return (
     <div className="space-y-4">
+      {/* El backend crea la orden como PENDING_CONFIRMATION sin cobrar: el pago
+          se coordina después de confirmar. Los campos son opcionales/informativos. */}
+      <div className="rounded-cc-sm border border-cc-primary-border bg-cc-primary-soft px-4 py-3 text-[13px] text-cc-text">
+        <p className="font-semibold">Pago a coordinar</p>
+        <p className="mt-0.5 text-cc-secondary">
+          Confirmá tu pedido ahora y coordinamos el pago con vos — no se realizará ningún cargo en este paso.
+          Los datos de tarjeta son opcionales.
+        </p>
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5 sm:col-span-2">
           <span className="text-[12px] font-semibold text-cc-secondary">Titular de la tarjeta</span>
@@ -147,7 +147,7 @@ export function PaymentForm({
 
       <p className="flex items-center gap-1.5 text-[12px] text-cc-muted">
         <Lock className="h-3.5 w-3.5" strokeWidth={2} />
-        Pago simulado — no se realizará ningún cargo real.
+        No se realizará ningún cargo ahora — el pago se coordina al confirmar.
       </p>
     </div>
   );

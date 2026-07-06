@@ -1,18 +1,19 @@
 import Link from "next/link";
-import { homeBrands } from "@/lib/home-data";
+import type { HomeBrand } from "@/lib/home-data";
 import { SectionHeading } from "./section-heading";
 
-export function BrandStrip() {
+export function BrandStrip({ brands }: { brands: HomeBrand[] }) {
+  if (brands.length === 0) return null;
   return (
     <section aria-labelledby="home-brands-title" className="mt-8">
       <SectionHeading
-        eyebrow="Marcas lideres"
-        title="Tecnologia confiable en un solo lugar"
+        eyebrow="Marcas líderes"
+        title="Tecnología confiable en un solo lugar"
         href="/products"
         linkLabel="Ver todas"
       />
       <div className="cc-no-scrollbar flex gap-3 overflow-x-auto rounded-[22px] border border-cc-border bg-white p-3 shadow-cc-xs">
-        {homeBrands.map((brand) => (
+        {brands.map((brand) => (
           <Link
             key={brand.id}
             href={brand.href}

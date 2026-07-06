@@ -1,4 +1,5 @@
 import {
+  OrderChannel,
   OrderStatus,
   ShipmentStatus,
   ShippingMethod,
@@ -82,7 +83,11 @@ export class OrderService {
     }
     const pricedLines: CreateManualOrderLineRecord[] = [];
     for (const line of input.lines) {
-      const snapshot = await this.pricing.getSnapshot({ variantId: line.variantId, currency: defaultCurrency });
+      const snapshot = await this.pricing.getSnapshot({
+        variantId: line.variantId,
+        currency: defaultCurrency,
+        quantity: line.quantity,
+      });
       if (!snapshot) {
         return err({ type: "PRICING_UNAVAILABLE", variantId: line.variantId });
       }
@@ -91,6 +96,7 @@ export class OrderService {
         quantity: line.quantity,
         unitPriceMinor: snapshot.unitPriceMinor,
         supplierCostSnapshotMinor: snapshot.supplierCostMinor,
+        supplierId: snapshot.supplierId,
       });
     }
 
@@ -99,6 +105,7 @@ export class OrderService {
         idempotencyKey: context.idempotencyKey ?? null,
         requestHash: this.hashPayload(input),
         customerId: input.customerId,
+        channel: OrderChannel.ADMIN_MANUAL,
         shippingMethod: input.shippingMethod,
         shippingAddressId: input.shippingAddressId ?? null,
         initialStatus,

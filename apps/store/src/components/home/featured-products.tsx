@@ -1,22 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Star } from "lucide-react";
-import { homeFeaturedProducts } from "@/lib/home-data";
-import { formatCOP } from "@/lib/utils";
+import type { HomeFeaturedProduct } from "@/lib/home-data";
+import { formatPrice } from "@/lib/utils";
 import { SectionHeading } from "./section-heading";
 
-export function FeaturedProducts() {
+export function FeaturedProducts({ products }: { products: HomeFeaturedProduct[] }) {
+  if (products.length === 0) return null;
   return (
     <section aria-labelledby="home-featured-products-title" className="mt-8">
       <SectionHeading
         eyebrow="Destacados"
         title="Productos elegidos para empezar"
-        description="Una muestra compacta del catalogo para descubrir tecnologia sin convertir la home en una grilla infinita."
+        description="Una muestra compacta del catálogo para descubrir tecnología sin convertir la home en una grilla infinita."
         href="/products"
-        linkLabel="Explorar catalogo"
+        linkLabel="Explorar catálogo"
       />
       <div className="cc-no-scrollbar grid gap-3 overflow-x-auto sm:grid-cols-2 xl:grid-cols-3">
-        {homeFeaturedProducts.map((product) => (
+        {products.map((product) => (
           <Link
             key={product.id}
             href={product.href}
@@ -51,7 +52,7 @@ export function FeaturedProducts() {
               ) : null}
               <span className="mt-1.5 flex items-center justify-between gap-3">
                 <strong className="text-[18px] font-black tracking-[-0.035em] text-cc-text">
-                  {formatCOP(product.price)}
+                  {formatPrice(product.price)}
                 </strong>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cc-primary text-white shadow-[0_10px_18px_rgba(11,107,255,.22)] transition-transform duration-[180ms] group-hover:scale-[1.04]">
                   <ShoppingCart className="h-4 w-4" strokeWidth={2} />

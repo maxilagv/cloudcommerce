@@ -1,20 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { useHydrated } from "@/hooks/use-hydrated";
-import { useOrders } from "@/store/orders";
+import type { Order } from "@/lib/account-types";
+import { fetchOrderDetail, mapDetailToOrder } from "@/lib/api/orders";
 import { OrderDetail } from "./order-detail";
 
+type State =
+  | { status: "loading" }
+  | { status: "not-found" }
+  | { status: "ready"; order: Order & { orderNumber: string } };
+
 /**
- * Resolves an order from placed (client) ∪ mock orders. Client-side so freshly
- * placed orders are viewable; gated on hydration to avoid SSR/CSR mismatch.
+ * Resolves an order from the backend (storefront.orderDetail) client-side —
+ * this runs behind AuthGuard so the customer session cookie is present.
  */
 export function OrderDetailResolver({ id }: { id: string }) {
-  const hydrated = useHydrated();
-  const getById = useOrders((s) => s.getById);
+  const [state, setState] = useState<State>({ status: "loading" });
 
-  if (!hydrated) {
+  useEffect(() => {
+    let cancelled = false;
+    void fetchOrderDetail(id).then((detail) => {
+      if (cancelled) return;
+      setState(detail ? { status: "ready", order: mapDetailToOrder(detail) } : { status: "not-found" });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (state.status === "loading") {
     return (
       <div className="flex justify-center py-24">
         <Loader2 className="h-6 w-6 animate-spin text-cc-muted" />
@@ -22,9 +38,7 @@ export function OrderDetailResolver({ id }: { id: string }) {
     );
   }
 
-  const order = getById(id);
-
-  if (!order) {
+  if (state.status === "not-found") {
     return (
       <div className="py-20 text-center">
         <p className="text-[16px] font-semibold text-cc-text">Pedido no encontrado</p>
@@ -41,5 +55,5 @@ export function OrderDetailResolver({ id }: { id: string }) {
     );
   }
 
-  return <OrderDetail order={order} />;
+  return <OrderDetail order={state.order} />;
 }

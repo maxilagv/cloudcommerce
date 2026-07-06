@@ -135,8 +135,13 @@ class UnknownStockReader {
 }
 
 class FixedPriceReader implements PriceReaderPort {
-  public async getProductPrice(_productId: string): Promise<{ salePriceMinor: number; compareAtPriceMinor: number | null; currency: "ARS" }> {
-    return { salePriceMinor: 123_456, compareAtPriceMinor: 150_000, currency: "ARS" };
+  public async getProductPrice(_productId: string): Promise<{
+    salePriceMinor: number;
+    compareAtPriceMinor: number | null;
+    currency: "ARS";
+    wholesale: { minQuantity: number; priceMinor: number } | null;
+  }> {
+    return { salePriceMinor: 123_456, compareAtPriceMinor: 150_000, currency: "ARS", wholesale: null };
   }
 }
 

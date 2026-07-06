@@ -17,6 +17,14 @@ const STATUS_MAP: Record<string, { tone: BadgeTone; label: string }> = {
   CANCELLED: { tone: "danger", label: "Cancelado" },
   RETURN_REQUESTED: { tone: "danger", label: "Devolución pedida" },
   RETURNED: { tone: "muted", label: "Devuelto" },
+  // ShipmentStatus
+  CREATED: { tone: "info", label: "Creado" },
+  PREPARED: { tone: "info", label: "Preparado" },
+  DISPATCHED: { tone: "info", label: "Despachado" },
+  IN_TRANSIT: { tone: "info", label: "En transito" },
+  OUT_FOR_DELIVERY: { tone: "warning", label: "En reparto" },
+  DELAYED: { tone: "warning", label: "Demorado" },
+  FAILED_ATTEMPT: { tone: "danger", label: "Intento fallido" },
   // ProductStatus
   READY_FOR_REVIEW: { tone: "warning", label: "En revisión" },
   PUBLISHED: { tone: "success", label: "Publicado" },
@@ -26,6 +34,36 @@ const STATUS_MAP: Record<string, { tone: BadgeTone; label: string }> = {
   IN_STOCK: { tone: "success", label: "En stock" },
   SOON: { tone: "warning", label: "Reponiendo" },
   OUT_OF_STOCK: { tone: "danger", label: "Sin stock" },
+  // DocumentStatus
+  AVAILABLE: { tone: "success", label: "Disponible" },
+  PROCESSING: { tone: "info", label: "Procesando" },
+  VOID: { tone: "muted", label: "Anulado" },
+  // SupplierFeedStatus
+  IDLE: { tone: "muted", label: "En espera" },
+  RUNNING: { tone: "info", label: "Ejecutando" },
+  OK: { tone: "success", label: "OK" },
+  PARTIAL: { tone: "warning", label: "Parcial" },
+  FAILED: { tone: "danger", label: "Fallido" },
+  DISABLED: { tone: "muted", label: "Deshabilitado" },
+  // SupplierSyncStatus
+  LINKED: { tone: "success", label: "Vinculado" },
+  PENDING_REVIEW: { tone: "warning", label: "A revisar" },
+  CONFLICT: { tone: "danger", label: "Conflicto" },
+  DISCONTINUED: { tone: "muted", label: "Discontinuado" },
+  // SupplierForwardStatus
+  PENDING: { tone: "warning", label: "Pendiente" },
+  SENT: { tone: "info", label: "Enviado" },
+  ACCEPTED: { tone: "success", label: "Aceptado" },
+  REJECTED: { tone: "danger", label: "Rechazado" },
+  // AiGenerationStatus
+  QUEUED: { tone: "info", label: "En cola" },
+  SUCCEEDED: { tone: "success", label: "Completado" },
+  DEGRADED: { tone: "warning", label: "Degradado" },
+  // AiAlertStatus
+  OPEN: { tone: "warning", label: "Abierta" },
+  ACKNOWLEDGED: { tone: "info", label: "Reconocida" },
+  RESOLVED: { tone: "success", label: "Resuelta" },
+  DISMISSED: { tone: "muted", label: "Descartada" },
 };
 
 export interface StatusBadgeProps {

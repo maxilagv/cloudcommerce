@@ -5,7 +5,7 @@ import { CreditCard, Plus, Trash2 } from "lucide-react";
 import { usePayments } from "@/store/payments";
 import { toast } from "@/store/toast";
 import { Modal } from "@/components/ui/modal";
-import type { PaymentMethod } from "@/lib/mock-account";
+import type { PaymentMethod } from "@/lib/account-types";
 
 const cardColors: Record<string, string> = {
   visa: "bg-[#1A1F71]",

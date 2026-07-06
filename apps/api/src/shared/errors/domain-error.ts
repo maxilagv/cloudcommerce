@@ -132,7 +132,45 @@ export type AiDomainError =
   | { type: "AI_QUOTA_EXCEEDED" }
   | { type: "AI_UPSTREAM_UNAVAILABLE" }
   | { type: "AI_RESPONSE_INVALID" }
-  | { type: "AI_CONTENT_REJECTED" };
+  | { type: "AI_CONTENT_REJECTED" }
+  | { type: "IMAGE_SOURCE_REQUIRED" };
+
+export type StorefrontDomainError =
+  | { type: "UNAUTHENTICATED" }
+  | { type: "FORBIDDEN" }
+  | { type: "INVALID_CREDENTIALS" }
+  | { type: "EMAIL_IN_USE" }
+  | { type: "ACCOUNT_INACTIVE" }
+  | { type: "ORDER_NOT_FOUND" }
+  | { type: "ADDRESS_REQUIRED" }
+  | { type: "PRODUCT_NOT_AVAILABLE"; productId: string }
+  | { type: "PRICING_UNAVAILABLE"; productId: string }
+  | { type: "INSUFFICIENT_STOCK"; productId: string }
+  | { type: "IDEMPOTENCY_CONFLICT" };
+
+export type LoyaltyDomainError =
+  | { type: "UNAUTHENTICATED" }
+  | { type: "FORBIDDEN" }
+  | { type: "PROGRAM_DISABLED" }
+  | { type: "REWARD_NOT_FOUND" }
+  | { type: "REWARD_NOT_AVAILABLE" }
+  | { type: "OUT_OF_STOCK" }
+  | { type: "INSUFFICIENT_POINTS"; balance: number }
+  | { type: "REDEMPTION_NOT_FOUND" }
+  | { type: "REDEMPTION_INVALID_STATE" }
+  | { type: "CUSTOMER_NOT_FOUND" }
+  | { type: "MEMBERSHIP_NOT_FOUND" };
+
+export type EngagementDomainError =
+  | { type: "UNAUTHENTICATED" }
+  | { type: "FORBIDDEN" }
+  | { type: "CUSTOMER_NOT_FOUND" }
+  | { type: "PROFILE_NOT_FOUND" }
+  | { type: "CONVERSATION_NOT_FOUND" }
+  | { type: "WHATSAPP_NOT_AVAILABLE" }
+  | { type: "NO_CONSENT" }
+  | { type: "AI_UPSTREAM_UNAVAILABLE" }
+  | { type: "AI_RESPONSE_INVALID" };
 
 export type SettingsDomainError =
   | { type: "UNAUTHENTICATED" }

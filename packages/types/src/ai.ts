@@ -68,6 +68,26 @@ export type AiPriceSuggestion = {
   withinMinMargin: boolean;
 };
 
+export type AiImageAnalysis = {
+  summary: string;
+  qualityScore: number;
+  issues: string[];
+  strengths: string[];
+  enhancementPlan: string;
+  isUsableSource: boolean;
+  model: string;
+  usage: AiUsage;
+};
+
+export type AiGeneratedImage = {
+  mediaAssetId: string;
+  appliedToTarget: boolean;
+  analysis: Omit<AiImageAnalysis, "model" | "usage"> | null;
+  promptUsed: string;
+  model: string;
+  usage: AiUsage;
+};
+
 export type AiGenerationSummary = {
   id: string;
   kind: AiGenerationKind;

@@ -10,6 +10,7 @@ import {
   outboxEvent,
   product,
   productVariant,
+  resaleConfig,
   shipment,
   shipmentEvent,
   stockItem,
@@ -115,6 +116,18 @@ export class DrizzleOrderRepository implements OrderRepository {
         const id = uuidv7();
         const orderNumber = await this.nextOrderNumber(tx, now);
         const sortedLines = [...input.lines].sort((left, right) => left.variantId.localeCompare(right.variantId));
+        // Modo reventa: con backorder habilitado, la falta de stock propio no
+        // bloquea la venta (la línea simplemente no genera movimientos).
+        let backorderAllowed: boolean | null = null;
+        const isBackorderAllowed = async (): Promise<boolean> => {
+          if (backorderAllowed === null) {
+            const config = await tx.query.resaleConfig.findFirst({
+              where: eq(resaleConfig.id, "default"),
+            });
+            backorderAllowed = config?.allowBackorder ?? false;
+          }
+          return backorderAllowed;
+        };
         for (const line of sortedLines) {
           const [reservedStock] = await tx
             .update(stockItem)
@@ -130,6 +143,9 @@ export class DrizzleOrderRepository implements OrderRepository {
             )
             .returning();
           if (!reservedStock) {
+            if (await isBackorderAllowed()) {
+              continue;
+            }
             throw new InsufficientStockError(line.variantId);
           }
           const reservationId = uuidv7();
@@ -202,7 +218,7 @@ export class DrizzleOrderRepository implements OrderRepository {
             orderNumber,
             customerId: input.customerId,
             status: input.initialStatus,
-            channel: OrderChannel.ADMIN_MANUAL,
+            channel: input.channel,
             currency: input.currency,
             subtotalMinor,
             shippingMinor: input.shippingMinor,
@@ -237,6 +253,7 @@ export class DrizzleOrderRepository implements OrderRepository {
               unitPriceMinor: line.unitPriceMinor,
               lineTotalMinor: line.unitPriceMinor * line.quantity,
               supplierCostSnapshotMinor: line.supplierCostSnapshotMinor,
+              supplierId: line.supplierId ?? null,
             };
           }),
         );
@@ -246,7 +263,7 @@ export class DrizzleOrderRepository implements OrderRepository {
           orderId: id,
           fromStatus: null,
           toStatus: input.initialStatus,
-          reason: "Manual order created",
+          reason: input.statusReason ?? "Manual order created",
           actorId: input.placedBy,
         });
         await tx.insert(auditLog).values({

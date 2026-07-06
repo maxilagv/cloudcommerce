@@ -12,7 +12,11 @@ const internalPricingActor: Actor = {
 export class PricingOrderPricingPort implements OrderPricingPort {
   public constructor(private readonly pricing: PricingService) {}
 
-  public async getSnapshot(input: { variantId: string; currency: "ARS" | "USD" }): Promise<OrderPriceSnapshot | null> {
+  public async getSnapshot(input: {
+    variantId: string;
+    currency: "ARS" | "USD";
+    quantity: number;
+  }): Promise<OrderPriceSnapshot | null> {
     const result = await this.pricing.computeSalePrice(internalPricingActor, input);
     if (!result.ok) {
       return null;
@@ -24,7 +28,9 @@ export class PricingOrderPricingPort implements OrderPricingPort {
       variantId: result.value.variantId,
       unitPriceMinor: result.value.price.amountMinor,
       supplierCostMinor: result.value.supplierCost.amountMinor,
+      supplierId: result.value.supplierId,
       compareAtAmountMinor: result.value.compareAtPrice?.amountMinor ?? null,
+      appliedTier: result.value.appliedTier,
       currency: result.value.price.currency,
     };
   }

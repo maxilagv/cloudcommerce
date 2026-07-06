@@ -1,18 +1,32 @@
-import { ShoppingBag, Tag, Package, Star } from "lucide-react";
-import { mockMetrics } from "@/lib/mock-account";
+"use client";
 
-const icons = {
-  "shopping-bag": ShoppingBag,
-  tag: Tag,
-  package: Package,
-  star: Star,
-} as const;
+import { useMemo } from "react";
+import { ShoppingBag, Package, Truck, CheckCircle2 } from "lucide-react";
+import { useMyOrders } from "@/hooks/use-my-orders";
+import { mapOrderStatus } from "@/lib/api/orders";
+import { formatPrice } from "@/lib/utils";
 
 export function MetricCards() {
+  const { orders } = useMyOrders();
+
+  const metrics = useMemo(() => {
+    const active = orders.filter((o) => mapOrderStatus(o.status) !== "cancelled");
+    const totalSpent = active.reduce((acc, o) => acc + Math.round(o.total.amountMinor / 100), 0);
+    const inProgress = orders.filter((o) => mapOrderStatus(o.status) === "preparing").length;
+    const inTransit = orders.filter((o) => mapOrderStatus(o.status) === "in-transit").length;
+    const delivered = orders.filter((o) => mapOrderStatus(o.status) === "delivered").length;
+    return [
+      { label: "Total gastado", value: formatPrice(totalSpent), icon: ShoppingBag },
+      { label: "Compras realizadas", value: String(active.length), icon: Package },
+      { label: "Pedidos en curso", value: String(inProgress + inTransit), icon: Truck },
+      { label: "Entregados", value: String(delivered), icon: CheckCircle2 },
+    ];
+  }, [orders]);
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {mockMetrics.map((m) => {
-        const Icon = icons[m.icon as keyof typeof icons];
+      {metrics.map((m) => {
+        const Icon = m.icon;
         return (
           <div
             key={m.label}
@@ -29,16 +43,6 @@ export function MetricCards() {
             <p className="text-[22px] font-black text-cc-text leading-tight mt-2 tracking-tight">
               {m.value}
             </p>
-            <span
-              className={[
-                "inline-block mt-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full",
-                m.positive
-                  ? "bg-cc-success-soft text-cc-success"
-                  : "bg-cc-danger-soft text-cc-danger",
-              ].join(" ")}
-            >
-              {m.variation}
-            </span>
           </div>
         );
       })}

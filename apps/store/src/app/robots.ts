@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const BASE_URL = "https://www.cloudcommerce.com.ar";
+import { BASE_URL } from "@/lib/seo/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -14,7 +13,10 @@ export default function robots(): MetadataRoute.Robots {
           "/checkout",
           "/account",
           "/orders",
+          "/compare",
           "/search",
+          "/login",
+          "/register",
           "/*?sort=",
           "/*?session=",
           "/*?utm_",

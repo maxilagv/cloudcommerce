@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Users,
   BadgeDollarSign,
+  Gift,
   Truck,
   FileText,
   Sparkles,
@@ -49,6 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Pedidos", href: "/pedidos", icon: ClipboardList, roles: [A.OWNER, A.ADMIN, A.FINANCE, A.SUPPORT] },
       { label: "Clientes", href: "/clientes", icon: Users, roles: [A.OWNER, A.ADMIN, A.SUPPORT] },
+      { label: "Fidelización", href: "/fidelizacion", icon: Gift, roles: [A.OWNER, A.ADMIN, A.SUPPORT] },
       { label: "Pricing", href: "/pricing", icon: BadgeDollarSign, roles: [A.OWNER, A.ADMIN] },
     ],
   },

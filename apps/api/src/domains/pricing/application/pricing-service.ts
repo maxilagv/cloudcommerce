@@ -1,6 +1,7 @@
 import {
   PriceOrigin,
   PricingScope,
+  PricingValueKind,
   type Actor,
   type Currency,
   type MarkupRuleResponse,
@@ -8,7 +9,10 @@ import {
   type PriceBreakdownPublic,
   type PriceBreakdownResponse,
   type PriceListResponse,
+  type PriceTier,
+  type ResaleConfig,
   type SupplierCostResponse,
+  type SupplierRebateRow,
   type DiscountResponse,
 } from "@cloudcommerce/types";
 import type {
@@ -17,6 +21,9 @@ import type {
   SetManualPriceInput,
   SetMarkupRuleInput,
   SetSupplierCostInput,
+  SetSupplierRebateInput,
+  SupplierRebateReportInput,
+  UpdateResaleConfigInput,
   UpsertPriceListInput,
   VariantPricingInput,
 } from "@cloudcommerce/validators";
@@ -56,6 +63,7 @@ type ComputedPrice = {
   compareAtAmountMinor: number | null;
   currency: Currency;
   origin: PriceOrigin;
+  appliedTier: PriceTier;
   validFrom: Date;
   validTo: Date | null;
   supplierCost: SupplierCostEntity;
@@ -75,7 +83,12 @@ export class PricingService {
     if (!canReadPricing(actor)) {
       return err({ type: actor.kind === "public" ? "UNAUTHENTICATED" : "FORBIDDEN" });
     }
-    const computed = await this.computeVariantPrice(input.variantId, input.currency, new Date());
+    const computed = await this.computeVariantPrice(
+      input.variantId,
+      input.currency,
+      new Date(),
+      input.quantity,
+    );
     if (!computed.ok) {
       return computed;
     }
@@ -85,7 +98,17 @@ export class PricingService {
   public async getCatalogPriceByProductId(
     productId: string,
     currency: Currency = "ARS",
-  ): Promise<Result<{ salePriceMinor: number; compareAtPriceMinor: number | null; currency: "ARS" }, PricingDomainError>> {
+  ): Promise<
+    Result<
+      {
+        salePriceMinor: number;
+        compareAtPriceMinor: number | null;
+        currency: "ARS";
+        wholesale: { minQuantity: number; priceMinor: number } | null;
+      },
+      PricingDomainError
+    >
+  > {
     const variant = await this.repository.findPrimaryVariantByProductId(productId);
     if (!variant) {
       return err({ type: "PRICE_POLICY_VIOLATION" });
@@ -94,10 +117,24 @@ export class PricingService {
     if (!computed.ok) {
       return computed;
     }
+    // Tramo mayorista publicable (si está habilitado y realmente es más barato).
+    const config = await this.repository.getResaleConfig();
+    let wholesale: { minQuantity: number; priceMinor: number } | null = null;
+    if (config.wholesaleEnabled) {
+      const wholesaleMinor = applyMarkup(
+        computed.value.supplierCost.costAmountMinor,
+        PricingValueKind.PERCENT,
+        config.wholesaleMarginBps,
+      );
+      if (wholesaleMinor < computed.value.amountMinor) {
+        wholesale = { minQuantity: config.wholesaleMinQty, priceMinor: wholesaleMinor };
+      }
+    }
     return ok({
       salePriceMinor: computed.value.amountMinor,
       compareAtPriceMinor: computed.value.compareAtAmountMinor,
       currency: "ARS",
+      wholesale,
     });
   }
 
@@ -266,6 +303,7 @@ export class PricingService {
     variantId: string,
     currency: Currency,
     at: Date,
+    quantity?: number,
   ): Promise<Result<ComputedPrice, PricingDomainError>> {
     if (currency !== "ARS") {
       return err({ type: "CURRENCY_MISMATCH" });
@@ -285,43 +323,79 @@ export class PricingService {
       return err({ type: "NO_ACTIVE_MARKUP_RULE" });
     }
 
+    let retail: ComputedPrice;
     if (manualPrice) {
       const ruleMinMargin = markup?.minMarginBps ?? null;
       if (ruleMinMargin !== null && manualPrice.amountMinor < minSalePriceForMargin(cost.costAmountMinor, ruleMinMargin)) {
         return err({ type: "MARGIN_BELOW_MINIMUM", minMarginBps: ruleMinMargin });
       }
       const compareAt = await this.resolveCompareAt(manualPrice, priceList.id, currency, at);
-      return ok({
+      retail = {
         variantId,
         amountMinor: manualPrice.amountMinor,
         compareAtAmountMinor: compareAt,
         currency,
         origin: PriceOrigin.MANUAL,
+        appliedTier: "RETAIL",
         validFrom: manualPrice.validFrom,
         validTo: manualPrice.validTo,
         supplierCost: cost,
         markupRule: markup,
-      });
+      };
+    } else {
+      if (!markup) {
+        return err({ type: "NO_ACTIVE_MARKUP_RULE" });
+      }
+      const base = applyMarkup(cost.costAmountMinor, markup.kind, markup.value);
+      const amountMinor = applyMinimumMargin(base, cost.costAmountMinor, markup.minMarginBps);
+      const previous = await this.repository.getPreviousPrice(variantId, priceList.id, currency, at);
+      const compareAt = previous && previous.amountMinor > amountMinor ? previous.amountMinor : null;
+      retail = {
+        variantId,
+        amountMinor,
+        compareAtAmountMinor: compareAt,
+        currency,
+        origin: PriceOrigin.COMPUTED,
+        appliedTier: "RETAIL",
+        validFrom: at,
+        validTo: null,
+        supplierCost: cost,
+        markupRule: markup,
+      };
     }
 
-    if (!markup) {
-      return err({ type: "NO_ACTIVE_MARKUP_RULE" });
+    return ok(await this.applyResaleTier(retail, quantity));
+  }
+
+  /**
+   * Tramo mayorista del modo reventa: comprando `wholesaleMinQty`+ unidades el
+   * precio pasa a costo + `wholesaleMarginBps` (0 = precio del proveedor).
+   * El margen mínimo minorista NO aplica acá — el mayorista es deliberado; la
+   * ganancia del negocio en ese tramo es el rebate del proveedor. El precio
+   * minorista queda como compareAt para que el ahorro sea visible.
+   */
+  private async applyResaleTier(price: ComputedPrice, quantity?: number): Promise<ComputedPrice> {
+    if (!quantity || quantity < 1) {
+      return price;
     }
-    const base = applyMarkup(cost.costAmountMinor, markup.kind, markup.value);
-    const amountMinor = applyMinimumMargin(base, cost.costAmountMinor, markup.minMarginBps);
-    const previous = await this.repository.getPreviousPrice(variantId, priceList.id, currency, at);
-    const compareAt = previous && previous.amountMinor > amountMinor ? previous.amountMinor : null;
-    return ok({
-      variantId,
-      amountMinor,
-      compareAtAmountMinor: compareAt,
-      currency,
-      origin: PriceOrigin.COMPUTED,
-      validFrom: at,
-      validTo: null,
-      supplierCost: cost,
-      markupRule: markup,
-    });
+    const config = await this.repository.getResaleConfig();
+    if (!config.wholesaleEnabled || quantity < config.wholesaleMinQty) {
+      return price;
+    }
+    const wholesaleMinor = applyMarkup(
+      price.supplierCost.costAmountMinor,
+      PricingValueKind.PERCENT,
+      config.wholesaleMarginBps,
+    );
+    if (wholesaleMinor >= price.amountMinor) {
+      return price;
+    }
+    return {
+      ...price,
+      amountMinor: wholesaleMinor,
+      compareAtAmountMinor: price.amountMinor,
+      appliedTier: "WHOLESALE",
+    };
   }
 
   private async resolveCompareAt(price: PriceEntity, listId: string, currency: Currency, at: Date): Promise<number | null> {
@@ -346,6 +420,7 @@ export class PricingService {
       price: { amountMinor: price.amountMinor, currency: price.currency },
       compareAtPrice: price.compareAtAmountMinor ? { amountMinor: price.compareAtAmountMinor, currency: price.currency } : null,
       origin: price.origin,
+      appliedTier: price.appliedTier,
       validFrom: price.validFrom,
       validTo: price.validTo,
     };
@@ -355,11 +430,60 @@ export class PricingService {
     const internalBreakdown: PriceBreakdownInternal = {
       ...publicBreakdown,
       supplierCost: { amountMinor: price.supplierCost.costAmountMinor, currency: price.currency },
+      supplierId: price.supplierCost.supplierId,
       markupRule: price.markupRule ? this.presentMarkupRule(price.markupRule) : null,
       marginMinor: price.amountMinor - price.supplierCost.costAmountMinor,
       marginBps: marginBps(price.amountMinor, price.supplierCost.costAmountMinor),
     };
     return internalBreakdown;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Modo reventa (dropshipping)
+  // ---------------------------------------------------------------------------
+
+  public async getResaleConfig(actor: Actor): Promise<Result<ResaleConfig, PricingDomainError>> {
+    if (!canReadPricing(actor)) {
+      return err({ type: actor.kind === "public" ? "UNAUTHENTICATED" : "FORBIDDEN" });
+    }
+    return ok(await this.repository.getResaleConfig());
+  }
+
+  public async updateResaleConfig(
+    actor: Actor,
+    input: UpdateResaleConfigInput,
+  ): Promise<Result<ResaleConfig, PricingDomainError>> {
+    if (!canManagePricePolicy(actor)) {
+      return err({ type: actor.kind === "public" ? "UNAUTHENTICATED" : "FORBIDDEN" });
+    }
+    return ok(await this.repository.updateResaleConfig(input));
+  }
+
+  /** Consulta interna (catálogo/órdenes) — sin actor: config no sensible. */
+  public async isBackorderEnabled(): Promise<boolean> {
+    const config = await this.repository.getResaleConfig();
+    return config.allowBackorder;
+  }
+
+  public async supplierRebateReport(
+    actor: Actor,
+    input: SupplierRebateReportInput,
+  ): Promise<Result<SupplierRebateRow[], PricingDomainError>> {
+    if (!canViewSensitivePricing(actor)) {
+      return err({ type: actor.kind === "public" ? "UNAUTHENTICATED" : "FORBIDDEN" });
+    }
+    return ok(await this.repository.getSupplierRebateReport(input.from, input.to));
+  }
+
+  public async setSupplierRebate(
+    actor: Actor,
+    input: SetSupplierRebateInput,
+  ): Promise<Result<{ updated: boolean }, PricingDomainError>> {
+    if (!canManagePricePolicy(actor)) {
+      return err({ type: actor.kind === "public" ? "UNAUTHENTICATED" : "FORBIDDEN" });
+    }
+    const updated = await this.repository.setSupplierRebate(input.supplierId, input.rebateBps);
+    return ok({ updated });
   }
 
   private presentPriceList(priceList: PriceListEntity): PriceListResponse {

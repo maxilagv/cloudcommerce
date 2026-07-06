@@ -1,8 +1,9 @@
-import type { ProductDetailData } from "@/lib/mock-product-detail";
+import type { ProductCardData } from "@/lib/catalog-types";
+import { productHref } from "@/lib/catalog-types";
+import type { ProductDetailData } from "@/lib/product-detail-types";
+import { BASE_URL, SITE_NAME } from "./site";
 
-const BASE_URL = "https://www.cloudcommerce.com.ar";
-
-/** Remove undefined/null/empty values from JSON-LD before serialization — skill §12.1 */
+/** Remove undefined/null/empty values from JSON-LD before serialization. */
 export function removeEmpty<T>(input: T): T {
   if (Array.isArray(input)) {
     const filtered = (input as unknown[])
@@ -25,10 +26,15 @@ export function removeEmpty<T>(input: T): T {
   return input;
 }
 
-/** Full Product JSON-LD — skill §12 */
+/** Product images may be absolute API media URLs or local /public paths. */
+function absoluteUrl(pathOrUrl: string): string {
+  return pathOrUrl.startsWith("http") ? pathOrUrl : `${BASE_URL}${pathOrUrl}`;
+}
+
+/** Full Product JSON-LD for the PDP. */
 export function buildProductJsonLd(product: ProductDetailData) {
   const canonical = `${BASE_URL}/products/${product.slug}`;
-  const images = product.images.map((img) => `${BASE_URL}${img}`);
+  const images = product.images.map(absoluteUrl);
 
   const additionalProperty = product.specs[0]?.rows.slice(0, 5).map((row) => ({
     "@type": "PropertyValue",
@@ -70,11 +76,13 @@ export function buildProductJsonLd(product: ProductDetailData) {
     image: images,
     url: canonical,
     sku: product.sku,
-    brand: {
-      "@type": "Brand",
-      name: product.brand,
-    },
-    color: product.colorVariants.find((c) => c.id === product.activeColor)?.label,
+    brand: product.brand
+      ? {
+          "@type": "Brand",
+          name: product.brand,
+        }
+      : undefined,
+    category: product.category,
     additionalProperty,
     aggregateRating,
     review,
@@ -93,55 +101,43 @@ export function buildProductJsonLd(product: ProductDetailData) {
       itemCondition: "https://schema.org/NewCondition",
       seller: {
         "@type": "Organization",
-        name: "cloudcommerce",
+        name: SITE_NAME,
       },
-      hasMerchantReturnPolicy:
-        product.shipping === "free"
-          ? {
-              "@type": "MerchantReturnPolicy",
-              applicableCountry: "AR",
-              returnPolicyCategory:
-                "https://schema.org/MerchantReturnFiniteReturnWindow",
-              merchantReturnDays: 30,
-              returnMethod: "https://schema.org/ReturnByMail",
-              returnFees: "https://schema.org/FreeReturn",
-            }
-          : undefined,
-      shippingDetails:
-        product.shipping === "free"
-          ? {
-              "@type": "OfferShippingDetails",
-              shippingDestination: {
-                "@type": "DefinedRegion",
-                addressCountry: "AR",
-              },
-              deliveryTime: {
-                "@type": "ShippingDeliveryTime",
-                handlingTime: {
-                  "@type": "QuantitativeValue",
-                  minValue: 0,
-                  maxValue: 1,
-                  unitCode: "DAY",
-                },
-                transitTime: {
-                  "@type": "QuantitativeValue",
-                  minValue: 1,
-                  maxValue: 3,
-                  unitCode: "DAY",
-                },
-              },
-              shippingRate: {
-                "@type": "MonetaryAmount",
-                value: 0,
-                currency: "ARS",
-              },
-            }
-          : undefined,
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "AR",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: 30,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
+      },
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "AR",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 0,
+            maxValue: 1,
+            unitCode: "DAY",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 3,
+            unitCode: "DAY",
+          },
+        },
+      },
     },
   };
 }
 
-/** BreadcrumbList JSON-LD — skill §13 */
+/** BreadcrumbList JSON-LD. */
 export function buildBreadcrumbJsonLd(
   items: { label: string; href?: string }[],
 ) {
@@ -157,18 +153,38 @@ export function buildBreadcrumbJsonLd(
   };
 }
 
-/** Organization / OnlineStore — skill §15 */
+/**
+ * ItemList JSON-LD for catalog/category listings — lets Google understand
+ * the page as a product list and index the linked PDPs.
+ */
+export function buildItemListJsonLd(
+  products: ProductCardData[],
+  listUrl: string,
+  listName: string,
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${listUrl}#list`,
+    name: listName,
+    numberOfItems: products.length,
+    itemListElement: products.slice(0, 24).map((p, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${BASE_URL}${productHref(p)}`,
+      name: p.name,
+    })),
+  };
+}
+
+/** Organization / OnlineStore. */
 export const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "OnlineStore",
   "@id": `${BASE_URL}/#organization`,
-  name: "cloudcommerce",
+  name: SITE_NAME,
   url: BASE_URL,
-  logo: `${BASE_URL}/logo-cloudcommerce.svg`,
-  sameAs: [
-    "https://www.instagram.com/cloudcommerce",
-    "https://www.linkedin.com/company/cloudcommerce",
-  ],
+  logo: `${BASE_URL}/logo.svg`,
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
@@ -177,14 +193,15 @@ export const organizationJsonLd = {
   },
 };
 
-/** WebSite + SearchAction — skill §14 */
+/** WebSite + SearchAction (sitelinks searchbox). */
 export const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "@id": `${BASE_URL}/#website`,
-  name: "cloudcommerce",
+  name: SITE_NAME,
   url: BASE_URL,
   inLanguage: "es-AR",
+  publisher: { "@id": `${BASE_URL}/#organization` },
   potentialAction: {
     "@type": "SearchAction",
     target: `${BASE_URL}/search?q={search_term_string}`,

@@ -22,7 +22,36 @@ export const UpsertPriceListInputSchema = z.object({
 export const VariantPricingInputSchema = z.object({
   variantId: UuidSchema,
   currency: CurrencySchema.default("ARS"),
+  /** Cantidad a cotizar — activa el tramo mayorista si corresponde. */
+  quantity: z.number().int().min(1).max(9_999).optional(),
 });
+
+export const UpdateResaleConfigSchema = z
+  .object({
+    wholesaleEnabled: z.boolean(),
+    wholesaleMinQty: z.number().int().min(2).max(999),
+    wholesaleMarginBps: z.number().int().min(0).max(100_000),
+    allowBackorder: z.boolean(),
+  })
+  .strict();
+export type UpdateResaleConfigInput = z.infer<typeof UpdateResaleConfigSchema>;
+
+export const SupplierRebateReportSchema = z
+  .object({
+    from: z.coerce.date(),
+    to: z.coerce.date(),
+  })
+  .strict()
+  .refine((value) => value.from < value.to, "from debe ser anterior a to");
+export type SupplierRebateReportInput = z.infer<typeof SupplierRebateReportSchema>;
+
+export const SetSupplierRebateSchema = z
+  .object({
+    supplierId: UuidSchema,
+    rebateBps: z.number().int().min(0).max(10_000),
+  })
+  .strict();
+export type SetSupplierRebateInput = z.infer<typeof SetSupplierRebateSchema>;
 
 export const SetSupplierCostInputSchema = z.object({
   variantId: UuidSchema,

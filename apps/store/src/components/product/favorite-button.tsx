@@ -4,7 +4,7 @@ import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/store/wishlist";
 import { toast } from "@/store/toast";
-import type { ProductCardData } from "@/lib/mock-products";
+import type { ProductCardData } from "@/lib/catalog-types";
 
 export function FavoriteButton({
   product,

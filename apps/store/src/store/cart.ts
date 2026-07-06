@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ProductCardData } from '@/lib/mock-products'
+import { unitPriceFor, type ProductCardData } from '@/lib/catalog-types'
 
 export type CartItem = {
   product: ProductCardData
   quantity: number
+  /** Backend variant id (defaults to the product's active variant) — used by checkout. */
+  variantId?: string
 }
 
 type CartStore = {
@@ -37,7 +39,12 @@ export const useCart = create<CartStore>()(
             ),
           })
         } else {
-          set({ items: [...get().items, { product, quantity }] })
+          set({
+            items: [
+              ...get().items,
+              { product, quantity, variantId: product.variantId },
+            ],
+          })
         }
       },
 
@@ -71,7 +78,9 @@ export const useCart = create<CartStore>()(
 export const useCartCount = () =>
   useCart((s) => s.items.reduce((acc, i) => acc + i.quantity, 0))
 
+// El total respeta el tramo por cantidad (minorista/mayorista). El precio
+// final SIEMPRE lo re-cotiza el backend en el checkout — esto es display.
 export const useCartTotal = () =>
   useCart((s) =>
-    s.items.reduce((acc, i) => acc + i.product.price * i.quantity, 0),
+    s.items.reduce((acc, i) => acc + unitPriceFor(i.product, i.quantity) * i.quantity, 0),
   )

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Monitor, Settings, Users } from "lucide-react";
 
 const SECTIONS = [
-  { href: "/configuracion/sesiones", icon: Monitor, label: "Sesiones activas", desc: "Dispositivos con sesión abierta", ready: true },
-  { href: "/configuracion", icon: Users, label: "Usuarios admin", desc: "Roles y accesos — Fase 8", ready: false },
-  { href: "/configuracion", icon: Settings, label: "Tienda y pagos", desc: "Datos, métodos de pago — Fase 8", ready: false },
+  { href: "/configuracion/sesiones", icon: Monitor, label: "Sesiones activas", desc: "Dispositivos con sesion abierta", ready: true },
+  { href: "/configuracion/usuarios", icon: Users, label: "Usuarios admin", desc: "Roles, invitaciones y accesos", ready: true },
+  { href: "/configuracion/tienda", icon: Settings, label: "Tienda y pagos", desc: "Datos, envios, pagos y flags", ready: true },
 ];
 
 export default function ConfigPage() {
@@ -14,7 +14,7 @@ export default function ConfigPage() {
     <div className="admin-view">
       <div className="admin-ph">
         <div>
-          <h1>Configuración</h1>
+          <h1>Configuracion</h1>
           <div className="admin-ph__sub">Ajustes de tu cuenta y tu tienda</div>
         </div>
       </div>

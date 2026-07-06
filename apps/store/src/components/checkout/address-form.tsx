@@ -6,6 +6,7 @@ export type AddressData = {
   name: string;
   street: string;
   city: string;
+  province: string;
   postal: string;
   phone: string;
 };
@@ -14,6 +15,7 @@ export const emptyAddress: AddressData = {
   name: "",
   street: "",
   city: "",
+  province: "",
   postal: "",
   phone: "",
 };
@@ -25,6 +27,7 @@ export function validateAddress(value: AddressData): AddressErrors {
   if (!value.name.trim()) errors.name = "Ingresá tu nombre completo";
   if (!value.street.trim()) errors.street = "Ingresá tu dirección";
   if (!value.city.trim()) errors.city = "Ingresá tu ciudad";
+  if (!value.province.trim()) errors.province = "Ingresá tu provincia";
   if (!/^\d{4,8}$/.test(value.postal.trim())) errors.postal = "Código postal inválido";
   if (!/^[\d\s+()-]{7,}$/.test(value.phone.trim())) errors.phone = "Teléfono inválido";
   return errors;
@@ -100,10 +103,17 @@ export function AddressForm({
       />
       <Field label="Ciudad" value={value.city} onChange={set("city")} placeholder="Ciudad" error={errors.city} />
       <Field
+        label="Provincia"
+        value={value.province}
+        onChange={set("province")}
+        placeholder="Ej: Buenos Aires"
+        error={errors.province}
+      />
+      <Field
         label="Código postal"
         value={value.postal}
         onChange={set("postal")}
-        placeholder="110111"
+        placeholder="1043"
         error={errors.postal}
         inputMode="numeric"
       />
@@ -111,10 +121,9 @@ export function AddressForm({
         label="Teléfono"
         value={value.phone}
         onChange={set("phone")}
-        placeholder="+57 300 000 0000"
+        placeholder="+54 11 0000 0000"
         error={errors.phone}
         inputMode="tel"
-        className="sm:col-span-2"
       />
     </div>
   );

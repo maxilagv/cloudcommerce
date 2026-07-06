@@ -5,6 +5,9 @@ import {
   SetManualPriceInputSchema,
   SetMarkupRuleInputSchema,
   SetSupplierCostInputSchema,
+  SetSupplierRebateSchema,
+  SupplierRebateReportSchema,
+  UpdateResaleConfigSchema,
   UpsertPriceListInputSchema,
   VariantPricingInputSchema,
 } from "@cloudcommerce/validators";
@@ -61,6 +64,37 @@ export const pricingRouter = router({
       return throwPricing(result.error);
     }
     return result.value;
+  }),
+
+  resale: router({
+    getConfig: adminProcedure.query(async ({ ctx }) => {
+      const result = await ctx.container.pricing.getResaleConfig(ctx.actor);
+      if (!result.ok) {
+        return throwPricing(result.error);
+      }
+      return result.value;
+    }),
+    updateConfig: adminProcedure.input(UpdateResaleConfigSchema).mutation(async ({ ctx, input }) => {
+      const result = await ctx.container.pricing.updateResaleConfig(ctx.actor, input);
+      if (!result.ok) {
+        return throwPricing(result.error);
+      }
+      return result.value;
+    }),
+    rebateReport: adminProcedure.input(SupplierRebateReportSchema).query(async ({ ctx, input }) => {
+      const result = await ctx.container.pricing.supplierRebateReport(ctx.actor, input);
+      if (!result.ok) {
+        return throwPricing(result.error);
+      }
+      return result.value;
+    }),
+    setSupplierRebate: adminProcedure.input(SetSupplierRebateSchema).mutation(async ({ ctx, input }) => {
+      const result = await ctx.container.pricing.setSupplierRebate(ctx.actor, input);
+      if (!result.ok) {
+        return throwPricing(result.error);
+      }
+      return result.value;
+    }),
   }),
 
   discounts: router({

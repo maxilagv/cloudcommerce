@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Clock, Store, Truck } from "lucide-react";
-import { cn, formatCOP } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { SHIPPING_OPTIONS } from "@/lib/constants";
 
 const ICONS: Record<string, typeof Truck> = {
@@ -54,7 +54,7 @@ export function ShippingOptions({
                   opt.cost === 0 ? "text-cc-success" : "text-cc-text",
                 )}
               >
-                {opt.cost === 0 ? "Gratis" : formatCOP(opt.cost)}
+                {opt.cost === 0 ? "Gratis" : formatPrice(opt.cost)}
               </span>
               <span
                 className={cn(

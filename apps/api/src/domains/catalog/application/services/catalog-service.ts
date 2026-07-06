@@ -695,6 +695,12 @@ export class CatalogService {
       mainImage: this.presentMediaAsset(aggregate.mainImage),
       price: price ? { amountMinor: price.salePriceMinor, currency: price.currency } : null,
       compareAtPrice: price?.compareAtPriceMinor ? { amountMinor: price.compareAtPriceMinor, currency: price.currency } : null,
+      wholesale: price?.wholesale
+        ? {
+            minQuantity: price.wholesale.minQuantity,
+            price: { amountMinor: price.wholesale.priceMinor, currency: price.currency },
+          }
+        : null,
       currency: "ARS",
       stockStatus,
       status: aggregate.product.status,
@@ -770,7 +776,12 @@ const sanitizeAttributes = (attributes: Record<string, unknown>): Record<string,
 };
 
 export class PlaceholderPriceReader implements PriceReaderPort {
-  public async getProductPrice(_productId: string): Promise<{ salePriceMinor: number; compareAtPriceMinor: number | null; currency: "ARS" } | null> {
+  public async getProductPrice(_productId: string): Promise<{
+    salePriceMinor: number;
+    compareAtPriceMinor: number | null;
+    currency: "ARS";
+    wholesale: { minQuantity: number; priceMinor: number } | null;
+  } | null> {
     return null;
   }
 }

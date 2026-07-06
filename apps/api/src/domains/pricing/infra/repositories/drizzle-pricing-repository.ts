@@ -2,15 +2,26 @@ import {
   auditLog,
   discount,
   markupRule,
+  order,
+  orderLine,
   outboxEvent,
   price,
   priceList,
   product,
   productVariant,
+  resaleConfig,
+  supplier,
   supplierCost,
 } from "@cloudcommerce/database";
-import { PriceOrigin, PricingScope, type Currency } from "@cloudcommerce/types";
-import { and, desc, eq, gt, isNull, lte, or, type SQL } from "drizzle-orm";
+import {
+  OrderStatus,
+  PriceOrigin,
+  PricingScope,
+  type Currency,
+  type ResaleConfig,
+  type SupplierRebateRow,
+} from "@cloudcommerce/types";
+import { and, desc, eq, gt, gte, isNull, lt, lte, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { Database } from "../../../../infrastructure/database/client.js";
 import { PricingWriteConflictError } from "../../application/pricing-repository.js";
@@ -29,8 +40,113 @@ import type {
   VariantPricingContext,
 } from "../../application/pricing-repository.js";
 
+const RESALE_CONFIG_ID = "default";
+const RESALE_CACHE_TTL_MS = 10_000;
+const DEFAULT_RESALE_CONFIG: ResaleConfig = {
+  wholesaleEnabled: false,
+  wholesaleMinQty: 4,
+  wholesaleMarginBps: 0,
+  allowBackorder: false,
+};
+
+/** Estados de orden que NO cuentan como venta para liquidaciones. */
+const NON_SALE_STATUSES = [
+  OrderStatus.DRAFT,
+  OrderStatus.CANCELLED,
+  OrderStatus.RETURN_REQUESTED,
+  OrderStatus.RETURNED,
+];
+
 export class DrizzlePricingRepository implements PricingRepository {
+  // La config de reventa se consulta por cada precio publicado — cache corto.
+  private resaleCache: { value: ResaleConfig; expiresAt: number } | null = null;
+
   public constructor(private readonly db: Database) {}
+
+  public async getResaleConfig(): Promise<ResaleConfig> {
+    const now = Date.now();
+    if (this.resaleCache && this.resaleCache.expiresAt > now) {
+      return this.resaleCache.value;
+    }
+    const row = await this.db.query.resaleConfig.findFirst({
+      where: eq(resaleConfig.id, RESALE_CONFIG_ID),
+    });
+    const value: ResaleConfig = row
+      ? {
+          wholesaleEnabled: row.wholesaleEnabled,
+          wholesaleMinQty: row.wholesaleMinQty,
+          wholesaleMarginBps: row.wholesaleMarginBps,
+          allowBackorder: row.allowBackorder,
+        }
+      : DEFAULT_RESALE_CONFIG;
+    this.resaleCache = { value, expiresAt: now + RESALE_CACHE_TTL_MS };
+    return value;
+  }
+
+  public async updateResaleConfig(config: ResaleConfig): Promise<ResaleConfig> {
+    await this.db
+      .insert(resaleConfig)
+      .values({ id: RESALE_CONFIG_ID, ...config, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: resaleConfig.id,
+        set: { ...config, updatedAt: new Date() },
+      });
+    this.resaleCache = null;
+    return this.getResaleConfig();
+  }
+
+  public async getSupplierRebateReport(from: Date, to: Date): Promise<SupplierRebateRow[]> {
+    const rows = await this.db
+      .select({
+        supplierId: orderLine.supplierId,
+        orders: sql<number>`count(distinct ${order.id})::int`,
+        unitsSold: sql<number>`coalesce(sum(${orderLine.quantity}), 0)::int`,
+        salesMinor: sql<number>`coalesce(sum(${orderLine.lineTotalMinor}), 0)::bigint`,
+        supplierCostMinor: sql<number>`coalesce(sum(coalesce(${orderLine.supplierCostSnapshotMinor}, 0) * ${orderLine.quantity}), 0)::bigint`,
+      })
+      .from(orderLine)
+      .innerJoin(order, eq(orderLine.orderId, order.id))
+      .where(
+        and(
+          gte(order.createdAt, from),
+          lt(order.createdAt, to),
+          notInArray(order.status, NON_SALE_STATUSES),
+        ),
+      )
+      .groupBy(orderLine.supplierId);
+
+    const suppliers = await this.db
+      .select({ id: supplier.id, name: supplier.name, rebateBps: supplier.rebateBps })
+      .from(supplier);
+    const supplierById = new Map(suppliers.map((s) => [s.id, s]));
+
+    return rows
+      .map((row) => {
+        const info = row.supplierId ? supplierById.get(row.supplierId) : undefined;
+        const rebateBps = info?.rebateBps ?? 0;
+        const salesMinor = Number(row.salesMinor);
+        return {
+          supplierId: row.supplierId,
+          supplierName: info?.name ?? null,
+          rebateBps,
+          orders: row.orders,
+          unitsSold: row.unitsSold,
+          salesMinor,
+          supplierCostMinor: Number(row.supplierCostMinor),
+          expectedRebateMinor: Math.floor((salesMinor * rebateBps) / 10_000),
+        };
+      })
+      .sort((a, b) => b.salesMinor - a.salesMinor);
+  }
+
+  public async setSupplierRebate(supplierId: string, rebateBps: number): Promise<boolean> {
+    const [row] = await this.db
+      .update(supplier)
+      .set({ rebateBps, updatedAt: new Date() })
+      .where(eq(supplier.id, supplierId))
+      .returning({ id: supplier.id });
+    return Boolean(row);
+  }
 
   public async findVariantContext(variantId: string): Promise<VariantPricingContext | null> {
     const [row] = await this.db

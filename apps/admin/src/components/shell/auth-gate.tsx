@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { useUiStore } from "@/stores/ui-store";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { CommandPalette } from "./command-palette";
 
 /**
  * Client-side session gate for the dashboard group. Resolves `identity.me`;
@@ -49,6 +50,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <Topbar me={me} />
         <div className="admin-content">{children}</div>
       </div>
+      <CommandPalette />
     </div>
   );
 }

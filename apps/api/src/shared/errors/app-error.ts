@@ -54,6 +54,7 @@ export const errorTitles: Record<ApiErrorCode, string> = {
   AI_QUOTA_EXCEEDED: "AI quota exceeded",
   AI_RESPONSE_INVALID: "AI response invalid",
   AI_CONTENT_REJECTED: "AI content rejected",
+  IMAGE_SOURCE_REQUIRED: "Image source required",
   SUPPLIER_REJECTED: "Supplier rejected the order",
   SSRF_BLOCKED: "URL not allowed",
   FEED_RUN_IN_PROGRESS: "Feed run already in progress",
