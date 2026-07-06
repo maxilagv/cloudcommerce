@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, Truck, Clock, CheckCircle2, XCircle, Package, MapPin, CreditCard } from "lucide-react";
-import { formatCOP } from "@/lib/utils";
-import type { Order, OrderStatus } from "@/lib/mock-account";
+import { formatPrice } from "@/lib/utils";
+import type { Order, OrderStatus } from "@/lib/account-types";
 
 const statusConfig: Record<
   OrderStatus,
@@ -21,9 +21,10 @@ const TIMELINE_STEPS = [
   { label: "Entregado", statuses: ["delivered"] as OrderStatus[] },
 ];
 
-export function OrderDetail({ order }: { order: Order }) {
+export function OrderDetail({ order }: { order: Order & { orderNumber?: string } }) {
   const cfg = statusConfig[order.status];
   const { Icon } = cfg;
+  const displayNumber = order.orderNumber ?? order.id;
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,7 +39,7 @@ export function OrderDetail({ order }: { order: Order }) {
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-[22px] font-bold text-cc-text">
-            Pedido #{order.id}
+            Pedido #{displayNumber}
           </h1>
           <span
             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-semibold ${cfg.bg} ${cfg.text}`}
@@ -120,7 +121,7 @@ export function OrderDetail({ order }: { order: Order }) {
                 </p>
               </div>
               <p className="text-[14px] font-bold text-cc-text shrink-0">
-                {formatCOP(item.price * item.qty)}
+                {formatPrice(item.price * item.qty)}
               </p>
             </li>
           ))}
@@ -130,23 +131,23 @@ export function OrderDetail({ order }: { order: Order }) {
         <div className="border-t border-cc-border-subtle mt-4 pt-4 flex flex-col gap-2">
           <div className="flex justify-between text-[13px] text-cc-secondary">
             <span>Subtotal</span>
-            <span>{formatCOP(order.subtotal)}</span>
+            <span>{formatPrice(order.subtotal)}</span>
           </div>
           {order.discount > 0 && (
             <div className="flex justify-between text-[13px] text-cc-success">
               <span>Descuento</span>
-              <span>-{formatCOP(order.discount)}</span>
+              <span>-{formatPrice(order.discount)}</span>
             </div>
           )}
           <div className="flex justify-between text-[13px] text-cc-secondary">
             <span>Envío</span>
             <span className={order.shipping === 0 ? "text-cc-success font-medium" : ""}>
-              {order.shipping === 0 ? "Gratis" : formatCOP(order.shipping)}
+              {order.shipping === 0 ? "Gratis" : formatPrice(order.shipping)}
             </span>
           </div>
           <div className="flex justify-between text-[16px] font-black text-cc-text border-t border-cc-border-subtle pt-2 mt-1">
             <span>Total</span>
-            <span>{formatCOP(order.total)}</span>
+            <span>{formatPrice(order.total)}</span>
           </div>
         </div>
       </div>
@@ -156,7 +157,7 @@ export function OrderDetail({ order }: { order: Order }) {
         <div className="bg-cc-shell border border-cc-border-subtle rounded-cc-xl shadow-cc-sm p-4">
           <div className="flex items-center gap-2 mb-2">
             <MapPin className="h-4 w-4 text-cc-primary" strokeWidth={1.8} />
-            <h3 className="text-[13px] font-bold text-cc-text">Dirección de entrega</h3>
+            <h3 className="text-[13px] font-bold text-cc-text">Entrega</h3>
           </div>
           <p className="text-[13px] text-cc-secondary">{order.address}</p>
         </div>
@@ -166,7 +167,9 @@ export function OrderDetail({ order }: { order: Order }) {
             <h3 className="text-[13px] font-bold text-cc-text">Método de pago</h3>
           </div>
           <p className="text-[13px] text-cc-secondary">
-            Tarjeta terminada en {order.paymentLast4}
+            {order.paymentLast4
+              ? `Tarjeta terminada en ${order.paymentLast4}`
+              : "Pago a coordinar con el vendedor"}
           </p>
         </div>
       </div>

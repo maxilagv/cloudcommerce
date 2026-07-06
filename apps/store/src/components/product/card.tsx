@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Check, Scale, Star, Truck, Sparkles } from "lucide-react";
-import type { ProductCardData } from "@/lib/mock-products";
-import { cn, formatCOP } from "@/lib/utils";
+import { productHref, type ProductCardData } from "@/lib/catalog-types";
+import { cn, formatPrice } from "@/lib/utils";
 import { useCompare } from "@/store/compare";
 import { FavoriteButton } from "./favorite-button";
 import { AddToCartButton } from "./add-to-cart-button";
@@ -69,7 +69,7 @@ export function ProductCard({
           clicks fall through to this link; interactive controls re-enable
           pointer events (pointer-events-auto) to keep working. */}
       <Link
-        href={`/products/${product.id}`}
+        href={productHref(product)}
         className="absolute inset-0 z-0 rounded-cc-lg"
         aria-label={`Ver ${product.name}`}
       />
@@ -127,39 +127,50 @@ export function ProductCard({
           {product.name}
         </h3>
 
-        {/* Rating */}
-        <div className="mt-1 flex items-center gap-1 text-xs text-cc-secondary">
-          <Star className="h-[13px] w-[13px] fill-cc-star text-cc-star" />
-          <span className="font-semibold text-cc-text">
-            {product.rating.toFixed(1)}
-          </span>
-          <span className="text-cc-muted">({product.reviewCount})</span>
-        </div>
+        {/* Rating (hidden until the product has reviews) */}
+        {product.reviewCount > 0 && (
+          <div className="mt-1 flex items-center gap-1 text-xs text-cc-secondary">
+            <Star className="h-[13px] w-[13px] fill-cc-star text-cc-star" />
+            <span className="font-semibold text-cc-text">
+              {product.rating.toFixed(1)}
+            </span>
+            <span className="text-cc-muted">({product.reviewCount})</span>
+          </div>
+        )}
 
         {/* Features */}
-        <ul className="mt-1.5 grid gap-1">
-          {product.features.slice(0, 3).map((feature) => (
-            <li
-              key={feature}
-              className="flex items-center gap-1.5 text-[11.5px] text-cc-secondary"
-            >
-              <Check className="h-3 w-3 shrink-0 text-cc-primary" strokeWidth={2.4} />
-              <span className="truncate">{feature}</span>
-            </li>
-          ))}
-        </ul>
+        {product.features.length > 0 && (
+          <ul className="mt-1.5 grid gap-1">
+            {product.features.slice(0, 3).map((feature) => (
+              <li
+                key={feature}
+                className="flex items-center gap-1.5 text-[11.5px] text-cc-secondary"
+              >
+                <Check className="h-3 w-3 shrink-0 text-cc-primary" strokeWidth={2.4} />
+                <span className="truncate">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* Price */}
         <div className="mt-auto flex items-baseline gap-2 pt-2.5">
           <span className="text-[19px] font-extrabold leading-[1.1] tracking-[-0.025em] text-cc-text">
-            {formatCOP(product.price)}
+            {formatPrice(product.price)}
           </span>
           {product.oldPrice ? (
             <span className="text-xs text-cc-faint line-through">
-              {formatCOP(product.oldPrice)}
+              {formatPrice(product.oldPrice)}
             </span>
           ) : null}
         </div>
+
+        {/* Wholesale hint (modo reventa) */}
+        {product.wholesale && product.wholesale.price < product.price ? (
+          <p className="mt-0.5 text-[11px] font-semibold text-cc-primary">
+            {product.wholesale.minQuantity}+ u: {formatPrice(product.wholesale.price)} c/u
+          </p>
+        ) : null}
 
         {/* Shipping */}
         {product.shipping === "free" ? (

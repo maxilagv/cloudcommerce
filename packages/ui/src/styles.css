@@ -121,6 +121,7 @@
 .ui-dialog__body { padding: 0 22px 8px; font-size: 13.5px; color: var(--admin-text-secondary); }
 .ui-dialog__foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--admin-border-subtle); margin-top: 12px; }
 .ui-dialog--danger .ui-dialog__title { color: var(--admin-danger); }
+.ui-dialog--wide { width: min(94vw, 760px); }
 
 /* ---------------- Dropdown menu ---------------- */
 .ui-menu {
@@ -157,6 +158,16 @@
 .ui-toast__msg { color: var(--admin-text-muted); font-size: 11.5px; margin-top: 1px; }
 .ui-toast__close { background: none; border: none; color: var(--admin-text-faint); cursor: pointer; display: flex; padding: 2px; border-radius: 5px; }
 .ui-toast__close:hover { color: var(--admin-text-secondary); }
+.ui-toast__action {
+  flex-shrink: 0; background: var(--admin-accent-soft); color: var(--admin-accent);
+  border: 1px solid transparent; border-radius: 8px; padding: 5px 10px;
+  font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  transition: background var(--admin-duration-fast) var(--admin-ease-out),
+    color var(--admin-duration-fast) var(--admin-ease-out),
+    transform var(--admin-duration-instant) var(--admin-ease-out);
+}
+.ui-toast__action:hover { background: var(--admin-accent); color: #fff; }
+.ui-toast__action:active { transform: scale(0.96); }
 
 /* ---------------- DataTable ---------------- */
 .ui-table-scroll { overflow-x: auto; }

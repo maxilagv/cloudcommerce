@@ -30,6 +30,19 @@ export const registerMediaRoutes = async (app: FastifyInstance, container: AppCo
     reply.status(201).send(envelope(result.value, request.requestId));
   });
 
+  // Imagen pública del catálogo (consumida por apps/store). Caché larga: los
+  // assets son inmutables (el contenido nuevo siempre crea otro asset).
+  app.get("/media/public/:mediaAssetId", async (request: FastifyRequest<{ Params: { mediaAssetId: string } }>, reply: FastifyReply) => {
+    const result = await container.media.getPublicFile(request.params.mediaAssetId);
+    if (!result.ok) {
+      throw mediaErrorToAppError(result.error);
+    }
+    reply
+      .header("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800")
+      .type(result.value.contentType)
+      .send(result.value.body);
+  });
+
   app.get("/media/assets/:mediaAssetId/download", async (request: FastifyRequest<{ Params: { mediaAssetId: string } }>, reply: FastifyReply) => {
     const expiresRaw = readQueryValue(request.query, "expires");
     const signature = readQueryValue(request.query, "signature");

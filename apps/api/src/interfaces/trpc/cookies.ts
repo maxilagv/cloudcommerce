@@ -29,3 +29,23 @@ export const clearAdminCookies = (reply: FastifyReply): void => {
   reply.clearCookie(adminSessionCookie, { path: "/" });
   reply.clearCookie(adminRefreshCookie, { path: "/trpc" });
 };
+
+export const customerSessionCookie = "cc_customer_session";
+
+export const setCustomerCookie = (
+  reply: FastifyReply,
+  input: { sessionToken: string; expiresAt: Date; secure: boolean },
+): void => {
+  reply.setCookie(customerSessionCookie, input.sessionToken, {
+    httpOnly: true,
+    secure: input.secure,
+    sameSite: "lax",
+    path: "/",
+    expires: input.expiresAt,
+    signed: true,
+  });
+};
+
+export const clearCustomerCookie = (reply: FastifyReply): void => {
+  reply.clearCookie(customerSessionCookie, { path: "/" });
+};

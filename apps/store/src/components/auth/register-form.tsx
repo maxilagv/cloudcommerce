@@ -19,7 +19,7 @@ export function RegisterForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (name.trim().length < 2) {
       setError("Ingresá tu nombre");
@@ -29,17 +29,19 @@ export function RegisterForm() {
       setError("Ingresá un correo válido");
       return;
     }
-    if (password.length < 4) {
-      setError("La contraseña debe tener al menos 4 caracteres");
+    if (password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres");
       return;
     }
     setError("");
     setLoading(true);
-    window.setTimeout(() => {
-      register(name, email);
+    const ok = await register(name, email, password);
+    if (ok) {
       toast.success("Cuenta creada", { description: `Bienvenido, ${name}` });
       router.replace(returnTo);
-    }, 700);
+      return;
+    }
+    setLoading(false);
   }
 
   const inputClass =

@@ -2,23 +2,43 @@
 
 import { ChevronDown } from "lucide-react";
 import { SORT_OPTIONS, type SortKey } from "@/lib/catalog-filter";
+import type { CategoryLink, ProductCardData } from "@/lib/catalog-types";
 import { useCatalog, useFilteredProducts } from "@/store/catalog";
+import { MobileFilters } from "./mobile-filters";
 
-export function CatalogToolbar() {
+export function CatalogToolbar({
+  products,
+  categories,
+  activeCategory,
+}: {
+  products: ProductCardData[];
+  categories?: CategoryLink[];
+  activeCategory?: CategoryLink;
+}) {
   const sort = useCatalog((s) => s.sort);
   const setSort = useCatalog((s) => s.setSort);
-  const count = useFilteredProducts().length;
+  const count = useFilteredProducts(products).length;
 
   return (
-    <div className="flex items-center justify-between gap-4">
-      <p className="text-sm text-cc-muted">
-        <span className="font-semibold text-cc-text">
-          {count.toLocaleString("es-CO")}
-        </span>{" "}
-        {count === 1 ? "producto encontrado" : "productos encontrados"}
-      </p>
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <MobileFilters
+          products={products}
+          categories={categories}
+          activeCategory={activeCategory}
+        />
+        <p className="truncate text-sm text-cc-muted">
+          <span className="font-semibold text-cc-text">
+            {count.toLocaleString("es-AR")}
+          </span>{" "}
+          {count === 1 ? "producto" : "productos"}
+          {activeCategory ? (
+            <span className="hidden sm:inline"> en {activeCategory.label}</span>
+          ) : null}
+        </p>
+      </div>
 
-      <label className="flex items-center gap-2 text-sm text-cc-secondary">
+      <label className="flex shrink-0 items-center gap-2 text-sm text-cc-secondary">
         <span className="hidden sm:inline">Ordenar por:</span>
         <div className="relative">
           <select

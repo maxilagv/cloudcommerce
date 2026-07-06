@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, LockKeyhole, Radar, Truck } from "lucide-react";
-import { homePromos } from "@/lib/home-data";
+import type { HomePromo } from "@/lib/home-data";
 import { SectionHeading } from "./section-heading";
 
 const toneClass = {
@@ -18,16 +18,17 @@ const iconByPromo = {
   arrivals: Radar,
 };
 
-export function PromoGrid() {
+export function PromoGrid({ promos }: { promos: HomePromo[] }) {
+  if (promos.length === 0) return null;
   return (
     <section aria-labelledby="home-offers-title" className="mt-8">
       <SectionHeading
-        eyebrow="Seleccion premium"
+        eyebrow="Selección premium"
         title="Ofertas, lanzamientos y compra protegida"
-        description="Modulos comerciales claros, sin ruido, pensados para avanzar rapido hacia productos relevantes."
+        description="Módulos comerciales claros, sin ruido, pensados para avanzar rápido hacia productos relevantes."
       />
       <div className="grid gap-4 lg:grid-cols-4">
-        {homePromos.map((promo, index) => {
+        {promos.map((promo, index) => {
           const Icon = iconByPromo[promo.id as keyof typeof iconByPromo] ?? Radar;
           const primary = index === 0;
           return (

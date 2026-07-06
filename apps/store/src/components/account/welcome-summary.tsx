@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Package, ShoppingBag, FileDown } from "lucide-react";
-import { mockProfile } from "@/lib/mock-account";
+import { useAuth } from "@/store/auth";
 
 const quickActions = [
   { href: "/orders", label: "Ver mis pedidos", icon: Package },
@@ -9,13 +11,16 @@ const quickActions = [
 ];
 
 export function WelcomeSummary() {
+  const user = useAuth((s) => s.user);
+
   return (
     <div>
       <h1 className="text-[22px] font-bold text-cc-text">
-        Hola, {mockProfile.name.split(" ")[0]} 👋
+        Hola, {user?.name.split(" ")[0] ?? "cliente"} 👋
       </h1>
       <p className="text-[14px] text-cc-muted mt-1">
-        Miembro desde {mockProfile.memberSince} · {mockProfile.tier}
+        {user?.email}
+        {user?.tier ? ` · ${user.tier}` : ""}
       </p>
       <div className="flex flex-wrap gap-2 mt-4">
         {quickActions.map((a) => {

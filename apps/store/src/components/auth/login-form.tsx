@@ -18,23 +18,25 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       setError("Ingresá un correo válido");
       return;
     }
-    if (password.length < 4) {
-      setError("La contraseña debe tener al menos 4 caracteres");
+    if (password.length === 0) {
+      setError("Ingresá tu contraseña");
       return;
     }
     setError("");
     setLoading(true);
-    window.setTimeout(() => {
-      login(email);
+    const ok = await login(email, password);
+    if (ok) {
       toast.success("Sesión iniciada", { description: email });
       router.replace(returnTo);
-    }, 700);
+      return;
+    }
+    setLoading(false);
   }
 
   return (
@@ -111,9 +113,6 @@ export function LoginForm() {
             </Link>
           </p>
         </div>
-        <p className="mt-4 text-center text-[11px] text-cc-faint">
-          Demo: cualquier correo y contraseña funcionan.
-        </p>
       </div>
     </div>
   );

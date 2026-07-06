@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
-import { formatCOP } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { useCart, useCartTotal } from "@/store/cart";
 
 export function CartSummary() {
@@ -14,7 +14,7 @@ export function CartSummary() {
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-cc-secondary">Subtotal</span>
         <span className="text-[15px] font-extrabold tracking-tight text-cc-text">
-          {formatCOP(total)}
+          {formatPrice(total)}
         </span>
       </div>
       <p className="text-[11px] text-cc-muted">

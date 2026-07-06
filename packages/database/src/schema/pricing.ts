@@ -194,3 +194,17 @@ export const markupRuleRelations = relations(markupRule, ({ one }) => ({
     references: [product.id],
   }),
 }));
+
+/**
+ * Config del modo reventa (dropshipping) — una sola fila (id "default").
+ * Minorista: reglas de markup normales. Mayorista: a partir de
+ * `wholesaleMinQty` unidades el precio pasa a costo + `wholesaleMarginBps`.
+ */
+export const resaleConfig = pgTable("resale_config", {
+  id: text("id").primaryKey(),
+  wholesaleEnabled: boolean("wholesale_enabled").notNull().default(false),
+  wholesaleMinQty: integer("wholesale_min_qty").notNull().default(4),
+  wholesaleMarginBps: integer("wholesale_margin_bps").notNull().default(0),
+  allowBackorder: boolean("allow_backorder").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

@@ -15,6 +15,7 @@ import { trpc, type MeResponse } from "@/lib/trpc";
 import { initials } from "@/lib/format";
 import { useUiStore } from "@/stores/ui-store";
 import { ThemeToggle } from "./theme-toggle";
+import { openCommandPalette } from "./command-palette";
 
 export function Topbar({ me }: { me: MeResponse }) {
   const router = useRouter();
@@ -41,7 +42,7 @@ export function Topbar({ me }: { me: MeResponse }) {
         <span>CloudCommerce</span>
       </div>
       <div className="admin-topbar__sp" />
-      <button className="admin-search" onClick={() => toast({ tone: "info", title: "Búsqueda", message: "⌘K llega en una próxima fase" })}>
+      <button className="admin-search" onClick={openCommandPalette}>
         <Search size={15} />
         Buscar…
         <kbd>⌘K</kbd>

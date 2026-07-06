@@ -8,17 +8,24 @@ export function QuantityCounter({
   min = 1,
   max = 99,
   initial = 1,
+  value,
+  onChange,
 }: {
   min?: number;
   max?: number;
   initial?: number;
+  /** Modo controlado: la cantidad vive en el padre (precio por cantidad). */
+  value?: number;
+  onChange?: (quantity: number) => void;
 }) {
-  const [qty, setQty] = useState(initial);
+  const [internalQty, setInternalQty] = useState(initial);
   const [bump, setBump] = useState(false);
+  const qty = value ?? internalQty;
 
   function change(next: number) {
     if (next < min || next > max) return;
-    setQty(next);
+    if (value === undefined) setInternalQty(next);
+    onChange?.(next);
     setBump(true);
     setTimeout(() => setBump(false), 140);
   }

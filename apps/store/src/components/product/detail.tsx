@@ -3,9 +3,15 @@ import { ImageGallery } from "./image-gallery";
 import { ProductInfo } from "./product-info";
 import { PurchasePanel } from "./purchase-panel";
 import { ContentTabs } from "./content-tabs";
-import type { ProductDetailData } from "@/lib/mock-product-detail";
+import type { ProductDetailData } from "@/lib/product-detail-types";
 
-export function ProductDetail({ product }: { product: ProductDetailData }) {
+export function ProductDetail({
+  product,
+  pointsPer1000 = 0,
+}: {
+  product: ProductDetailData;
+  pointsPer1000?: number;
+}) {
   return (
     <main id="producto" aria-labelledby="product-title" className="mx-auto max-w-[1440px] px-4 py-6">
       <Breadcrumb items={product.breadcrumb} />
@@ -16,7 +22,7 @@ export function ProductDetail({ product }: { product: ProductDetailData }) {
         style={{ gridTemplateColumns: "45% 35% 20%" }}
       >
         <ImageGallery images={product.images} productName={product.name} />
-        <ProductInfo product={product} />
+        <ProductInfo product={product} pointsPer1000={pointsPer1000} />
         <aside className="sticky top-4">
           <PurchasePanel product={product} />
         </aside>
@@ -25,7 +31,7 @@ export function ProductDetail({ product }: { product: ProductDetailData }) {
       {/* Mobile/tablet: single column stack */}
       <div className="mt-5 flex flex-col gap-6 lg:hidden">
         <ImageGallery images={product.images} productName={product.name} />
-        <ProductInfo product={product} />
+        <ProductInfo product={product} pointsPer1000={pointsPer1000} />
         <PurchasePanel product={product} />
       </div>
 

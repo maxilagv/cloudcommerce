@@ -4,7 +4,7 @@ export function HomeBenefitsStrip() {
   return (
     <section aria-labelledby="home-benefits-title" className="mt-4">
       <h2 id="home-benefits-title" className="sr-only">
-        Beneficios de comprar en cloudcommerce
+        Beneficios de comprar en CloudCommerce
       </h2>
       <div className="grid gap-3 rounded-[24px] border border-cc-border bg-white p-3 shadow-cc-sm sm:grid-cols-2 lg:grid-cols-5">
         {homeBenefits.map(({ id, title, description, icon: Icon }) => (

@@ -5,6 +5,10 @@ import type {
   AiCatalogCandidate,
   AiCategoryContext,
   AiGatewayPort,
+  AiImageContext,
+  AiImagePayload,
+  AiImageStyle,
+  AiImageSubject,
   AiPricingContext,
   AiProductContext,
   AiUpstreamError,
@@ -92,13 +96,51 @@ const PricingResponseSchema = z.object({
   usage: UsageSchema,
 });
 
+const ImageAnalysisSchema = z.object({
+  summary: z.string().min(1).max(600),
+  qualityScore: z.number().int().min(0).max(100),
+  issues: z.array(z.string().max(300)).max(12),
+  strengths: z.array(z.string().max(300)).max(12),
+  enhancementPlan: z.string().max(1_200),
+  isUsableSource: z.boolean(),
+});
+
+const AnalyzeImageResponseSchema = z.object({
+  analysis: ImageAnalysisSchema,
+  model: z.string().min(1).max(120),
+  usage: UsageSchema,
+});
+
+const ImagePayloadSchema = z.object({
+  data: z.string().min(1),
+  mimeType: z.string().min(1).max(80),
+});
+
+const EnhanceImageResponseSchema = z.object({
+  image: ImagePayloadSchema,
+  analysis: ImageAnalysisSchema,
+  promptUsed: z.string().max(4_000),
+  model: z.string().min(1).max(120),
+  usage: UsageSchema,
+});
+
+const GenerateImageResponseSchema = z.object({
+  image: ImagePayloadSchema,
+  promptUsed: z.string().max(4_000),
+  model: z.string().min(1).max(120),
+  usage: UsageSchema,
+});
+
 const TIMEOUT_MS: Record<string, number> = {
-  "products/generate-description": 8_000,
-  "products/generate-specs": 10_000,
-  "products/generate-seo": 6_000,
-  recommendations: 6_000,
-  "trends/analyze": 6_000,
-  "pricing/optimize": 6_000,
+  "products/generate-description": 45_000,
+  "products/generate-specs": 60_000,
+  "products/generate-seo": 30_000,
+  recommendations: 45_000,
+  "trends/analyze": 60_000,
+  "pricing/optimize": 10_000,
+  "images/analyze": 60_000,
+  "images/enhance": 180_000,
+  "images/generate": 180_000,
 };
 
 export class AiHttpGateway implements AiGatewayPort {
@@ -190,6 +232,59 @@ export class AiHttpGateway implements AiGatewayPort {
       generationId: input.generationId,
       contexts: input.contexts,
     }, PricingResponseSchema);
+  }
+
+  public async analyzeImage(input: {
+    generationId: string;
+    requestId: string;
+    subject: AiImageSubject;
+    context: AiImageContext;
+    image: AiImagePayload;
+  }): Promise<Result<z.infer<typeof AnalyzeImageResponseSchema>, AiUpstreamError>> {
+    return this.call("images/analyze", input.generationId, input.requestId, {
+      generationId: input.generationId,
+      subject: input.subject,
+      context: input.context,
+      image: input.image,
+    }, AnalyzeImageResponseSchema);
+  }
+
+  public async enhanceImage(input: {
+    generationId: string;
+    requestId: string;
+    subject: AiImageSubject;
+    context: AiImageContext;
+    image: AiImagePayload;
+    style: AiImageStyle;
+    instructions: string | null;
+  }): Promise<Result<z.infer<typeof EnhanceImageResponseSchema>, AiUpstreamError>> {
+    return this.call("images/enhance", input.generationId, input.requestId, {
+      generationId: input.generationId,
+      subject: input.subject,
+      context: input.context,
+      image: input.image,
+      style: input.style,
+      instructions: input.instructions,
+    }, EnhanceImageResponseSchema);
+  }
+
+  public async generateImage(input: {
+    generationId: string;
+    requestId: string;
+    subject: AiImageSubject;
+    context: AiImageContext;
+    style: AiImageStyle;
+    instructions: string | null;
+    referenceImage: AiImagePayload | null;
+  }): Promise<Result<z.infer<typeof GenerateImageResponseSchema>, AiUpstreamError>> {
+    return this.call("images/generate", input.generationId, input.requestId, {
+      generationId: input.generationId,
+      subject: input.subject,
+      context: input.context,
+      style: input.style,
+      instructions: input.instructions,
+      referenceImage: input.referenceImage,
+    }, GenerateImageResponseSchema);
   }
 
   private async call<T extends z.ZodType>(

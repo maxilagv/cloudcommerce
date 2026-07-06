@@ -111,7 +111,13 @@ export interface CatalogRepository {
 }
 
 export interface PriceReaderPort {
-  getProductPrice(productId: string): Promise<{ salePriceMinor: number; compareAtPriceMinor: number | null; currency: "ARS" } | null>;
+  getProductPrice(productId: string): Promise<{
+    salePriceMinor: number;
+    compareAtPriceMinor: number | null;
+    currency: "ARS";
+    /** Tramo mayorista publicable (modo reventa), si aplica. */
+    wholesale: { minQuantity: number; priceMinor: number } | null;
+  } | null>;
 }
 
 export interface StockReaderPort {

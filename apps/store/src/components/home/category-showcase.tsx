@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { homeCategories } from "@/lib/home-data";
+import type { HomeCategory } from "@/lib/home-data";
 import { SectionHeading } from "./section-heading";
 
 const accentClass = {
@@ -10,16 +10,17 @@ const accentClass = {
   neutral: "from-white to-[#F8FAFD]",
 };
 
-export function CategoryShowcase() {
+export function CategoryShowcase({ categories }: { categories: HomeCategory[] }) {
+  if (categories.length === 0) return null;
   return (
     <section id="home-categories" aria-labelledby="home-categories-title" className="mt-8">
       <SectionHeading
-        eyebrow="Explora por categoria"
-        title="Encuentra rapido lo que necesitas"
-        description="Accesos visuales a las verticales principales de tecnologia, hogar y entretenimiento."
+        eyebrow="Explorá por categoría"
+        title="Encontrá rápido lo que necesitás"
+        description="Accesos visuales a las verticales principales de tecnología, hogar y entretenimiento."
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {homeCategories.map(({ id, title, description, href, image, icon: Icon, accent }) => (
+        {categories.map(({ id, title, description, href, image, icon: Icon, accent }) => (
           <Link
             key={id}
             href={href}
@@ -34,14 +35,20 @@ export function CategoryShowcase() {
               Ver productos
               <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform duration-[180ms] group-hover:translate-x-0.5" />
             </span>
-            <Image
-              src={image.src}
-              alt={image.alt}
-              width={image.width}
-              height={image.height}
-              sizes="(min-width: 1280px) 12vw, (min-width: 640px) 30vw, 42vw"
-              className="absolute -bottom-4 -right-5 max-h-[112px] w-auto max-w-[58%] object-contain drop-shadow-[0_16px_22px_rgba(16,24,40,.13)] transition-transform duration-[260ms] ease-cc-out group-hover:scale-[1.035]"
-            />
+            {image ? (
+              <Image
+                src={image.src}
+                alt={image.alt}
+                width={image.width}
+                height={image.height}
+                sizes="(min-width: 1280px) 12vw, (min-width: 640px) 30vw, 42vw"
+                className="absolute -bottom-4 -right-5 max-h-[112px] w-auto max-w-[58%] object-contain drop-shadow-[0_16px_22px_rgba(16,24,40,.13)] transition-transform duration-[260ms] ease-cc-out group-hover:scale-[1.035]"
+              />
+            ) : (
+              <span className="absolute -bottom-6 -right-6 grid h-24 w-24 place-items-center rounded-full bg-cc-primary/8 text-cc-primary/30 transition-transform duration-[260ms] ease-cc-out group-hover:scale-110">
+                <Icon className="h-10 w-10" strokeWidth={1.4} />
+              </span>
+            )}
           </Link>
         ))}
       </div>

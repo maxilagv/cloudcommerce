@@ -5,7 +5,8 @@ import { X, Send, Sparkles } from "lucide-react";
 import { ChatMessageBubble } from "./chat-message";
 import { TypingIndicator } from "./typing-indicator";
 import { QuickPrompts } from "./quick-prompts";
-import { getWelcomeMessage, getAiResponse, type ChatMessage } from "@/lib/mock-ai";
+import { getWelcomeMessage, type ChatMessage } from "@/lib/assistant-data";
+import { getAiResponse } from "@/lib/api/assistant";
 
 export function CloudIAPanel({
   open,

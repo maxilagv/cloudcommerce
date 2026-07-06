@@ -6,18 +6,28 @@ import { cn } from "../../lib/cn";
 
 export type ToastTone = "success" | "info" | "warning" | "error";
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastOptions {
   title: string;
   message?: string;
   tone?: ToastTone;
   /** ms before auto-dismiss; errors default to sticky (0). */
   duration?: number;
+  /** Optional action button (e.g. "Deshacer"). Clicking it dismisses the toast. */
+  action?: ToastAction;
 }
 
-interface ToastItem extends Required<Omit<ToastOptions, "message" | "duration">> {
+interface ToastItem {
   id: number;
+  title: string;
+  tone: ToastTone;
   message?: string;
   duration: number;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
@@ -43,10 +53,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toast = useCallback(
-    ({ title, message, tone = "info", duration }: ToastOptions) => {
+    ({ title, message, tone = "info", duration, action }: ToastOptions) => {
       const id = ++seq.current;
-      const ms = duration ?? (tone === "error" ? 0 : 2600);
-      setItems((prev) => [...prev, { id, title, message, tone, duration: ms }]);
+      // Toasts with an action stay longer so the user can reach it.
+      const ms = duration ?? (tone === "error" ? 0 : action ? 6000 : 2600);
+      setItems((prev) => [...prev, { id, title, message, tone, duration: ms, action }]);
       if (ms > 0) window.setTimeout(() => dismiss(id), ms);
     },
     [dismiss],
@@ -69,6 +80,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <b>{t.title}</b>
                 {t.message && <div className="ui-toast__msg">{t.message}</div>}
               </div>
+              {t.action && (
+                <button
+                  className="ui-toast__action"
+                  onClick={() => {
+                    dismiss(t.id);
+                    t.action?.onClick();
+                  }}
+                >
+                  {t.action.label}
+                </button>
+              )}
               <button className="ui-toast__close" onClick={() => dismiss(t.id)} aria-label="Cerrar">
                 <X size={13} />
               </button>

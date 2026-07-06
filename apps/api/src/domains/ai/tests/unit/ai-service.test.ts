@@ -110,6 +110,59 @@ class FakeGateway implements AiGatewayPort {
       },
     };
   }
+
+  public async analyzeImage(): ReturnType<AiGatewayPort["analyzeImage"]> {
+    if (this.mode !== "ok") return { ok: false, error: { type: "UPSTREAM_UNAVAILABLE" } };
+    return {
+      ok: true,
+      value: {
+        analysis: {
+          summary: "Foto correcta",
+          qualityScore: 70,
+          issues: [],
+          strengths: ["nitidez"],
+          enhancementPlan: "replace background",
+          isUsableSource: true,
+        },
+        model: "gemini",
+        usage,
+      },
+    };
+  }
+
+  public async enhanceImage(): ReturnType<AiGatewayPort["enhanceImage"]> {
+    if (this.mode !== "ok") return { ok: false, error: { type: "UPSTREAM_UNAVAILABLE" } };
+    return {
+      ok: true,
+      value: {
+        image: { data: "aW1n", mimeType: "image/png" },
+        analysis: {
+          summary: "Foto correcta",
+          qualityScore: 70,
+          issues: [],
+          strengths: [],
+          enhancementPlan: "replace background",
+          isUsableSource: true,
+        },
+        promptUsed: "studio prompt",
+        model: "gemini",
+        usage,
+      },
+    };
+  }
+
+  public async generateImage(): ReturnType<AiGatewayPort["generateImage"]> {
+    if (this.mode !== "ok") return { ok: false, error: { type: "UPSTREAM_UNAVAILABLE" } };
+    return {
+      ok: true,
+      value: {
+        image: { data: "aW1n", mimeType: "image/png" },
+        promptUsed: "studio prompt",
+        model: "gemini",
+        usage,
+      },
+    };
+  }
 }
 
 class FakeRepository implements AiRepository {

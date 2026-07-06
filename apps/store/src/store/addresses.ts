@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { mockAddresses, type Address } from "@/lib/mock-account";
+import type { Address } from "@/lib/account-types";
 
 type AddressInput = Omit<Address, "id">;
 
@@ -18,14 +18,14 @@ let seq = 0;
 const newId = () => `addr-${Date.now().toString(36)}-${seq++}`;
 
 /**
- * Seeded from mock data via the initial state: a first-time visitor sees the
- * seeds; once persisted (even to an empty list) the stored value wins, so an
- * intentionally-emptied list is respected. Gate UI on `useHydrated()`.
+ * Customer address book, persisted locally until the backend exposes customer
+ * addresses. Starts empty — the UI shows a real empty state, never seed data.
+ * Gate UI on `useHydrated()`.
  */
 export const useAddresses = create<AddressesStore>()(
   persist(
     (set) => ({
-      addresses: mockAddresses,
+      addresses: [],
       add: (a) =>
         set((s) => {
           const addr: Address = { ...a, id: newId() };

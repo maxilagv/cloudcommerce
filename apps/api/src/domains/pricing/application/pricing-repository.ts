@@ -1,4 +1,11 @@
-import type { Currency, PriceOrigin, PricingScope, PricingValueKind } from "@cloudcommerce/types";
+import type {
+  Currency,
+  PriceOrigin,
+  PricingScope,
+  PricingValueKind,
+  ResaleConfig,
+  SupplierRebateRow,
+} from "@cloudcommerce/types";
 
 export type RequestAuditContext = {
   actorId: string | null;
@@ -122,4 +129,9 @@ export interface PricingRepository {
   createDiscount(input: CreateDiscountRecord): Promise<DiscountEntity>;
   listDiscounts(input: { includeInactive: boolean; code?: string }): Promise<DiscountEntity[]>;
   deactivateDiscount(id: string): Promise<DiscountEntity | null>;
+  // Modo reventa (dropshipping)
+  getResaleConfig(): Promise<ResaleConfig>;
+  updateResaleConfig(config: ResaleConfig): Promise<ResaleConfig>;
+  getSupplierRebateReport(from: Date, to: Date): Promise<SupplierRebateRow[]>;
+  setSupplierRebate(supplierId: string, rebateBps: number): Promise<boolean>;
 }

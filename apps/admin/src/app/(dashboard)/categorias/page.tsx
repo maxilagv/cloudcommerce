@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { LayoutGrid, Plus } from "lucide-react";
+import { LayoutGrid, Plus, Sparkles } from "lucide-react";
 import {
   Badge,
   Button,
@@ -15,6 +15,7 @@ import {
   type SelectOption,
 } from "@cloudcommerce/ui";
 import type { CategoryNode } from "@cloudcommerce/types";
+import { ImageStudioDialog } from "@/components/ai/image-studio-dialog";
 import { trpc } from "@/lib/trpc";
 import { slugify } from "@/lib/slug";
 
@@ -37,6 +38,7 @@ export default function CategoriesPage() {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
+  const [aiTarget, setAiTarget] = useState<CategoryNode | null>(null);
 
   const query = useQuery({
     queryKey: ["catalog", "categories", "all"],
@@ -99,6 +101,7 @@ export default function CategoriesPage() {
                 <th>Nombre</th>
                 <th>Slug</th>
                 <th style={{ textAlign: "right" }}>Estado</th>
+                <th style={{ width: 60 }} />
               </tr>
             </thead>
             <tbody>
@@ -116,12 +119,26 @@ export default function CategoriesPage() {
                   <td style={{ textAlign: "right" }}>
                     <Badge tone={node.isActive ? "success" : "muted"}>{node.isActive ? "Activa" : "Inactiva"}</Badge>
                   </td>
+                  <td style={{ textAlign: "right" }}>
+                    <Button variant="ghost" size="sm" title="Imagen IA" onClick={() => setAiTarget(node)}>
+                      <Sparkles size={15} />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {aiTarget && (
+        <ImageStudioDialog
+          open={aiTarget !== null}
+          onOpenChange={(open) => !open && setAiTarget(null)}
+          target={{ kind: "category", id: aiTarget.id, title: aiTarget.name, mainImageMediaId: aiTarget.imageId }}
+          onApplied={() => qc.invalidateQueries({ queryKey: ["catalog", "categories"] })}
+        />
+      )}
 
       <Dialog open={creating} onOpenChange={(o) => !o && setCreating(false)}>
         <DialogContent

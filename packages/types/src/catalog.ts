@@ -79,6 +79,12 @@ export type ProductMediaResponse = {
   asset: MediaAssetResponse | null;
 };
 
+/** Precio mayorista visible en la tienda a partir de `minQuantity` unidades. */
+export type WholesaleTier = {
+  minQuantity: number;
+  price: Money;
+};
+
 export type ProductCard = SeoFields & {
   id: string;
   slug: string;
@@ -89,6 +95,7 @@ export type ProductCard = SeoFields & {
   mainImage: MediaAssetResponse | null;
   price: Money | null;
   compareAtPrice: Money | null;
+  wholesale: WholesaleTier | null;
   currency: Currency;
   stockStatus: StockStatus;
   status: ProductStatus;

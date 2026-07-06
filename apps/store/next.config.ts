@@ -1,11 +1,20 @@
 import type { NextConfig } from "next";
 
+// Product/category images are served by the API — its host must be
+// allow-listed for next/image. Derived from NEXT_PUBLIC_API_URL so dev and
+// production work without touching this file.
+const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000");
+
 const nextConfig: NextConfig = {
-  // Visual catalog build uses local placeholder images in /public, so the
-  // image optimizer stays hermetic (no outbound fetches in this container).
-  // When real product photos move to a CDN, add remotePatterns here.
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: apiUrl.protocol.replace(":", "") as "http" | "https",
+        hostname: apiUrl.hostname,
+        port: apiUrl.port,
+        pathname: "/media/public/**",
+      },
+    ],
   },
 };
 

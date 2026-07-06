@@ -1,41 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCatalog } from "@/store/catalog";
-import type { SortKey } from "@/lib/catalog-filter";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-const linkClass =
-  "cc-focus-ring rounded-cc-sm px-3 py-2 text-sm font-medium transition-[color,background] duration-[140ms] ease-cc-out text-cc-secondary hover:bg-cc-primary-softer hover:text-cc-primary";
+export const NAV_LINKS = [
+  { label: "Inicio", href: "/" },
+  { label: "Catálogo", href: "/products" },
+  { label: "Ofertas", href: "/products?deals=1" },
+  { label: "Novedades", href: "/products?sort=newest" },
+] as const;
 
+/** Desktop primary nav — plain crawlable links driven by URL params. */
 export function MainNav() {
-  const router = useRouter();
-
-  function goCatalog(sort?: SortKey) {
-    if (sort) useCatalog.getState().setSort(sort);
-    router.push("/products#catalogo");
-  }
+  const pathname = usePathname();
 
   return (
     <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
-      <Link
-        href="/"
-        className="cc-focus-ring rounded-cc-sm bg-cc-primary-soft px-3 py-2 text-sm font-bold text-cc-primary transition-[color,background] duration-[140ms] ease-cc-out"
-      >
-        Inicio
-      </Link>
-      <button type="button" onClick={() => goCatalog()} className={linkClass}>
-        Catalogo
-      </button>
-      <button type="button" onClick={() => goCatalog("price-asc")} className={linkClass}>
-        Ofertas
-      </button>
-      <button type="button" onClick={() => goCatalog("newest")} className={linkClass}>
-        Novedades
-      </button>
-      <button type="button" onClick={() => goCatalog()} className={linkClass}>
-        Marcas
-      </button>
+      {NAV_LINKS.map((link) => {
+        const isActive =
+          link.href === "/" ? pathname === "/" : link.href === "/products" && pathname === "/products";
+        return (
+          <Link
+            key={link.label}
+            href={link.href}
+            className={cn(
+              "cc-focus-ring rounded-cc-sm px-3 py-2 text-sm transition-[color,background] duration-[140ms] ease-cc-out",
+              isActive
+                ? "bg-cc-primary-soft font-bold text-cc-primary"
+                : "font-medium text-cc-secondary hover:bg-cc-primary-softer hover:text-cc-primary",
+            )}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

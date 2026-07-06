@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { mockProducts } from "@/lib/mock-products";
+import type { ProductCardData } from "@/lib/catalog-types";
 import {
   defaultCatalogQuery,
   filterAndSort,
@@ -15,7 +15,6 @@ type CatalogStore = CatalogQuery & {
   setQuery: (query: string) => void;
   setCategory: (category: string | null) => void;
   toggleBrand: (brand: string) => void;
-  setRating: (rating: number | null) => void;
   toggleAvailability: (id: string) => void;
   setPriceMax: (priceMax: number) => void;
   setSort: (sort: SortKey) => void;
@@ -40,7 +39,6 @@ export const useCatalog = create<CatalogStore>((set) => ({
         : [...s.brands, brand],
       page: 1,
     })),
-  setRating: (rating) => set((s) => ({ rating: s.rating === rating ? null : rating, page: 1 })),
   toggleAvailability: (id) =>
     set((s) => ({
       availability: s.availability.includes(id)
@@ -61,7 +59,6 @@ export function useCatalogQuery(): CatalogQuery {
       query: s.query,
       category: s.category,
       brands: s.brands,
-      rating: s.rating,
       availability: s.availability,
       priceMax: s.priceMax,
       sort: s.sort,
@@ -71,7 +68,7 @@ export function useCatalogQuery(): CatalogQuery {
 }
 
 /** Filtered + sorted product list driven by current catalog state. */
-export function useFilteredProducts() {
+export function useFilteredProducts(products: ProductCardData[]) {
   const q = useCatalogQuery();
-  return useMemo(() => filterAndSort(mockProducts, q), [q]);
+  return useMemo(() => filterAndSort(products, q), [products, q]);
 }

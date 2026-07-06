@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import type { ColorVariant, CapacityVariant } from "@/lib/mock-product-detail";
+import type { ColorVariant, CapacityVariant } from "@/lib/product-detail-types";
 
 interface VariantSelectorProps {
   colorVariants: ColorVariant[];
@@ -25,9 +25,13 @@ export function VariantSelector({
   const activeCapacityLabel =
     capacityVariants.find((c) => c.id === activeCapacity)?.label ?? "";
 
+  // Products without variants render nothing (no empty headers).
+  if (colorVariants.length === 0 && capacityVariants.length === 0) return null;
+
   return (
     <div className="flex flex-col gap-4">
       {/* Color swatches */}
+      {colorVariants.length > 0 && (
       <div>
         <p className="mb-2 text-[13px] text-cc-muted">
           Color:{" "}
@@ -55,11 +59,13 @@ export function VariantSelector({
           ))}
         </div>
       </div>
+      )}
 
-      {/* Capacity chips */}
+      {/* Variant chips */}
+      {capacityVariants.length > 0 && (
       <div>
         <p className="mb-2 text-[13px] text-cc-muted">
-          Capacidad:{" "}
+          Variante:{" "}
           <span className="font-semibold text-cc-text">{activeCapacityLabel}</span>
         </p>
         <div className="flex flex-wrap gap-2">
@@ -83,6 +89,7 @@ export function VariantSelector({
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -217,12 +217,22 @@ const requestContext = {
 };
 
 class FakePricingPort implements OrderPricingPort {
-  public async getSnapshot(): Promise<{ variantId: string; unitPriceMinor: number; supplierCostMinor: number; compareAtAmountMinor: null; currency: Currency }> {
+  public async getSnapshot(): Promise<{
+    variantId: string;
+    unitPriceMinor: number;
+    supplierCostMinor: number;
+    supplierId: string | null;
+    compareAtAmountMinor: null;
+    appliedTier: "RETAIL";
+    currency: Currency;
+  }> {
     return {
       variantId,
       unitPriceMinor: 100_000,
       supplierCostMinor: 60_000,
+      supplierId: null,
       compareAtAmountMinor: null,
+      appliedTier: "RETAIL",
       currency: "ARS",
     };
   }

@@ -4,14 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, Check, Loader2, Lock } from "lucide-react";
-import { cn, formatCOP } from "@/lib/utils";
+import { TRPCClientError } from "@trpc/client";
+import { ShippingMethod } from "@cloudcommerce/types";
+import { cn, formatPrice } from "@/lib/utils";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/store/auth";
 import { useCart, useCartTotal } from "@/store/cart";
 import { useOrders } from "@/store/orders";
 import { toast } from "@/store/toast";
 import { SHIPPING_OPTIONS, DEFAULT_SHIPPING_ID } from "@/lib/constants";
-import type { Order } from "@/lib/mock-account";
 import {
   AddressForm,
   emptyAddress,
@@ -23,16 +25,17 @@ import { ShippingOptions } from "@/components/checkout/shipping-options";
 import {
   PaymentForm,
   emptyPayment,
-  validatePayment,
   type PaymentData,
-  type PaymentErrors,
 } from "@/components/checkout/payment-form";
 
 const STEPS = ["Dirección", "Envío", "Pago", "Confirmar"];
 
-function formatDate(d: Date) {
-  return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
-}
+/** UI shipping option id → backend ShippingMethod. */
+const SHIPPING_METHOD_BY_ID: Record<string, ShippingMethod> = {
+  standard: ShippingMethod.STANDARD,
+  express: ShippingMethod.EXPRESS,
+  pickup: ShippingMethod.PICKUP,
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -41,15 +44,16 @@ export default function CheckoutPage() {
   const items = useCart((s) => s.items);
   const clearCart = useCart((s) => s.clear);
   const subtotal = useCartTotal();
-  const addOrder = useOrders((s) => s.addOrder);
+  const setLastOrderId = useOrders((s) => s.setLastOrderId);
 
   const [step, setStep] = useState(0);
   const [address, setAddress] = useState<AddressData>(emptyAddress);
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const [shippingId, setShippingId] = useState(DEFAULT_SHIPPING_ID);
   const [payment, setPayment] = useState<PaymentData>(emptyPayment);
-  const [paymentErrors, setPaymentErrors] = useState<PaymentErrors>({});
   const [placing, setPlacing] = useState(false);
+  // Protects against double-submit; regenerated after a failed attempt.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   // Prefill names once the user is known.
   useEffect(() => {
@@ -74,6 +78,7 @@ export default function CheckoutPage() {
     [shippingId],
   );
   const total = subtotal + shipping.cost;
+  const isPickup = shippingId === "pickup";
 
   if (!hydrated || !user || items.length === 0) {
     return (
@@ -84,48 +89,53 @@ export default function CheckoutPage() {
   }
 
   function next() {
-    if (step === 0) {
+    if (step === 0 && !isPickup) {
       const errs = validateAddress(address);
       setAddressErrors(errs);
-      if (Object.keys(errs).length > 0) return;
-    }
-    if (step === 2) {
-      const errs = validatePayment(payment);
-      setPaymentErrors(errs);
       if (Object.keys(errs).length > 0) return;
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
-  function placeOrder() {
+  async function placeOrder() {
     setPlacing(true);
-    const order: Order = {
-      id: `CC-${Date.now().toString().slice(-8)}`,
-      status: "preparing",
-      date: formatDate(new Date()),
-      eta: formatDate(new Date(Date.now() + 5 * 86_400_000)),
-      items: items.map((ci) => ({
-        productId: ci.product.id,
-        name: ci.product.name,
-        image: ci.product.image,
-        qty: ci.quantity,
-        price: ci.product.price,
-      })),
-      subtotal,
-      shipping: shipping.cost,
-      discount: 0,
-      total,
-      address: `${address.street}, ${address.city}`,
-      paymentLast4: payment.number.replace(/\D/g, "").slice(-4) || "0000",
-    };
+    try {
+      const shippingMethod = SHIPPING_METHOD_BY_ID[shippingId] ?? ShippingMethod.STANDARD;
+      const result = await trpc.storefront.checkout.mutate({
+        items: items.map((ci) => ({
+          productId: ci.product.id,
+          variantId: ci.variantId ?? ci.product.variantId,
+          quantity: ci.quantity,
+        })),
+        shippingMethod,
+        address:
+          shippingMethod === ShippingMethod.PICKUP
+            ? undefined
+            : {
+                recipientName: address.name.trim() || undefined,
+                province: address.province.trim(),
+                city: address.city.trim(),
+                street: address.street.trim(),
+                postalCode: address.postal.trim() || undefined,
+              },
+        notes: address.phone.trim() ? `Teléfono de contacto: ${address.phone.trim()}` : undefined,
+        idempotencyKey,
+      });
 
-    // Simulate network/payment latency.
-    window.setTimeout(() => {
-      addOrder(order);
+      setLastOrderId(result.orderId);
       clearCart();
-      toast.success("¡Pedido confirmado!", { description: `#${order.id}` });
+      toast.success("¡Pedido confirmado!", { description: `#${result.orderNumber}` });
       router.replace("/checkout/success");
-    }, 1200);
+    } catch (err) {
+      const message =
+        err instanceof TRPCClientError && err.message
+          ? err.message
+          : "No pudimos confirmar tu pedido. Intentá de nuevo.";
+      toast.error("No se pudo confirmar el pedido", { description: message });
+      // A failed attempt may have consumed the key server-side: use a fresh one.
+      setIdempotencyKey(crypto.randomUUID());
+      setPlacing(false);
+    }
   }
 
   return (
@@ -173,6 +183,11 @@ export default function CheckoutPage() {
           {step === 0 && (
             <>
               <h2 className="mb-4 text-[16px] font-bold text-cc-text">Dirección de envío</h2>
+              {isPickup && (
+                <p className="mb-4 rounded-cc-sm bg-cc-soft px-3 py-2 text-[13px] text-cc-secondary">
+                  Elegiste retiro coordinado: la dirección es opcional.
+                </p>
+              )}
               <AddressForm value={address} onChange={setAddress} errors={addressErrors} />
             </>
           )}
@@ -185,7 +200,7 @@ export default function CheckoutPage() {
           {step === 2 && (
             <>
               <h2 className="mb-4 text-[16px] font-bold text-cc-text">Pago</h2>
-              <PaymentForm value={payment} onChange={setPayment} errors={paymentErrors} />
+              <PaymentForm value={payment} onChange={setPayment} />
             </>
           )}
           {step === 3 && (
@@ -193,11 +208,17 @@ export default function CheckoutPage() {
               <h2 className="mb-4 text-[16px] font-bold text-cc-text">Revisá tu pedido</h2>
               <dl className="space-y-3 text-[13px]">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-cc-muted">Envío a</dt>
+                  <dt className="text-cc-muted">{isPickup ? "Retiro" : "Envío a"}</dt>
                   <dd className="text-right font-medium text-cc-text">
-                    {address.name}
-                    <br />
-                    {address.street}, {address.city}
+                    {isPickup ? (
+                      "Retiro coordinado con el vendedor"
+                    ) : (
+                      <>
+                        {address.name}
+                        <br />
+                        {address.street}, {address.city}, {address.province}
+                      </>
+                    )}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4 border-t border-cc-border-subtle pt-3">
@@ -206,9 +227,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between gap-4 border-t border-cc-border-subtle pt-3">
                   <dt className="text-cc-muted">Pago</dt>
-                  <dd className="font-medium text-cc-text">
-                    Tarjeta •••• {payment.number.replace(/\D/g, "").slice(-4) || "0000"}
-                  </dd>
+                  <dd className="font-medium text-cc-text">A coordinar (sin cargo ahora)</dd>
                 </div>
               </dl>
             </>
@@ -281,7 +300,7 @@ export default function CheckoutPage() {
                 </div>
                 <p className="min-w-0 flex-1 truncate text-[12px] text-cc-text">{ci.product.name}</p>
                 <p className="text-[12px] font-semibold text-cc-text">
-                  {formatCOP(ci.product.price * ci.quantity)}
+                  {formatPrice(ci.product.price * ci.quantity)}
                 </p>
               </div>
             ))}
@@ -290,18 +309,22 @@ export default function CheckoutPage() {
           <div className="mt-4 space-y-2 border-t border-cc-border-subtle pt-4 text-[13px]">
             <div className="flex justify-between">
               <span className="text-cc-secondary">Subtotal</span>
-              <span className="font-semibold text-cc-text">{formatCOP(subtotal)}</span>
+              <span className="font-semibold text-cc-text">{formatPrice(subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-cc-secondary">Envío</span>
               <span className="font-semibold text-cc-text">
-                {shipping.cost === 0 ? "Gratis" : formatCOP(shipping.cost)}
+                {shipping.cost === 0 ? "Gratis" : formatPrice(shipping.cost)}
               </span>
             </div>
             <div className="flex justify-between border-t border-cc-border-subtle pt-2 text-[15px]">
               <span className="font-bold text-cc-text">Total</span>
-              <span className="font-extrabold tracking-tight text-cc-text">{formatCOP(total)}</span>
+              <span className="font-extrabold tracking-tight text-cc-text">{formatPrice(total)}</span>
             </div>
+            <p className="pt-1 text-[11px] leading-relaxed text-cc-muted">
+              El total final lo calcula el backend con precios y stock vigentes; el pago se coordina
+              luego de confirmar.
+            </p>
           </div>
         </aside>
       </div>

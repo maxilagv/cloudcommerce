@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, Shield, Truck, RotateCcw, ThumbsUp, ChevronDown, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/store/toast";
-import type { ProductDetailData } from "@/lib/mock-product-detail";
+import type { ProductDetailData } from "@/lib/product-detail-types";
 
 type Tab = "descripcion" | "especificaciones" | "servicios" | "opiniones" | "preguntas";
 
@@ -240,7 +240,8 @@ export function ContentTabs({ product }: { product: ProductDetailData }) {
         {/* Opiniones */}
         {activeTab === "opiniones" && (
           <div id="tab-reviews">
-            {/* Summary header */}
+            {/* Summary header (only when the product has reviews) */}
+            {product.reviewCount > 0 && (
             <div className="flex flex-col sm:flex-row gap-6 items-start pb-6 border-b border-cc-border-subtle">
               {/* Big rating */}
               <div className="flex flex-col items-center gap-1 flex-shrink-0">
@@ -284,6 +285,7 @@ export function ContentTabs({ product }: { product: ProductDetailData }) {
                 })}
               </div>
             </div>
+            )}
 
             {/* Individual reviews */}
             {product.reviews.length > 0 ? (

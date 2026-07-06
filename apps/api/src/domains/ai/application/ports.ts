@@ -61,6 +61,27 @@ export type AiUpstreamError =
   | { type: "UPSTREAM_UNAVAILABLE" }
   | { type: "RESPONSE_INVALID" };
 
+export type AiImageStyle = "studio" | "lifestyle" | "hero" | "minimal";
+export type AiImageSubject = "product" | "category";
+
+export type AiImagePayload = { data: string; mimeType: string };
+
+export type AiImageContext = {
+  title: string;
+  categoryName: string;
+  brandName: string | null;
+  description: string | null;
+};
+
+export type AiImageAnalysisPayload = {
+  summary: string;
+  qualityScore: number;
+  issues: string[];
+  strengths: string[];
+  enhancementPlan: string;
+  isUsableSource: boolean;
+};
+
 export interface AiGatewayPort {
   generateProductDescription(input: {
     generationId: string;
@@ -107,6 +128,64 @@ export interface AiGatewayPort {
     requestId: string;
     contexts: AiPricingContext[];
   }): Promise<Result<{ suggestions: AiPriceSuggestion[]; usage: AiUsage }, AiUpstreamError>>;
+
+  analyzeImage(input: {
+    generationId: string;
+    requestId: string;
+    subject: AiImageSubject;
+    context: AiImageContext;
+    image: AiImagePayload;
+  }): Promise<Result<{ analysis: AiImageAnalysisPayload; model: string; usage: AiUsage }, AiUpstreamError>>;
+
+  enhanceImage(input: {
+    generationId: string;
+    requestId: string;
+    subject: AiImageSubject;
+    context: AiImageContext;
+    image: AiImagePayload;
+    style: AiImageStyle;
+    instructions: string | null;
+  }): Promise<Result<{
+    image: AiImagePayload;
+    analysis: AiImageAnalysisPayload;
+    promptUsed: string;
+    model: string;
+    usage: AiUsage;
+  }, AiUpstreamError>>;
+
+  generateImage(input: {
+    generationId: string;
+    requestId: string;
+    subject: AiImageSubject;
+    context: AiImageContext;
+    style: AiImageStyle;
+    instructions: string | null;
+    referenceImage: AiImagePayload | null;
+  }): Promise<Result<{
+    image: AiImagePayload;
+    promptUsed: string;
+    model: string;
+    usage: AiUsage;
+  }, AiUpstreamError>>;
+}
+
+/** Lee y persiste imágenes en el media storage en nombre del dominio IA. */
+export interface AiMediaPort {
+  loadImage(mediaAssetId: string): Promise<AiImagePayload | null>;
+  saveGeneratedImage(input: {
+    data: string;
+    mimeType: string;
+    altText: string | null;
+    createdBy: string | null;
+  }): Promise<{ mediaAssetId: string } | null>;
+}
+
+/** Aplica una imagen generada como imagen principal del target. */
+export interface AiTargetWriterPort {
+  setProductMainImage(productId: string, mediaAssetId: string): Promise<boolean>;
+  setCategoryImage(categoryId: string, mediaAssetId: string): Promise<boolean>;
+  getProductMainImageId(productId: string): Promise<string | null>;
+  getCategoryImageId(categoryId: string): Promise<string | null>;
 }
 
 export type CreateGenerationRecord = {

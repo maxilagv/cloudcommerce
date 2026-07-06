@@ -1,15 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, PackageCheck, ShieldCheck, Sparkles } from "lucide-react";
-import { heroProducts, homeHeroCopy } from "@/lib/home-data";
+import { homeHeroCopy, type HeroShowcaseImage } from "@/lib/home-data";
 
 const chips = [
-  { label: "Envios rapidos 24-48h", icon: PackageCheck, className: "left-[2%] top-[15%]" },
+  { label: "Envíos rápidos 24-48h", icon: PackageCheck, className: "left-[2%] top-[15%]" },
   { label: "Compra segura", icon: ShieldCheck, className: "right-[2%] top-[7%]" },
-  { label: "Garantia oficial", icon: BadgeCheck, className: "right-[8%] bottom-[12%]" },
+  { label: "Garantía oficial", icon: BadgeCheck, className: "right-[8%] bottom-[12%]" },
 ];
 
-export function HomeHero() {
+export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
   return (
     <section
       aria-labelledby="home-hero-title"
@@ -40,7 +40,7 @@ export function HomeHero() {
 
           <div className="mt-7 grid gap-3 sm:flex">
             <Link
-              href="/products?sort=price-asc"
+              href="/products?deals=1"
               className="cc-focus-ring group inline-flex h-12 items-center justify-center rounded-full bg-cc-primary px-6 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(11,107,255,.25)] transition-[transform,box-shadow,background] duration-[180ms] ease-cc-out hover:-translate-y-px hover:bg-cc-primary-hover hover:shadow-[0_18px_42px_rgba(11,107,255,.32)] active:translate-y-0 active:scale-[.985]"
             >
               {homeHeroCopy.primaryCta}
@@ -56,7 +56,7 @@ export function HomeHero() {
 
           <div className="mt-7 flex flex-wrap gap-2 text-[12px] font-bold text-cc-secondary">
             <span className="rounded-full bg-white/80 px-3 py-1.5 shadow-cc-xs">Productos originales</span>
-            <span className="rounded-full bg-white/80 px-3 py-1.5 shadow-cc-xs">Marcas lideres</span>
+            <span className="rounded-full bg-white/80 px-3 py-1.5 shadow-cc-xs">Marcas líderes</span>
             <span className="rounded-full bg-white/80 px-3 py-1.5 shadow-cc-xs">Soporte experto</span>
           </div>
         </div>
@@ -67,17 +67,24 @@ export function HomeHero() {
           <div className="absolute inset-[17%] rounded-full border border-white/80" />
 
           <div className="group absolute inset-0 transition-transform duration-[360ms] ease-cc-out hover:-translate-y-[3px] hover:scale-[1.008]">
-            {heroProducts.map((product) => (
-              <Image
+            {showcase.map((product) => (
+              <Link
                 key={product.id}
-                src={product.src}
-                alt={product.alt}
-                width={420}
-                height={420}
-                priority={product.id === "tv"}
-                sizes="(min-width: 1024px) 34vw, 90vw"
-                className={`absolute object-contain drop-shadow-[0_20px_28px_rgba(16,24,40,.14)] ${product.className}`}
-              />
+                href={product.href}
+                tabIndex={-1}
+                aria-hidden="true"
+                className={`absolute ${product.className}`}
+              >
+                <Image
+                  src={product.src}
+                  alt={product.alt}
+                  width={420}
+                  height={420}
+                  priority={product.priority}
+                  sizes="(min-width: 1024px) 34vw, 90vw"
+                  className="w-full object-contain drop-shadow-[0_20px_28px_rgba(16,24,40,.14)] transition-transform duration-[260ms] ease-cc-out hover:scale-[1.03]"
+                />
+              </Link>
             ))}
           </div>
 

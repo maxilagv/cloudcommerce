@@ -9,8 +9,8 @@ export function LogoutButton() {
   const router = useRouter();
   const logout = useAuth((s) => s.logout);
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     toast.info("Sesión cerrada");
     router.push("/");
   }

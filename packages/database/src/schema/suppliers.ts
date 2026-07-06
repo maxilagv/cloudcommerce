@@ -19,6 +19,8 @@ export const supplier = pgTable(
     slug: text("slug").notNull(),
     contact: jsonb("contact").$type<SupplierContact>(),
     apiConfigEnc: text("api_config_enc"),
+    /** Rebate acordado sobre las ventas (bps; 300 = 3%) para liquidaciones. */
+    rebateBps: integer("rebate_bps").notNull().default(300),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

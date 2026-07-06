@@ -17,6 +17,7 @@ import { createTRPCContext } from "../interfaces/trpc/context.js";
 import { registerFinanceRoutes } from "../interfaces/http/routes/finance-routes.js";
 import { registerMediaRoutes } from "../interfaces/http/routes/media-routes.js";
 import { registerSupplierWebhookRoutes } from "../interfaces/http/routes/supplier-webhook-routes.js";
+import { registerWhatsappWebhookRoutes } from "../interfaces/http/routes/whatsapp-webhook-routes.js";
 import { appRouter } from "../interfaces/trpc/router.js";
 import { AppError } from "../shared/errors/app-error.js";
 import type { AppContainer } from "./container.js";
@@ -31,7 +32,8 @@ export const buildServer = async (container: AppContainer) => {
   const app = Fastify({
     loggerInstance: container.logger as unknown as FastifyBaseLogger,
     trustProxy: container.config.TRUST_PROXY,
-    requestTimeout: 30_000,
+    // La generación de imágenes IA (ai.generateImage) puede tardar hasta ~3 min.
+    requestTimeout: 240_000,
     bodyLimit: container.config.MEDIA_MAX_REQUEST_BYTES,
   });
 
@@ -95,6 +97,7 @@ export const buildServer = async (container: AppContainer) => {
   await registerMediaRoutes(app, container);
   await registerFinanceRoutes(app, container);
   await registerSupplierWebhookRoutes(app, container);
+  await registerWhatsappWebhookRoutes(app, container);
 
   await app.register(fastifyTRPCPlugin, {
     prefix: "/trpc",

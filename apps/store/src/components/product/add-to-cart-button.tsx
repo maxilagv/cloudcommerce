@@ -5,14 +5,16 @@ import { Check, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/store/cart";
 import { toast } from "@/store/toast";
-import type { ProductCardData } from "@/lib/mock-products";
+import type { ProductCardData } from "@/lib/catalog-types";
 
 export function AddToCartButton({
   product,
   size = "md",
+  quantity = 1,
 }: {
   product: ProductCardData;
   size?: "md" | "lg";
+  quantity?: number;
 }) {
   const [added, setAdded] = useState(false);
   const add = useCart((s) => s.add);
@@ -20,10 +22,10 @@ export function AddToCartButton({
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
-    add(product);
+    add(product, quantity);
     setAdded(true);
     toast.success("Agregado al carrito", {
-      description: product.name,
+      description: quantity > 1 ? `${product.name} × ${quantity}` : product.name,
       actionLabel: "Ver carrito",
       onAction: openCart,
     });

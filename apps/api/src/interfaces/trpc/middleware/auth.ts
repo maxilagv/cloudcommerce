@@ -15,4 +15,11 @@ export const adminProcedure = t.procedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+export const customerProcedure = t.procedure.use(({ ctx, next }) => {
+  if (ctx.actor.kind !== "customer") {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Necesitas iniciar sesion en la tienda." });
+  }
+  return next({ ctx });
+});
+
 export const zodInput = <T extends z.ZodType>(schema: T): T => schema;

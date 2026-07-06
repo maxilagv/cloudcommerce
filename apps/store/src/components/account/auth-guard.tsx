@@ -10,8 +10,15 @@ import { useAuth } from "@/store/auth";
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const hydrated = useHydrated();
   const user = useAuth((s) => s.user);
+  const hydrateSession = useAuth((s) => s.hydrateSession);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Recover the cookie session once on mount so a refreshed page stays logged in
+  // (and drop the stale local user when the server session expired).
+  useEffect(() => {
+    void hydrateSession();
+  }, [hydrateSession]);
 
   useEffect(() => {
     if (hydrated && !user) {

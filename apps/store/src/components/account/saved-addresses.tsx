@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAddresses } from "@/store/addresses";
 import { toast } from "@/store/toast";
 import { Modal } from "@/components/ui/modal";
-import type { Address } from "@/lib/mock-account";
+import type { Address } from "@/lib/account-types";
 
 type FormState = { label: string; name: string; street: string; city: string; isPrimary: boolean };
 

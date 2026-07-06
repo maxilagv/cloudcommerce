@@ -97,6 +97,77 @@ describe("PricingService", () => {
     expect(repository.openSupplierCostsFor(variantId, "USD")).toHaveLength(1);
   });
 
+  it("cotiza minorista por debajo del umbral mayorista", async () => {
+    const repository = new FakePricingRepository();
+    repository.resale = { wholesaleEnabled: true, wholesaleMinQty: 4, wholesaleMarginBps: 0, allowBackorder: false };
+    const service = new PricingService(repository);
+
+    const result = await service.computeSalePrice(admin(AdminRole.OWNER), { variantId, currency: "ARS", quantity: 3 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.price.amountMinor).toBe(1_800_000); // costo 1.2M + 50%
+      expect(result.value.appliedTier).toBe("RETAIL");
+    }
+  });
+
+  it("desde el umbral aplica precio mayorista = costo y muestra el minorista como compareAt", async () => {
+    const repository = new FakePricingRepository();
+    repository.resale = { wholesaleEnabled: true, wholesaleMinQty: 4, wholesaleMarginBps: 0, allowBackorder: false };
+    const service = new PricingService(repository);
+
+    const result = await service.computeSalePrice(admin(AdminRole.OWNER), { variantId, currency: "ARS", quantity: 4 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.price.amountMinor).toBe(1_200_000); // precio del proveedor
+      expect(result.value.appliedTier).toBe("WHOLESALE");
+      expect(result.value.compareAtPrice?.amountMinor).toBe(1_800_000);
+    }
+  });
+
+  it("el margen mayorista configurable se aplica sobre el costo", async () => {
+    const repository = new FakePricingRepository();
+    repository.resale = { wholesaleEnabled: true, wholesaleMinQty: 4, wholesaleMarginBps: 300, allowBackorder: false };
+    const service = new PricingService(repository);
+
+    const result = await service.computeSalePrice(admin(AdminRole.OWNER), { variantId, currency: "ARS", quantity: 10 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.price.amountMinor).toBe(1_236_000); // costo + 3%
+      expect(result.value.appliedTier).toBe("WHOLESALE");
+    }
+  });
+
+  it("el mayorista nunca cobra más que el minorista", async () => {
+    const repository = new FakePricingRepository();
+    repository.resale = { wholesaleEnabled: true, wholesaleMinQty: 4, wholesaleMarginBps: 100_000, allowBackorder: false };
+    const service = new PricingService(repository);
+
+    const result = await service.computeSalePrice(admin(AdminRole.OWNER), { variantId, currency: "ARS", quantity: 10 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.price.amountMinor).toBe(1_800_000);
+      expect(result.value.appliedTier).toBe("RETAIL");
+    }
+  });
+
+  it("con el modo reventa apagado la cantidad no altera el precio", async () => {
+    const repository = new FakePricingRepository();
+    repository.resale = { wholesaleEnabled: false, wholesaleMinQty: 4, wholesaleMarginBps: 0, allowBackorder: false };
+    const service = new PricingService(repository);
+
+    const result = await service.computeSalePrice(admin(AdminRole.OWNER), { variantId, currency: "ARS", quantity: 50 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.price.amountMinor).toBe(1_800_000);
+      expect(result.value.appliedTier).toBe("RETAIL");
+    }
+  });
+
   it("maps manual price open-row write conflicts to PRICE_CHANGED", async () => {
     const service = new PricingService(new ManualPriceConflictRepository());
 
@@ -198,6 +269,30 @@ class FakePricingRepository implements PricingRepository {
 
   public async deactivateDiscount(_id: string): Promise<DiscountEntity | null> {
     return null;
+  }
+
+  public resale = {
+    wholesaleEnabled: false,
+    wholesaleMinQty: 4,
+    wholesaleMarginBps: 0,
+    allowBackorder: false,
+  };
+
+  public async getResaleConfig() {
+    return { ...this.resale };
+  }
+
+  public async updateResaleConfig(config: typeof this.resale) {
+    this.resale = { ...config };
+    return { ...this.resale };
+  }
+
+  public async getSupplierRebateReport() {
+    return [];
+  }
+
+  public async setSupplierRebate() {
+    return true;
   }
 }
 

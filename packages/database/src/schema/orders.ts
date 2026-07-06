@@ -144,10 +144,14 @@ export const orderLine = pgTable(
     unitPriceMinor: integer("unit_price_minor").notNull(),
     lineTotalMinor: integer("line_total_minor").notNull(),
     supplierCostSnapshotMinor: integer("supplier_cost_snapshot_minor"),
+    // Proveedor del costo al momento de la venta (para liquidar rebates).
+    // Sin FK: suppliers.ts referencia order y un FK acá crearía un ciclo.
+    supplierId: uuid("supplier_id"),
   },
   (table) => ({
     orderIdx: index("idx_order_lines_order").on(table.orderId),
     variantIdx: index("order_line_variant_idx").on(table.variantId),
+    supplierIdx: index("order_line_supplier_idx").on(table.supplierId),
     quantityPositive: check("order_line_quantity_positive", sql`${table.quantity} >= 1`),
     unitPriceNonNegative: check("order_line_unit_price_non_negative", sql`${table.unitPriceMinor} >= 0`),
     supplierCostNonNegative: check(

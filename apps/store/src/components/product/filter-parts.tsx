@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Star } from "lucide-react";
-import { cn, formatCOP } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
+import { cn, formatPrice } from "@/lib/utils";
 
 /** Collapsible filter section with chevron rotation + grid-rows accordion. */
 export function FilterSection({
@@ -123,52 +123,17 @@ export function CheckRow({
   );
 }
 
-export function RatingRow({
-  stars,
-  active,
-  onClick,
-}: {
-  stars: number;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "cc-focus-ring flex w-full cursor-pointer items-center gap-2 rounded-cc-sm px-2 py-1.5 transition-colors duration-[140ms] ease-cc-out",
-        active ? "bg-cc-primary-soft" : "hover:bg-cc-soft",
-      )}
-    >
-      <span className="flex items-center gap-0.5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            className={cn(
-              "h-[14px] w-[14px]",
-              i < stars ? "fill-cc-star text-cc-star" : "fill-cc-border text-cc-border",
-            )}
-          />
-        ))}
-      </span>
-      <span className={cn("text-[13px]", active ? "font-semibold text-cc-primary" : "text-cc-secondary")}>
-        y más
-      </span>
-    </button>
-  );
-}
-
 /** Price range with a single draggable upper bound (controlled). */
 export function PriceRange({
   min,
   max,
+  step = 50000,
   value,
   onChange,
 }: {
   min: number;
   max: number;
+  step?: number;
   value: number;
   onChange: (value: number) => void;
 }) {
@@ -186,7 +151,7 @@ export function PriceRange({
           type="range"
           min={min}
           max={max}
-          step={50000}
+          step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           aria-label="Precio máximo"
@@ -194,8 +159,8 @@ export function PriceRange({
         />
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-cc-muted">
-        <span>{formatCOP(min)}</span>
-        <span className="font-semibold text-cc-text">{formatCOP(value)}</span>
+        <span>{formatPrice(min)}</span>
+        <span className="font-semibold text-cc-text">{formatPrice(value)}</span>
       </div>
     </div>
   );

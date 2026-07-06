@@ -2,13 +2,21 @@
 
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { cn, formatCOP } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
+import { unitPriceFor } from "@/lib/catalog-types";
 import { useCart } from "@/store/cart";
 import type { CartItem as CartItemType } from "@/store/cart";
 
 export function CartItem({ item }: { item: CartItemType }) {
   const { setQuantity, remove } = useCart();
   const { product, quantity } = item;
+
+  const unitPrice = unitPriceFor(product, quantity);
+  const wholesaleApplied = unitPrice < product.price;
+  const missingForWholesale =
+    product.wholesale && !wholesaleApplied && product.wholesale.price < product.price
+      ? product.wholesale.minQuantity - quantity
+      : 0;
 
   return (
     <div className="flex gap-3 py-4 border-b border-cc-border-subtle last:border-0">
@@ -32,11 +40,19 @@ export function CartItem({ item }: { item: CartItemType }) {
           {product.name}
         </p>
         <p className="text-[15px] font-extrabold text-cc-text tracking-tight">
-          {formatCOP(product.price * quantity)}
+          {formatPrice(unitPrice * quantity)}
         </p>
         {quantity > 1 && (
           <p className="text-[11px] text-cc-muted">
-            {formatCOP(product.price)} c/u
+            {formatPrice(unitPrice)} c/u
+            {wholesaleApplied && (
+              <span className="ml-1.5 font-bold text-cc-success">· precio mayorista</span>
+            )}
+          </p>
+        )}
+        {missingForWholesale > 0 && missingForWholesale <= 3 && (
+          <p className="text-[11px] font-semibold text-cc-primary">
+            Sumá {missingForWholesale} más y pagás {formatPrice(product.wholesale!.price)} c/u
           </p>
         )}
       </div>

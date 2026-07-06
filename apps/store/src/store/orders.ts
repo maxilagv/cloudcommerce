@@ -2,28 +2,26 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getOrderById, type Order } from "@/lib/mock-account";
 
 type OrdersStore = {
-  placedOrders: Order[];
+  /** Last order placed in this browser — used by the checkout success page. */
   lastOrderId: string | null;
-  addOrder: (order: Order) => void;
-  getById: (id: string) => Order | undefined;
+  setLastOrderId: (id: string) => void;
 };
 
-/** Client-placed orders (simulated checkout) + lookup over placed ∪ mock. */
+/**
+ * Orders now live in the backend (storefront.myOrders / orderDetail); this
+ * store only remembers the last placed order id for the success screen.
+ */
 export const useOrders = create<OrdersStore>()(
   persist(
-    (set, get) => ({
-      placedOrders: [],
+    (set) => ({
       lastOrderId: null,
-      addOrder: (order) =>
-        set((s) => ({ placedOrders: [order, ...s.placedOrders], lastOrderId: order.id })),
-      getById: (id) => get().placedOrders.find((o) => o.id === id) ?? getOrderById(id),
+      setLastOrderId: (id) => set({ lastOrderId: id }),
     }),
     {
       name: "cc-orders",
-      partialize: (s) => ({ placedOrders: s.placedOrders, lastOrderId: s.lastOrderId }),
+      partialize: (s) => ({ lastOrderId: s.lastOrderId }),
     },
   ),
 );

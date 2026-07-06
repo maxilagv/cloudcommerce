@@ -104,12 +104,18 @@ export type CreateManualOrderLineRecord = {
   quantity: number;
   unitPriceMinor: number;
   supplierCostSnapshotMinor: number | null;
+  /** Proveedor del costo al momento de la venta (liquidación de rebates). */
+  supplierId?: string | null;
 };
 
 export type CreateManualOrderRecord = {
   idempotencyKey: string | null;
   requestHash: string;
   customerId: string;
+  /** Canal de origen: admin_manual (backoffice) o store (checkout público). */
+  channel: OrderChannel;
+  /** Motivo registrado en el evento de estado inicial. */
+  statusReason?: string;
   shippingMethod: ShippingMethod;
   shippingAddressId: string | null;
   initialStatus: OrderStatus.CONFIRMED | OrderStatus.PENDING_CONFIRMATION;

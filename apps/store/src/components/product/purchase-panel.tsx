@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LockKeyhole, MapPin, PackageCheck, ShieldCheck, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ProductDetailData } from "@/lib/mock-product-detail";
+import type { ProductDetailData } from "@/lib/product-detail-types";
 import { toast } from "@/store/toast";
 import { AddToCartButton } from "./add-to-cart-button";
 

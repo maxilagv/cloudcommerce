@@ -30,6 +30,37 @@ export const GenerateSeoSchema = z.object({
 });
 export type GenerateSeoInput = z.infer<typeof GenerateSeoSchema>;
 
+export const AiImageStyleSchema = z.enum(["studio", "lifestyle", "hero", "minimal"]);
+export type AiImageStyle = z.infer<typeof AiImageStyleSchema>;
+
+export const AnalyzeImageSchema = z.object({
+  productId: UuidSchema.optional(),
+  categoryId: UuidSchema.optional(),
+  /** Imagen a analizar; si se omite se usa la imagen principal del target. */
+  sourceMediaAssetId: UuidSchema.optional(),
+  idempotencyKey: IdempotencyKeySchema,
+}).strict().refine((input) => Boolean(input.productId) !== Boolean(input.categoryId), {
+  message: "Debe indicarse productId o categoryId, no ambos.",
+});
+export type AnalyzeImageInput = z.infer<typeof AnalyzeImageSchema>;
+
+export const GenerateImageSchema = z.object({
+  productId: UuidSchema.optional(),
+  categoryId: UuidSchema.optional(),
+  /** enhance = mejora una foto existente; generate = crea desde cero (con o sin referencia). */
+  mode: z.enum(["enhance", "generate"]).default("enhance"),
+  /** Fuente para enhance / referencia para generate; default: imagen principal del target. */
+  sourceMediaAssetId: UuidSchema.optional(),
+  style: AiImageStyleSchema.default("studio"),
+  instructions: z.string().trim().max(500).optional(),
+  /** Si true, la imagen resultante se aplica como imagen principal del producto/categoría. */
+  applyToTarget: z.boolean().default(false),
+  idempotencyKey: IdempotencyKeySchema,
+}).strict().refine((input) => Boolean(input.productId) !== Boolean(input.categoryId), {
+  message: "Debe indicarse productId o categoryId, no ambos.",
+});
+export type GenerateImageInput = z.infer<typeof GenerateImageSchema>;
+
 export const GetRecommendationsSchema = z.object({
   seedProductId: UuidSchema.optional(),
   categoryId: UuidSchema.optional(),

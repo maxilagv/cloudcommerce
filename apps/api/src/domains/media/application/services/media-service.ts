@@ -130,6 +130,22 @@ export class MediaService {
     return ok(object);
   }
 
+  /**
+   * Descarga pública para el storefront. Los ids son UUID no adivinables y los
+   * assets son fotos de catálogo: se sirven con URL estable y caché larga.
+   */
+  public async getPublicFile(mediaAssetId: string): Promise<Result<{ body: Buffer; contentType: string }, MediaDomainError>> {
+    const asset = await this.repository.findById(mediaAssetId);
+    if (!asset) {
+      return err({ type: "MEDIA_NOT_FOUND" });
+    }
+    const object = await this.storage.getObject({ storageKey: asset.storageKey });
+    if (!object) {
+      return err({ type: "MEDIA_NOT_FOUND" });
+    }
+    return ok(object);
+  }
+
   private present(asset: {
     id: string;
     mime: string;

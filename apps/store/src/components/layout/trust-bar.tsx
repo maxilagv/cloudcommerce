@@ -1,10 +1,10 @@
 import { Headphones, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 
 const ITEMS = [
-  { icon: Truck, title: "Envíos a todo el país", sub: "Desde $4.99" },
+  { icon: Truck, title: "Envíos a todo el país", sub: "Con seguimiento en línea" },
   { icon: ShieldCheck, title: "Pago 100% seguro", sub: "Compra protegida" },
-  { icon: RotateCcw, title: "Devoluciones fáciles", sub: "30 días de garantía" },
-  { icon: Headphones, title: "Atención 24/7", sub: "Soporte siempre activo" },
+  { icon: RotateCcw, title: "Devoluciones fáciles", sub: "Hasta 30 días" },
+  { icon: Headphones, title: "Atención personalizada", sub: "Soporte siempre activo" },
 ];
 
 export function TrustBar() {

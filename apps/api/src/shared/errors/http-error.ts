@@ -5,13 +5,16 @@ import type {
   CatalogDomainError,
   CustomerDomainError,
   DashboardDomainError,
+  EngagementDomainError,
   FinanceDomainError,
   IdentityDomainError,
   InventoryDomainError,
+  LoyaltyDomainError,
   MediaDomainError,
   OrderDomainError,
   PricingDomainError,
   SettingsDomainError,
+  StorefrontDomainError,
   SupplierDomainError,
 } from "./domain-error.js";
 
@@ -316,6 +319,83 @@ export const aiErrorToAppError = (error: AiDomainError): AppError => {
       return new AppError({ code: "AI_RESPONSE_INVALID", status: 502, message: "La respuesta del servicio de IA no es valida." });
     case "AI_CONTENT_REJECTED":
       return new AppError({ code: "AI_CONTENT_REJECTED", status: 422, message: "El contenido generado no cumple las reglas de la tienda." });
+    case "IMAGE_SOURCE_REQUIRED":
+      return new AppError({ code: "IMAGE_SOURCE_REQUIRED", status: 422, message: "El target no tiene imagen fuente. Subi una imagen o usa el modo generar." });
+  }
+};
+
+export const storefrontErrorToAppError = (error: StorefrontDomainError): AppError => {
+  switch (error.type) {
+    case "UNAUTHENTICATED":
+      return new AppError({ code: "UNAUTHENTICATED", status: 401, message: "Necesitas iniciar sesion para continuar." });
+    case "FORBIDDEN":
+      return new AppError({ code: "FORBIDDEN", status: 403, message: "No tenes permiso para realizar esta accion." });
+    case "INVALID_CREDENTIALS":
+      return new AppError({ code: "UNAUTHENTICATED", status: 401, message: "Email o contrasena incorrectos." });
+    case "EMAIL_IN_USE":
+      return new AppError({ code: "CONFLICT", status: 409, message: "Ya existe una cuenta con ese email." });
+    case "ACCOUNT_INACTIVE":
+      return new AppError({ code: "FORBIDDEN", status: 403, message: "La cuenta esta deshabilitada." });
+    case "ORDER_NOT_FOUND":
+      return new AppError({ code: "RESOURCE_NOT_FOUND", status: 404, message: "No encontramos el pedido solicitado." });
+    case "ADDRESS_REQUIRED":
+      return new AppError({ code: "VALIDATION_FAILED", status: 400, message: "El envio a domicilio requiere una direccion." });
+    case "PRODUCT_NOT_AVAILABLE":
+      return new AppError({ code: "PRODUCT_NOT_AVAILABLE", status: 409, message: "Uno de los productos ya no esta disponible." });
+    case "PRICING_UNAVAILABLE":
+      return new AppError({ code: "PRODUCT_NOT_AVAILABLE", status: 409, message: "No hay un precio vigente para uno de los productos." });
+    case "INSUFFICIENT_STOCK":
+      return new AppError({ code: "INSUFFICIENT_STOCK", status: 409, message: "No hay stock suficiente para completar el pedido." });
+    case "IDEMPOTENCY_CONFLICT":
+      return new AppError({ code: "IDEMPOTENCY_CONFLICT", status: 409, message: "La operacion se repitio con datos distintos." });
+  }
+};
+
+export const loyaltyErrorToAppError = (error: LoyaltyDomainError): AppError => {
+  switch (error.type) {
+    case "UNAUTHENTICATED":
+      return new AppError({ code: "UNAUTHENTICATED", status: 401, message: "Necesitas iniciar sesion para continuar." });
+    case "FORBIDDEN":
+      return new AppError({ code: "FORBIDDEN", status: 403, message: "No tenes permiso para administrar el programa de puntos." });
+    case "PROGRAM_DISABLED":
+      return new AppError({ code: "CONFLICT", status: 409, message: "El programa CloudPoints esta pausado por el momento." });
+    case "REWARD_NOT_FOUND":
+      return new AppError({ code: "RESOURCE_NOT_FOUND", status: 404, message: "No encontramos ese regalo." });
+    case "REWARD_NOT_AVAILABLE":
+      return new AppError({ code: "CONFLICT", status: 409, message: "Ese regalo no esta disponible en la rotacion actual." });
+    case "OUT_OF_STOCK":
+      return new AppError({ code: "CONFLICT", status: 409, message: "Ese regalo se agoto. Volve a intentarlo en la proxima rotacion." });
+    case "INSUFFICIENT_POINTS":
+      return new AppError({ code: "CONFLICT", status: 409, message: "No tenes CloudPoints suficientes para este canje." });
+    case "REDEMPTION_NOT_FOUND":
+      return new AppError({ code: "RESOURCE_NOT_FOUND", status: 404, message: "No encontramos el canje solicitado." });
+    case "REDEMPTION_INVALID_STATE":
+      return new AppError({ code: "CONFLICT", status: 409, message: "El canje ya fue resuelto y no puede modificarse." });
+    case "CUSTOMER_NOT_FOUND":
+      return new AppError({ code: "RESOURCE_NOT_FOUND", status: 404, message: "No encontramos el cliente indicado." });
+    case "MEMBERSHIP_NOT_FOUND":
+      return new AppError({ code: "RESOURCE_NOT_FOUND", status: 404, message: "El cliente no tiene membresia CloudDigital." });
+  }
+};
+
+export const engagementErrorToAppError = (error: EngagementDomainError): AppError => {
+  switch (error.type) {
+    case "UNAUTHENTICATED":
+      return new AppError({ code: "UNAUTHENTICATED", status: 401, message: "Necesitas iniciar sesion." });
+    case "FORBIDDEN":
+      return new AppError({ code: "FORBIDDEN", status: 403, message: "No tenes permiso para usar el seguimiento inteligente de clientes." });
+    case "CUSTOMER_NOT_FOUND":
+    case "PROFILE_NOT_FOUND":
+    case "CONVERSATION_NOT_FOUND":
+      return new AppError({ code: "RESOURCE_NOT_FOUND", status: 404, message: "No encontramos el recurso solicitado." });
+    case "WHATSAPP_NOT_AVAILABLE":
+      return new AppError({ code: "CONFLICT", status: 409, message: "El cliente no tiene un numero de WhatsApp registrado." });
+    case "NO_CONSENT":
+      return new AppError({ code: "CONFLICT", status: 409, message: "El cliente no dio consentimiento para recibir mensajes por WhatsApp." });
+    case "AI_UPSTREAM_UNAVAILABLE":
+      return new AppError({ code: "UPSTREAM_UNAVAILABLE", status: 503, message: "El servicio de IA no esta disponible. Reintenta mas tarde." });
+    case "AI_RESPONSE_INVALID":
+      return new AppError({ code: "AI_RESPONSE_INVALID", status: 502, message: "La respuesta del servicio de IA no es valida." });
   }
 };
 
