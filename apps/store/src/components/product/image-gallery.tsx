@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { AnimatePresence, motion } from "motion/react";
 import { ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,25 +50,36 @@ export function ImageGallery({
         ))}
       </div>
 
-      {/* Main image */}
+      {/* Main image — crossfades between thumbnails instead of a hard cut */}
       <div className="relative flex-1 min-h-[380px] max-h-[520px] bg-white rounded-cc-xl border border-cc-border overflow-hidden group">
-        <Image
-          key={activeIdx}
-          src={images[activeIdx] ?? images[0]}
-          alt={productName}
-          fill
-          style={
-            activeIdx === 0 && productId
-              ? ({ viewTransitionName: `product-image-${productId}` } as React.CSSProperties)
-              : undefined
-          }
-          className={cn(
-            "object-contain p-8",
-            "transition-[transform,opacity] duration-[300ms] ease-cc-out",
-            "group-hover:scale-[1.03]",
-          )}
-          priority
-        />
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={activeIdx}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Image
+              src={images[activeIdx] ?? images[0]}
+              alt={productName}
+              fill
+              data-fly-image={productId}
+              style={
+                activeIdx === 0 && productId
+                  ? ({ viewTransitionName: `product-image-${productId}` } as React.CSSProperties)
+                  : undefined
+              }
+              className={cn(
+                "object-contain p-8",
+                "transition-transform duration-[300ms] ease-cc-out",
+                "group-hover:scale-[1.03]",
+              )}
+              priority
+            />
+          </motion.div>
+        </AnimatePresence>
 
         {/* Zoom hint */}
         <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur-sm px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-[200ms] shadow-cc-xs border border-cc-border-subtle">

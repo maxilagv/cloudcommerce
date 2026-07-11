@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import { BadgePercent, Star } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 import { unitPriceFor } from "@/lib/catalog-types";
 import { AddToCartButton } from "./add-to-cart-button";
 import { FavoriteButton } from "./favorite-button";
@@ -137,11 +139,18 @@ export function ProductInfo({
             type="button"
             onClick={() => setQuantity(1)}
             className={cn(
-              "cc-focus-ring flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13px] transition-colors duration-[140ms]",
-              !wholesaleApplied ? "bg-cc-primary-soft" : "bg-white hover:bg-cc-soft",
+              "cc-focus-ring relative flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13px]",
+              wholesaleApplied && "hover:bg-cc-soft",
             )}
           >
-            <span className={cn("font-semibold", !wholesaleApplied ? "text-cc-primary" : "text-cc-secondary")}>
+            {!wholesaleApplied && (
+              <motion.span
+                layoutId="wholesale-active-row"
+                transition={spring.snappy}
+                className="absolute inset-0 -z-10 bg-cc-primary-soft"
+              />
+            )}
+            <span className={cn("font-semibold transition-colors duration-150", !wholesaleApplied ? "text-cc-primary" : "text-cc-secondary")}>
               1 a {wholesale.minQuantity - 1} unidades
             </span>
             <span className="font-bold tabular-nums text-cc-text">
@@ -152,11 +161,18 @@ export function ProductInfo({
             type="button"
             onClick={() => setQuantity(wholesale.minQuantity)}
             className={cn(
-              "cc-focus-ring flex w-full items-center justify-between border-t border-cc-border-subtle px-3.5 py-2.5 text-left text-[13px] transition-colors duration-[140ms]",
-              wholesaleApplied ? "bg-cc-success-soft" : "bg-white hover:bg-cc-soft",
+              "cc-focus-ring relative flex w-full items-center justify-between border-t border-cc-border-subtle px-3.5 py-2.5 text-left text-[13px]",
+              !wholesaleApplied && "hover:bg-cc-soft",
             )}
           >
-            <span className={cn("font-semibold", wholesaleApplied ? "text-cc-success" : "text-cc-secondary")}>
+            {wholesaleApplied && (
+              <motion.span
+                layoutId="wholesale-active-row"
+                transition={spring.snappy}
+                className="absolute inset-0 -z-10 bg-cc-success-soft"
+              />
+            )}
+            <span className={cn("font-semibold transition-colors duration-150", wholesaleApplied ? "text-cc-success" : "text-cc-secondary")}>
               {wholesale.minQuantity}+ unidades · mayorista
             </span>
             <span className="font-bold tabular-nums text-cc-text">

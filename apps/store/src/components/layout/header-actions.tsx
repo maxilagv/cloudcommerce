@@ -79,7 +79,13 @@ export function HeaderActions() {
         <Badge count={hydrated ? wishlistCount : 0} />
       </button>
 
-      <button type="button" aria-label="Carrito" onClick={openCart} className={actionClass}>
+      <button
+        type="button"
+        id="cc-cart-icon-target"
+        aria-label="Carrito"
+        onClick={openCart}
+        className={actionClass}
+      >
         <ShoppingCart className="h-[22px] w-[22px]" strokeWidth={1.85} />
         <Badge count={hydrated ? cartCount : 0} />
       </button>

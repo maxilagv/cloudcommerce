@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 import type { ColorVariant, CapacityVariant } from "@/lib/product-detail-types";
 
 interface VariantSelectorProps {
@@ -46,16 +48,25 @@ export function VariantSelector({
               aria-label={`Color ${color.label}`}
               aria-pressed={activeColor === color.id}
               onClick={() => setActiveColor(color.id)}
-              className={cn(
-                "h-7 w-7 rounded-full border-2 flex-shrink-0",
-                "transition-all duration-[140ms] ease-cc-out hover:-translate-y-px hover:scale-105",
-                "cc-focus-ring",
-                activeColor === color.id
-                  ? "border-cc-primary ring-2 ring-cc-primary/20 scale-110"
-                  : "border-cc-border-strong hover:border-cc-primary-border",
+              className="cc-focus-ring relative grid h-7 w-7 flex-shrink-0 place-items-center rounded-full"
+            >
+              {activeColor === color.id && (
+                <motion.span
+                  layoutId="color-active-ring"
+                  transition={spring.snappy}
+                  className="absolute -inset-[3px] rounded-full ring-2 ring-cc-primary/40"
+                />
               )}
-              style={{ backgroundColor: color.hex }}
-            />
+              <span
+                className={cn(
+                  "h-full w-full rounded-full border-2 transition-transform duration-[140ms] ease-cc-out hover:-translate-y-px hover:scale-105",
+                  activeColor === color.id
+                    ? "scale-110 border-cc-primary"
+                    : "border-cc-border-strong hover:border-cc-primary-border",
+                )}
+                style={{ backgroundColor: color.hex }}
+              />
+            </button>
           ))}
         </div>
       </div>
@@ -76,14 +87,21 @@ export function VariantSelector({
               aria-pressed={activeCapacity === cap.id}
               onClick={() => setActiveCapacity(cap.id)}
               className={cn(
-                "h-8 px-3.5 rounded-full text-[12px] font-semibold border",
-                "transition-all duration-[140ms] ease-cc-out hover:-translate-y-px",
+                "relative h-8 flex-shrink-0 rounded-full px-3.5 text-[12px] font-semibold",
+                "transition-[color,transform] duration-[140ms] ease-cc-out hover:-translate-y-px",
                 "cc-focus-ring",
                 activeCapacity === cap.id
-                  ? "bg-cc-primary text-white border-cc-primary shadow-[0_4px_12px_rgba(11,107,255,0.22)]"
-                  : "bg-white text-cc-secondary border-cc-border hover:border-cc-primary-border hover:text-cc-primary",
+                  ? "text-white"
+                  : "border border-cc-border text-cc-secondary hover:border-cc-primary-border hover:text-cc-primary",
               )}
             >
+              {activeCapacity === cap.id && (
+                <motion.span
+                  layoutId="capacity-active-pill"
+                  transition={spring.snappy}
+                  className="absolute inset-0 -z-10 rounded-full bg-cc-primary shadow-[0_4px_12px_rgba(11,107,255,0.22)]"
+                />
+              )}
               {cap.label}
             </button>
           ))}
