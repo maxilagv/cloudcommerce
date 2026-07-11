@@ -231,6 +231,20 @@
   }
 }
 
+/* BrandLoader: draws the cloud mark once; the shimmer halo behind it (.cc-skeleton)
+   carries the "still loading" signal, so the path itself never loops. */
+.cc-brand-loader-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: cc-check-draw 900ms var(--cc-ease-out) 120ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-brand-loader-path {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
 /* ============================================================
    Base layer
    ============================================================ */
