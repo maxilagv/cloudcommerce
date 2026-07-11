@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 
 export const NAV_LINKS = [
   { label: "Inicio", href: "/" },
@@ -25,12 +27,19 @@ export function MainNav() {
             key={link.label}
             href={link.href}
             className={cn(
-              "cc-focus-ring rounded-cc-sm px-3 py-2 text-sm transition-[color,background] duration-[140ms] ease-cc-out",
+              "cc-focus-ring relative rounded-cc-sm px-3 py-2 text-sm transition-colors duration-[140ms] ease-cc-out",
               isActive
-                ? "bg-cc-primary-soft font-bold text-cc-primary"
+                ? "font-bold text-cc-primary"
                 : "font-medium text-cc-secondary hover:bg-cc-primary-softer hover:text-cc-primary",
             )}
           >
+            {isActive && (
+              <motion.span
+                layoutId="main-nav-active-pill"
+                className="absolute inset-0 -z-10 rounded-cc-sm bg-cc-primary-soft"
+                transition={spring.gentle}
+              />
+            )}
             {link.label}
           </Link>
         );

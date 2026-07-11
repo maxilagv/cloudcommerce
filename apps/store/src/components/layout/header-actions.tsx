@@ -2,23 +2,38 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "motion/react";
 import { Heart, ShoppingCart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { spring } from "@/lib/motion";
 import { useCart, useCartCount } from "@/store/cart";
 import { useWishlist, useWishlistCount } from "@/store/wishlist";
 import { useAuth } from "@/store/auth";
 
 function Badge({ count }: { count: number }) {
   if (count <= 0) return null;
+  const display = count > 99 ? "99+" : String(count);
   return (
     <span
       className={cn(
-        "absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-cc-primary px-1 text-[10px] font-bold text-white",
+        "absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center overflow-hidden rounded-full bg-cc-primary px-1 text-[10px] font-bold text-white",
         "animate-[cc-badge-pop_300ms_ease-cc-spring]",
       )}
     >
-      {count > 99 ? "99+" : count}
+      {/* Digit rollover: old value slides up-out while the new one slides up-in. */}
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={display}
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -10, opacity: 0 }}
+          transition={spring.snappy}
+          className="col-start-1 row-start-1"
+        >
+          {display}
+        </motion.span>
+      </AnimatePresence>
     </span>
   );
 }
