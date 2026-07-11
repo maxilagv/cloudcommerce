@@ -1,9 +1,11 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Checkout skeleton: step indicator + form area, matches CheckoutPage's single-column flow. */
 export default function CheckoutLoading() {
   return (
     <div className="mx-auto max-w-[900px] px-4 py-8 sm:px-6">
+      <RouteProgressBar />
       <div className="flex items-center gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex flex-1 items-center gap-2">

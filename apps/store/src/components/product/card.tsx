@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, Scale, Star, Truck, Sparkles } from "lucide-react";
 import { productHref, type ProductCardData } from "@/lib/catalog-types";
 import { cn, formatPrice } from "@/lib/utils";
+import { useViewTransitionNavigate } from "@/hooks/use-view-transition-navigate";
 import { useCompare } from "@/store/compare";
 import { FavoriteButton } from "./favorite-button";
 import { AddToCartButton } from "./add-to-cart-button";
@@ -56,6 +57,8 @@ export function ProductCard({
 }) {
   const toggleCompare = useCompare((s) => s.toggle);
   const inCompare = useCompare((s) => s.has(product.id));
+  const navigate = useViewTransitionNavigate();
+  const href = productHref(product);
 
   return (
     <article
@@ -69,9 +72,14 @@ export function ProductCard({
           clicks fall through to this link; interactive controls re-enable
           pointer events (pointer-events-auto) to keep working. */}
       <Link
-        href={productHref(product)}
+        href={href}
         className="absolute inset-0 z-0 rounded-cc-lg"
         aria-label={`Ver ${product.name}`}
+        onClick={(e) => {
+          if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          e.preventDefault();
+          navigate(href);
+        }}
       />
 
       {/* Top row: badge + favorite */}
@@ -95,6 +103,7 @@ export function ProductCard({
           alt={product.imageAlt}
           width={320}
           height={320}
+          style={{ viewTransitionName: `product-image-${product.id}` } as React.CSSProperties}
           className="max-h-[168px] w-auto max-w-[88%] object-contain drop-shadow-[0_14px_20px_rgba(16,24,40,0.12)] transition-transform duration-[260ms] ease-cc-out group-hover:-translate-y-0.5 group-hover:scale-[1.025]"
         />
         {/* Quick action — compare toggle (reveals on hover, stays when active) */}

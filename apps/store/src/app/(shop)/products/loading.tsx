@@ -1,9 +1,11 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Catalog skeleton: sidebar + hero banner + toolbar + product grid, same widths as CatalogLayout. */
 export default function ProductsLoading() {
   return (
     <div className="mx-auto flex w-full max-w-[1440px] gap-6 px-4 py-6 sm:px-6">
+      <RouteProgressBar />
       <aside className="hidden w-[240px] shrink-0 lg:block">
         <div className="space-y-5">
           {Array.from({ length: 4 }).map((_, i) => (

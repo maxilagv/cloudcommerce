@@ -1,9 +1,11 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Product detail skeleton: same 45/35/20 desktop split as ProductDetail. */
 export default function ProductDetailLoading() {
   return (
     <main className="mx-auto max-w-[1440px] px-4 py-6">
+      <RouteProgressBar />
       <Skeleton className="h-4 w-64" />
 
       <div

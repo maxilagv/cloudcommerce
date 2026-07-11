@@ -1,9 +1,11 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Cart page skeleton: items list + sticky summary, same 2-column split as CartPage. */
 export default function CartLoading() {
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6">
+      <RouteProgressBar />
       <div className="flex items-center justify-between gap-4">
         <Skeleton className="h-7 w-56" />
         <Skeleton className="h-4 w-32" />

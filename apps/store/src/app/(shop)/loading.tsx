@@ -1,9 +1,11 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Home skeleton: mirrors the rounded shell + hero + strip + grid of the real page. */
 export default function HomeLoading() {
   return (
     <div className="px-3 py-4 sm:px-5 lg:py-6">
+      <RouteProgressBar />
       <div className="mx-auto max-w-[1448px] rounded-[28px] border border-cc-border bg-white p-3 shadow-cc-md sm:p-4 lg:p-6">
         {/* Hero */}
         <div className="relative overflow-hidden rounded-[30px] border border-cc-border px-5 py-8 sm:px-8 lg:px-16 lg:py-12">

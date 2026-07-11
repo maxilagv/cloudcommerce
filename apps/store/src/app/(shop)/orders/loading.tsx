@@ -1,3 +1,4 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -7,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function OrdersLoading() {
   return (
     <div>
+      <RouteProgressBar />
       <Skeleton className="mb-6 h-7 w-40" />
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (

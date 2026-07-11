@@ -8,9 +8,13 @@ import { cn } from "@/lib/utils";
 export function ImageGallery({
   images,
   productName,
+  productId,
 }: {
   images: string[];
   productName: string;
+  /** Matches the view-transition-name set on the ProductCard image so the
+   *  product photo morphs from grid to detail (see use-view-transition-navigate). */
+  productId?: string;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -52,6 +56,11 @@ export function ImageGallery({
           src={images[activeIdx] ?? images[0]}
           alt={productName}
           fill
+          style={
+            activeIdx === 0 && productId
+              ? ({ viewTransitionName: `product-image-${productId}` } as React.CSSProperties)
+              : undefined
+          }
           className={cn(
             "object-contain p-8",
             "transition-[transform,opacity] duration-[300ms] ease-cc-out",

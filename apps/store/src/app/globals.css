@@ -135,6 +135,7 @@
   --animate-cc-pulse: cc-assistant-pulse 2.8s ease-in-out infinite;
   --animate-cc-fade-up: fadeSlideUp 0.5s var(--cc-ease-out) both;
   --animate-cc-scale-in: cc-scale-in 0.18s var(--cc-ease-out) both;
+  --animate-cc-route-progress: cc-route-progress 1.1s ease-in-out infinite;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -207,6 +208,15 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes cc-route-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
   }
 }
 
@@ -308,6 +318,17 @@
 .cc-stagger > *:nth-child(n + 9) { animation-delay: 320ms; }
 
 /* ============================================================
+   View Transitions (native API) — see hooks/use-view-transition-navigate.ts.
+   The whole-page crossfade is disabled (template.tsx already animates entry);
+   only elements with an explicit view-transition-name (e.g. product images)
+   get the browser's default morph between card and detail.
+   ============================================================ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* ============================================================
    Accessibility — respect reduced motion (Microanimaciones.md §4)
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
@@ -318,5 +339,11 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

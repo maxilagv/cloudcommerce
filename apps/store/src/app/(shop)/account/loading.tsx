@@ -1,3 +1,4 @@
+import { RouteProgressBar } from "@/components/ui/route-progress-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -9,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AccountLoading() {
   return (
     <div className="space-y-6">
+      <RouteProgressBar />
       <Skeleton className="h-8 w-64" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
