@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { MotionProvider } from "@/lib/motion";
 import { metadataBase } from "@/lib/seo/metadata";
 import { BRAND_COLOR, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/seo/site";
 
@@ -45,8 +46,10 @@ export default function RootLayout({
         <link rel="dns-prefetch" href={API_ORIGIN} />
       </head>
       <body className="font-sans antialiased">
-        {children}
-        <Toaster />
+        <MotionProvider>
+          {children}
+          <Toaster />
+        </MotionProvider>
       </body>
     </html>
   );
