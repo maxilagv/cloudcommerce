@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { AnimatePresence, motion } from "motion/react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { unitPriceFor } from "@/lib/catalog-types";
+import { spring } from "@/lib/motion";
 import { useCart } from "@/store/cart";
 import type { CartItem as CartItemType } from "@/store/cart";
 
@@ -83,8 +85,19 @@ export function CartItem({ item }: { item: CartItemType }) {
           >
             <Minus className="h-3 w-3" strokeWidth={2.2} />
           </button>
-          <span className="w-5 text-center text-[13px] font-bold text-cc-text">
-            {quantity}
+          <span className="relative grid h-4 w-5 place-items-center overflow-hidden">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={quantity}
+                initial={{ y: 8, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -8, opacity: 0 }}
+                transition={spring.snappy}
+                className="col-start-1 row-start-1 text-[13px] font-bold text-cc-text"
+              >
+                {quantity}
+              </motion.span>
+            </AnimatePresence>
           </span>
           <button
             type="button"

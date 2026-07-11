@@ -1,12 +1,17 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion, useMotionValue } from "motion/react";
 import { Heart, ShoppingCart, X } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
+import { spring } from "@/lib/motion";
 import { useWishlist, useWishlistCount } from "@/store/wishlist";
 import { useCart } from "@/store/cart";
 import { productHref, type ProductCardData } from "@/lib/catalog-types";
+
+const DRAG_CLOSE_DISTANCE = 320;
 
 function WishlistItem({ product }: { product: ProductCardData }) {
   const remove = useWishlist((s) => s.remove);
@@ -79,29 +84,48 @@ export function WishlistDrawer() {
   const close = useWishlist((s) => s.close);
   const items = useWishlist((s) => s.items);
   const count = useWishlistCount();
+  const backdropOpacity = useMotionValue(isOpen ? 1 : 0);
+
+  useEffect(() => {
+    backdropOpacity.set(isOpen ? 1 : 0);
+  }, [isOpen, backdropOpacity]);
 
   return (
     <>
       {/* Overlay */}
-      <div
+      <motion.div
         aria-hidden="true"
         onClick={close}
-        className={cn(
-          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-200",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        )}
+        style={{ opacity: backdropOpacity }}
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
+          isOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
       />
 
-      {/* Panel */}
-      <div
+      {/* Panel — spring physics + swipe-to-close */}
+      <motion.div
         role="dialog"
         aria-modal="true"
         aria-label="Mis favoritos"
-        className={cn(
-          "fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col bg-white shadow-2xl",
-          "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          isOpen ? "translate-x-0" : "translate-x-full",
-        )}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{ left: 0.04, right: 0.5 }}
+        onDrag={(_, info) => {
+          const progress = Math.min(Math.max(info.offset.x, 0) / DRAG_CLOSE_DISTANCE, 1);
+          backdropOpacity.set(1 - progress);
+        }}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 120 || info.velocity.x > 500) {
+            close();
+          } else {
+            backdropOpacity.set(1);
+          }
+        }}
+        initial={false}
+        animate={{ x: isOpen ? "0%" : "100%" }}
+        transition={spring.snappy}
+        style={{ pointerEvents: isOpen ? "auto" : "none" }}
+        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col bg-white shadow-2xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-cc-border px-5 py-4">
@@ -149,9 +173,21 @@ export function WishlistDrawer() {
             </div>
           ) : (
             <div>
-              {items.map((product) => (
-                <WishlistItem key={product.id} product={product} />
-              ))}
+              <AnimatePresence initial={false}>
+                {items.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={spring.gentle}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <WishlistItem product={product} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -164,7 +200,7 @@ export function WishlistDrawer() {
             </p>
           </div>
         )}
-      </div>
+      </motion.div>
     </>
   );
 }

@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { useCountUp } from "@/hooks/use-count-up";
 import { useCart, useCartTotal } from "@/store/cart";
 
 export function CartSummary() {
   const close = useCart((s) => s.close);
   const total = useCartTotal();
+  const displayTotal = useCountUp(total, formatPrice);
 
   return (
     <div className="space-y-3 border-t border-cc-border bg-white px-5 py-4">
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-cc-secondary">Subtotal</span>
-        <span className="text-[15px] font-extrabold tracking-tight text-cc-text">
-          {formatPrice(total)}
+        <span className="tabular-nums text-[15px] font-extrabold tracking-tight text-cc-text">
+          {displayTotal}
         </span>
       </div>
       <p className="text-[11px] text-cc-muted">
