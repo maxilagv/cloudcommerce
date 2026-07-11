@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform } from "motion/react";
+import { motion } from "motion/react";
 import { Check, Scale, Star, Truck, Sparkles } from "lucide-react";
 import { productHref, type ProductCardData } from "@/lib/catalog-types";
-import { cn, formatPrice } from "@/lib/utils";
-import { spring } from "@/lib/motion";
+import { cn, formatPrice, BLUR_DATA_URL } from "@/lib/utils";
+import { useTilt3d } from "@/hooks/use-tilt-3d";
 import { useViewTransitionNavigate } from "@/hooks/use-view-transition-navigate";
 import { useCompare } from "@/store/compare";
 import { FavoriteButton } from "./favorite-button";
@@ -63,31 +62,7 @@ export function ProductCard({
   const navigate = useViewTransitionNavigate();
   const href = productHref(product);
 
-  // 3D tilt: only on precise-pointer, hover-capable devices with no reduced-motion request.
-  const [tiltEnabled, setTiltEnabled] = useState(false);
-  useEffect(() => {
-    setTiltEnabled(
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-        !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    );
-  }, []);
-
-  const px = useMotionValue(0.5);
-  const py = useMotionValue(0.5);
-  const rotateX = useSpring(useTransform(py, [0, 1], [6, -6]), spring.gentle);
-  const rotateY = useSpring(useTransform(px, [0, 1], [-6, 6]), spring.gentle);
-  const highlight = useMotionTemplate`radial-gradient(circle at ${useTransform(px, (v) => `${v * 100}%`)} ${useTransform(py, (v) => `${v * 100}%`)}, rgba(255,255,255,0.55), transparent 60%)`;
-
-  function handleTiltMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (!tiltEnabled) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    px.set((e.clientX - rect.left) / rect.width);
-    py.set((e.clientY - rect.top) / rect.height);
-  }
-  function handleTiltLeave() {
-    px.set(0.5);
-    py.set(0.5);
-  }
+  const { enabled: tiltEnabled, rotateX, rotateY, highlight, onMouseMove, onMouseLeave } = useTilt3d(6);
 
   return (
     <article
@@ -114,8 +89,8 @@ export function ProductCard({
 
       {/* Tilting layer: rotates with the cursor, image floats above it via translateZ. */}
       <motion.div
-        onMouseMove={handleTiltMove}
-        onMouseLeave={handleTiltLeave}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseLeave}
         style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
         className="relative flex flex-1 flex-col"
       >
@@ -141,6 +116,8 @@ export function ProductCard({
               alt={product.imageAlt}
               width={320}
               height={320}
+              placeholder="blur"
+              blurDataURL={BLUR_DATA_URL}
               data-fly-image={product.id}
               style={{ viewTransitionName: `product-image-${product.id}` } as React.CSSProperties}
               className="max-h-[168px] w-auto max-w-[88%] object-contain drop-shadow-[0_14px_20px_rgba(16,24,40,0.12)] transition-transform duration-[260ms] ease-cc-out group-hover:-translate-y-0.5 group-hover:scale-[1.025]"

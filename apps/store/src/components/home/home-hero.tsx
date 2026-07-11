@@ -1,22 +1,37 @@
+"use client";
+
+import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, useScroll, useTransform } from "motion/react";
 import { ArrowRight, BadgeCheck, PackageCheck, ShieldCheck, Sparkles } from "lucide-react";
 import { homeHeroCopy, type HeroShowcaseImage } from "@/lib/home-data";
+import { BLUR_DATA_URL } from "@/lib/utils";
+import { useTilt3d } from "@/hooks/use-tilt-3d";
 
 const chips = [
-  { label: "Envíos rápidos 24-48h", icon: PackageCheck, className: "left-[2%] top-[15%]" },
-  { label: "Compra segura", icon: ShieldCheck, className: "right-[2%] top-[7%]" },
-  { label: "Garantía oficial", icon: BadgeCheck, className: "right-[8%] bottom-[12%]" },
+  { label: "Envíos rápidos 24-48h", icon: PackageCheck, className: "left-[2%] top-[15%]", delay: "0s" },
+  { label: "Compra segura", icon: ShieldCheck, className: "right-[2%] top-[7%]", delay: "0.9s" },
+  { label: "Garantía oficial", icon: BadgeCheck, className: "right-[8%] bottom-[12%]", delay: "1.7s" },
 ];
 
 export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  // Background layers drift at different rates as the hero scrolls past.
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
+  const blobY = useTransform(scrollYProgress, [0, 1], [0, 40]);
+  const ringY = useTransform(scrollYProgress, [0, 1], [0, 70]);
+
+  const { rotateX, rotateY, onMouseMove, onMouseLeave } = useTilt3d(4);
+
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="home-hero-title"
       className="relative overflow-hidden rounded-[30px] border border-cc-border bg-[radial-gradient(circle_at_76%_20%,rgba(11,107,255,0.18),transparent_30%),linear-gradient(135deg,#FFFFFF_0%,#F4F8FF_46%,#EAF3FF_100%)] px-5 py-8 shadow-cc-lg sm:px-8 lg:px-16 lg:py-12"
     >
-      <div className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-white/70 blur-3xl" />
-      <div className="absolute right-20 top-8 h-28 w-28 rounded-full border border-white/70" />
+      <motion.div style={{ y: blobY }} className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-white/70 blur-3xl" />
+      <motion.div style={{ y: ringY }} className="absolute right-20 top-8 h-28 w-28 rounded-full border border-white/70" />
       <div className="absolute right-[37%] top-10 h-3 w-3 rounded-full bg-cc-primary/25 animate-cc-float" />
       <div className="absolute right-[8%] top-[42%] h-2 w-2 rounded-full bg-cc-primary/35 animate-cc-float [animation-delay:650ms]" />
 
@@ -41,10 +56,12 @@ export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
           <div className="mt-7 grid gap-3 sm:flex">
             <Link
               href="/products?deals=1"
-              className="cc-focus-ring group inline-flex h-12 items-center justify-center rounded-full bg-cc-primary px-6 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(11,107,255,.25)] transition-[transform,box-shadow,background] duration-[180ms] ease-cc-out hover:-translate-y-px hover:bg-cc-primary-hover hover:shadow-[0_18px_42px_rgba(11,107,255,.32)] active:translate-y-0 active:scale-[.985]"
+              className="cc-focus-ring group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-full bg-cc-primary px-6 text-[15px] font-extrabold text-white shadow-[0_16px_34px_rgba(11,107,255,.25)] transition-[transform,box-shadow,background] duration-[180ms] ease-cc-out hover:-translate-y-px hover:bg-cc-primary-hover hover:shadow-[0_18px_42px_rgba(11,107,255,.32)] active:translate-y-0 active:scale-[.985]"
             >
-              {homeHeroCopy.primaryCta}
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-[180ms] group-hover:translate-x-0.5" />
+              {/* One-shot diagonal shine, resets on mouse-leave */}
+              <span className="pointer-events-none absolute inset-0 -translate-x-[150%] skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[150%]" />
+              <span className="relative">{homeHeroCopy.primaryCta}</span>
+              <ArrowRight className="relative ml-2 h-4 w-4 transition-transform duration-[180ms] group-hover:translate-x-0.5" />
             </Link>
             <Link
               href="#home-categories"
@@ -61,12 +78,21 @@ export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
           </div>
         </div>
 
-        <div className="relative min-h-[280px] lg:min-h-[360px]">
+        <motion.div
+          onMouseMove={onMouseMove}
+          onMouseLeave={onMouseLeave}
+          style={{ perspective: 800 }}
+          className="relative min-h-[280px] lg:min-h-[360px]"
+        >
           <div className="absolute inset-x-[7%] bottom-2 h-24 rounded-[50%] bg-white/80 shadow-[0_35px_60px_rgba(16,24,40,.12)]" />
           <div className="absolute inset-[8%] rounded-full border border-cc-primary/15" />
           <div className="absolute inset-[17%] rounded-full border border-white/80" />
 
-          <div className="group absolute inset-0 transition-transform duration-[360ms] ease-cc-out hover:-translate-y-[3px] hover:scale-[1.008]">
+          {/* Tilts toward the cursor — leve, capped at ±4° via useTilt3d */}
+          <motion.div
+            style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+            className="group absolute inset-0"
+          >
             {showcase.map((product) => (
               <Link
                 key={product.id}
@@ -82,22 +108,25 @@ export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
                   height={420}
                   priority={product.priority}
                   sizes="(min-width: 1024px) 34vw, 90vw"
+                  placeholder="blur"
+                  blurDataURL={BLUR_DATA_URL}
                   className="w-full object-contain drop-shadow-[0_20px_28px_rgba(16,24,40,.14)] transition-transform duration-[260ms] ease-cc-out hover:scale-[1.03]"
                 />
               </Link>
             ))}
-          </div>
+          </motion.div>
 
-          {chips.map(({ label, icon: Icon, className }) => (
+          {chips.map(({ label, icon: Icon, className, delay }) => (
             <span
               key={label}
-              className={`absolute hidden items-center gap-2 rounded-full border border-white/80 bg-white/88 px-3 py-2 text-[12px] font-extrabold text-cc-text shadow-cc-md backdrop-blur sm:inline-flex ${className}`}
+              style={{ animationDelay: delay }}
+              className={`absolute hidden animate-cc-float items-center gap-2 rounded-full border border-white/80 bg-white/88 px-3 py-2 text-[12px] font-extrabold text-cc-text shadow-cc-md backdrop-blur sm:inline-flex ${className}`}
             >
               <Icon className="h-4 w-4 text-cc-primary" strokeWidth={2} />
               {label}
             </span>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
