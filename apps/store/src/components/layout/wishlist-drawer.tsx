@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion, useMotionValue } from "motion/react";
+import { animate, AnimatePresence, motion, useMotionValue } from "motion/react";
 import { Heart, ShoppingCart, X } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { spring } from "@/lib/motion";
@@ -68,7 +68,7 @@ function WishlistItem({ product }: { product: ProductCardData }) {
             aria-label={`Quitar ${product.name} de favoritos`}
             className={cn(
               "grid h-[34px] w-[34px] place-items-center rounded-[8px] border border-cc-border text-cc-primary",
-              "transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500",
+              "transition-colors hover:border-cc-danger/30 hover:bg-cc-danger-soft hover:text-cc-danger",
             )}
           >
             <Heart className="h-4 w-4 fill-cc-primary" strokeWidth={1.9} />
@@ -86,8 +86,15 @@ export function WishlistDrawer() {
   const count = useWishlistCount();
   const backdropOpacity = useMotionValue(isOpen ? 1 : 0);
 
+  // Open/close fades the backdrop over 220ms. During a drag we set its opacity
+  // directly (below) with no easing, so it tracks the finger instead of lagging
+  // behind a CSS transition.
   useEffect(() => {
-    backdropOpacity.set(isOpen ? 1 : 0);
+    const controls = animate(backdropOpacity, isOpen ? 1 : 0, {
+      duration: 0.22,
+      ease: [0.22, 1, 0.36, 1],
+    });
+    return () => controls.stop();
   }, [isOpen, backdropOpacity]);
 
   return (
@@ -97,7 +104,7 @@ export function WishlistDrawer() {
         aria-hidden="true"
         onClick={close}
         style={{ opacity: backdropOpacity }}
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-40 bg-black/40 ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
       />
@@ -118,7 +125,7 @@ export function WishlistDrawer() {
           if (info.offset.x > 120 || info.velocity.x > 500) {
             close();
           } else {
-            backdropOpacity.set(1);
+            animate(backdropOpacity, 1, { duration: 0.18, ease: [0.22, 1, 0.36, 1] });
           }
         }}
         initial={false}

@@ -32,7 +32,7 @@ export function ImageGallery({
             onClick={() => setActiveIdx(i)}
             className={cn(
               "h-[70px] w-[70px] rounded-cc-sm border-2 bg-white overflow-hidden flex-shrink-0",
-              "transition-all duration-[140ms] ease-cc-out hover:-translate-y-px hover:scale-[1.02]",
+              "transition-[transform,border-color,box-shadow] duration-[140ms] ease-cc-out hover:-translate-y-px hover:scale-[1.02]",
               "cc-focus-ring",
               activeIdx === i
                 ? "border-cc-primary shadow-[0_0_0_3px_rgba(11,107,255,0.12)]"

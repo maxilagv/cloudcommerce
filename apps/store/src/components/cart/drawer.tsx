@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
+import { animate, AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
 import { ShoppingCart, X } from "lucide-react";
 import { spring } from "@/lib/motion";
 import { useCart, useCartCount } from "@/store/cart";
@@ -17,8 +17,15 @@ export function CartDrawer() {
   const count = useCartCount();
   const backdropOpacity = useMotionValue(isOpen ? 1 : 0);
 
+  // Open/close fades the backdrop over 220ms. During a drag we set its opacity
+  // directly (below) with no easing, so it tracks the finger instead of lagging
+  // behind a CSS transition.
   useEffect(() => {
-    backdropOpacity.set(isOpen ? 1 : 0);
+    const controls = animate(backdropOpacity, isOpen ? 1 : 0, {
+      duration: 0.22,
+      ease: [0.22, 1, 0.36, 1],
+    });
+    return () => controls.stop();
   }, [isOpen, backdropOpacity]);
 
   return (
@@ -28,7 +35,7 @@ export function CartDrawer() {
         aria-hidden="true"
         onClick={close}
         style={{ opacity: backdropOpacity }}
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-40 bg-black/40 ${
           isOpen ? "pointer-events-auto" : "pointer-events-none"
         }`}
       />
@@ -49,7 +56,7 @@ export function CartDrawer() {
           if (info.offset.x > 120 || info.velocity.x > 500) {
             close();
           } else {
-            backdropOpacity.set(1);
+            animate(backdropOpacity, 1, { duration: 0.18, ease: [0.22, 1, 0.36, 1] });
           }
         }}
         initial={false}

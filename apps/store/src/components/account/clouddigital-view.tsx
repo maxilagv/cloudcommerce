@@ -17,7 +17,6 @@ import {
   type CloudDigitalMembershipView,
 } from "@cloudcommerce/types";
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
 import { toast } from "@/store/toast";
 
 export function CloudDigitalView() {
@@ -85,17 +84,17 @@ export function CloudDigitalView() {
       {/* Hero */}
       <section
         aria-labelledby="clouddigital-title"
-        className="relative overflow-hidden rounded-cc-xl border border-cc-border bg-[radial-gradient(circle_at_20%_15%,rgba(30,134,255,.35),transparent_45%),linear-gradient(135deg,#0B1220,#152A4E)] p-6 text-white shadow-cc-md sm:p-8"
+        className="relative overflow-hidden rounded-cc-xl border border-cc-border bg-cc-text p-6 text-cc-shell shadow-cc-md sm:p-8"
       >
         <div className="pointer-events-none absolute -right-16 -bottom-20 h-56 w-56 rounded-full bg-cc-primary/25 blur-3xl" />
         <div className="relative max-w-[560px]">
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-white/90">
+          <p className="inline-flex items-center gap-2 rounded-full bg-cc-shell/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-cc-shell/90">
             <Cloud className="h-3.5 w-3.5" /> CloudDigital × LayerCloud
           </p>
           <h1 id="clouddigital-title" className="mt-4 text-[28px] font-black leading-tight tracking-[-0.03em] sm:text-[34px]">
             Descuentos en servicios digitales para tu propio e-commerce
           </h1>
-          <p className="mt-3 text-[14px] leading-6 text-white/80">
+          <p className="mt-3 text-[14px] leading-6 text-cc-shell/80">
             CloudDigital te da acceso a beneficios exclusivos en LayerCloud: hosting, dominios y
             herramientas para montar tu tienda online. Próximamente, exclusivo para emprendedores
             que están construyendo su propio e-commerce.
@@ -107,7 +106,7 @@ export function CloudDigitalView() {
                 type="button"
                 onClick={() => void join()}
                 disabled={joining}
-                className="cc-focus-ring inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[14px] font-extrabold text-[#0B1220] transition-[transform,box-shadow] duration-[160ms] ease-cc-out hover:-translate-y-px hover:shadow-[0_14px_30px_rgba(0,0,0,.3)] active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
+                className="cc-focus-ring inline-flex h-11 items-center gap-2 rounded-full bg-cc-shell px-5 text-[14px] font-extrabold text-cc-text transition-[transform,box-shadow] duration-[var(--cc-duration-fast)] ease-cc-out hover:-translate-y-px hover:shadow-cc-md active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
               >
                 <Rocket className="h-4 w-4" strokeWidth={2.2} />
                 {joining ? "Sumándote…" : "Unirme a la lista de espera"}
@@ -116,7 +115,7 @@ export function CloudDigitalView() {
             {membership?.status === CloudDigitalStatus.WAITLIST && (
               <span
                 role="status"
-                className="inline-flex items-center gap-2 rounded-full bg-cc-warning/20 px-4 py-2 text-[13px] font-bold text-[#FFD08A]"
+                className="inline-flex items-center gap-2 rounded-full bg-cc-warning-soft px-4 py-2 text-[13px] font-bold text-cc-text"
               >
                 <Hourglass className="h-4 w-4" /> Estás en la lista de espera
               </span>
@@ -124,7 +123,7 @@ export function CloudDigitalView() {
             {isActive && (
               <span
                 role="status"
-                className="inline-flex items-center gap-2 rounded-full bg-cc-success/20 px-4 py-2 text-[13px] font-bold text-[#8CE8B0]"
+                className="inline-flex items-center gap-2 rounded-full bg-cc-success-soft px-4 py-2 text-[13px] font-bold text-cc-success"
               >
                 <BadgeCheck className="h-4 w-4" /> Membresía activa
               </span>
@@ -132,7 +131,7 @@ export function CloudDigitalView() {
             {membership?.status === CloudDigitalStatus.REVOKED && (
               <span
                 role="status"
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[13px] font-bold text-white/75"
+                className="inline-flex items-center gap-2 rounded-full bg-cc-shell/10 px-4 py-2 text-[13px] font-bold text-cc-shell/75"
               >
                 Tu membresía fue dada de baja — escribinos si creés que es un error.
               </span>

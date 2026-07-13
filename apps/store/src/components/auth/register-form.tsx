@@ -3,140 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Cloud, Loader2, Lock, Mail, User } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
+import { AlertCircle, Loader2, Lock, Mail, User } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { toast } from "@/store/toast";
 
 export function RegisterForm() {
-  const router = useRouter();
-  const returnTo = useSearchParams().get("returnTo") || "/account";
-  const register = useAuth((s) => s.register);
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (name.trim().length < 2) {
-      setError("Ingresá tu nombre");
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setError("Ingresá un correo válido");
-      return;
-    }
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    const ok = await register(name, email, password);
-    if (ok) {
-      toast.success("Cuenta creada", { description: `Bienvenido, ${name}` });
-      router.replace(returnTo);
-      return;
-    }
-    setLoading(false);
-  }
-
-  const inputClass =
-    "h-11 w-full rounded-cc-sm border border-cc-border bg-white pl-9 pr-3 text-[14px] text-cc-text outline-none transition-[border-color,box-shadow] duration-[140ms] placeholder:text-cc-faint focus:border-cc-primary focus:ring-2 focus:ring-cc-primary/10";
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-cc-page px-4 py-12">
-      <div className="w-full max-w-[400px]">
-        <Link href="/" className="mb-6 flex items-center justify-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-cc-sm bg-cc-primary text-white">
-            <Cloud className="h-5 w-5" strokeWidth={2} />
-          </span>
-          <span className="text-[18px] font-extrabold tracking-tight text-cc-text">
-            CloudCommerce
-          </span>
-        </Link>
-
-        <div className="rounded-cc-xl border border-cc-border bg-white p-6 shadow-cc-sm sm:p-7">
-          <h1 className="text-[20px] font-bold text-cc-text">Creá tu cuenta</h1>
-          <p className="mt-1 text-[13px] text-cc-muted">
-            Unite a CloudCommerce en segundos.
-          </p>
-
-          <form onSubmit={submit} className="mt-5 space-y-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold text-cc-secondary">Nombre</span>
-              <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cc-muted" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Tu nombre"
-                  autoComplete="name"
-                  className={inputClass}
-                />
-              </div>
-            </label>
-
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold text-cc-secondary">Correo</span>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cc-muted" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tucorreo@ejemplo.com"
-                  autoComplete="email"
-                  className={inputClass}
-                />
-              </div>
-            </label>
-
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold text-cc-secondary">Contraseña</span>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cc-muted" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  className={inputClass}
-                />
-              </div>
-            </label>
-
-            {error && <p className="text-[12px] text-cc-danger">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className={cn(
-                "flex h-11 w-full items-center justify-center gap-2 rounded-[11px] bg-[linear-gradient(180deg,#1374FF_0%,#005FEF_100%)] text-[14px] font-bold text-white shadow-[0_10px_22px_rgba(11,107,255,0.24)] transition-[filter] hover:brightness-[1.03]",
-                loading && "opacity-70",
-              )}
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Crear cuenta
-            </button>
-          </form>
-
-          <p className="mt-5 text-center text-[13px] text-cc-muted">
-            ¿Ya tenés cuenta?{" "}
-            <Link
-              href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
-              className="font-semibold text-cc-primary hover:underline"
-            >
-              Iniciá sesión
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  const router = useRouter(); const returnTo = useSearchParams().get("returnTo") || "/account"; const register = useAuth((state) => state.register);
+  const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  async function submit(event: React.FormEvent) { event.preventDefault(); if (name.trim().length < 2) { setError("Ingresá tu nombre"); return; } if (!/^\S+@\S+\.\S+$/.test(email)) { setError("Ingresá un correo válido"); return; } if (password.length < 8) { setError("La contraseña debe tener al menos 8 caracteres"); return; } setError(""); setLoading(true); const ok = await register(name, email, password); if (ok) { toast.success("Cuenta creada", { description: `Bienvenido, ${name}` }); router.replace(returnTo); return; } setLoading(false); }
+  const inputClass = "cc-focus-ring h-12 w-full rounded-cc-sm border border-cc-border bg-cc-shell pl-9 pr-3 text-[14px] text-cc-text outline-none transition-[border-color,box-shadow] duration-[var(--cc-duration-fast)] ease-cc-out placeholder:text-cc-faint focus:border-cc-primary";
+  return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}><h1 className="text-[28px] font-extrabold tracking-tight text-cc-text">Creá tu cuenta</h1><p className="mt-2 text-[14px] leading-6 text-cc-muted">Guardá tus compras y seguí cada pedido.</p><form onSubmit={submit} className="mt-8 space-y-5">{error && <motion.p role="alert" initial={{ opacity: 0, transform: "translateY(-4px)" }} animate={{ opacity: 1, transform: "translateY(0px)" }} transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }} className="flex items-center gap-2 rounded-cc-sm bg-cc-danger-soft px-3 py-2.5 text-[13px] font-medium text-cc-danger"><AlertCircle className="h-4 w-4" strokeWidth={1.75} />{error}</motion.p>}<label className="flex flex-col gap-1.5"><span className="text-[12px] font-semibold text-cc-secondary">Nombre</span><span className="relative"><User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cc-muted" strokeWidth={1.75} /><input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Tu nombre" autoComplete="name" className={inputClass} /></span></label><label className="flex flex-col gap-1.5"><span className="text-[12px] font-semibold text-cc-secondary">Correo</span><span className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cc-muted" strokeWidth={1.75} /><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="tucorreo@ejemplo.com" autoComplete="email" className={inputClass} /></span></label><label className="flex flex-col gap-1.5"><span className="text-[12px] font-semibold text-cc-secondary">Contraseña</span><span className="relative"><Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cc-muted" strokeWidth={1.75} /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Mínimo 8 caracteres" autoComplete="new-password" className={inputClass} /></span></label><button type="submit" disabled={loading} className="cc-focus-ring flex h-12 w-full items-center justify-center gap-2 rounded-full bg-cc-primary text-[14px] font-bold text-cc-shell transition-[background-color,transform] duration-[var(--cc-duration-fast)] ease-cc-out hover:bg-cc-primary-hover active:scale-[0.98] disabled:opacity-70">{loading && <Loader2 className="h-4 w-4 animate-spin" />}Crear cuenta</button></form><p className="mt-7 text-center text-[13px] text-cc-muted">¿Ya tenés cuenta? <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="cc-focus-ring font-semibold text-cc-primary hover:underline">Iniciá sesión</Link></p></motion.div>;
 }

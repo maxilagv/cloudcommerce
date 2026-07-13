@@ -2,94 +2,29 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Package, Truck } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { Copy, Package, Truck } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useOrders } from "@/store/orders";
 import { fetchOrderDetail, mapDetailToOrder } from "@/lib/api/orders";
+import { toast } from "@/store/toast";
 
-type SuccessOrder = {
-  id: string;
-  orderNumber: string;
-  total: number;
-  eta?: string;
-};
+type SuccessOrder = { id: string; orderNumber: string; total: number; eta?: string };
+const confetti = Array.from({ length: 14 }, (_, index) => ({ left: `${8 + index * 6}%`, color: index % 3 === 0 ? "var(--cc-success)" : index % 3 === 1 ? "var(--cc-primary)" : "var(--cc-warning)", x: (index % 2 === 0 ? -1 : 1) * (12 + index * 3), y: 80 + (index % 4) * 18 }));
+
+function SuccessMark() {
+  const reduceMotion = useReducedMotion();
+  return <div className="relative mx-auto h-24 w-24"><motion.span aria-hidden="true" initial={reduceMotion ? false : { opacity: 0.55, transform: "scale(0.8)" }} animate={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: "scale(1.6)" }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0 rounded-full border-2 border-cc-success" /><svg viewBox="0 0 96 96" className="relative h-full w-full" aria-label="Compra confirmada"><motion.circle cx="48" cy="48" r="38" fill="var(--cc-success)" initial={{ opacity: 0, transform: "scale(0.9)" }} animate={{ opacity: 1, transform: "scale(1)" }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} /><motion.path d="M31 49 L42 60 L66 37" fill="none" stroke="var(--cc-shell)" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} /></svg></div>;
+}
 
 export default function CheckoutSuccessPage() {
   const hydrated = useHydrated();
-  const lastOrderId = useOrders((s) => s.lastOrderId);
+  const lastOrderId = useOrders((state) => state.lastOrderId);
   const [order, setOrder] = useState<SuccessOrder | null>(null);
-
-  useEffect(() => {
-    if (!hydrated || !lastOrderId) return;
-    let cancelled = false;
-    void fetchOrderDetail(lastOrderId).then((detail) => {
-      if (cancelled || !detail) return;
-      const mapped = mapDetailToOrder(detail);
-      setOrder({
-        id: mapped.id,
-        orderNumber: mapped.orderNumber,
-        total: mapped.total,
-        eta: mapped.eta,
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, lastOrderId]);
-
-  if (!hydrated) {
-    return <div className="mx-auto max-w-[640px] px-4 py-24" />;
-  }
-
-  return (
-    <div className="mx-auto max-w-[640px] px-4 py-16 text-center sm:px-6">
-      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-cc-success-soft animate-[cc-badge-pop_360ms_ease-cc-spring]">
-        <CheckCircle2 className="h-11 w-11 text-cc-success" strokeWidth={1.8} />
-      </div>
-      <h1 className="mt-5 text-[24px] font-extrabold tracking-tight text-cc-text">
-        ¡Gracias por tu compra!
-      </h1>
-      <p className="mt-2 text-[14px] text-cc-muted">
-        Recibimos tu pedido y nos vamos a contactar para coordinar el pago y la entrega.
-      </p>
-
-      {order && (
-        <div className="mt-8 rounded-cc-lg border border-cc-border bg-white p-5 text-left">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] text-cc-muted">Número de pedido</span>
-            <span className="text-[14px] font-bold text-cc-text">#{order.orderNumber}</span>
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-[13px] text-cc-muted">Total</span>
-            <span className="text-[15px] font-extrabold tracking-tight text-cc-text">
-              {formatPrice(order.total)}
-            </span>
-          </div>
-          {order.eta && (
-            <div className="mt-3 flex items-center gap-2 rounded-cc-sm bg-cc-soft px-3 py-2.5 text-[13px] text-cc-text">
-              <Truck className="h-4 w-4 text-cc-primary" strokeWidth={1.9} />
-              Entrega estimada: <span className="font-semibold">{order.eta}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <Link
-          href={lastOrderId ? `/orders/${lastOrderId}` : "/orders"}
-          className="flex items-center justify-center gap-2 rounded-[11px] bg-cc-primary px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-cc-primary-hover"
-        >
-          <Package className="h-[18px] w-[18px]" strokeWidth={2} />
-          Ver mi pedido
-        </Link>
-        <Link
-          href="/"
-          className="flex items-center justify-center rounded-[11px] border border-cc-border bg-white px-6 py-3 text-[14px] font-semibold text-cc-text transition-colors hover:border-cc-primary-border hover:text-cc-primary"
-        >
-          Seguir comprando
-        </Link>
-      </div>
-    </div>
-  );
+  const reduceMotion = useReducedMotion();
+  useEffect(() => { if (!hydrated || !lastOrderId) return; let cancelled = false; void fetchOrderDetail(lastOrderId).then((detail) => { if (cancelled || !detail) return; const mapped = mapDetailToOrder(detail); setOrder({ id: mapped.id, orderNumber: mapped.orderNumber, total: mapped.total, eta: mapped.eta }); }); return () => { cancelled = true; }; }, [hydrated, lastOrderId]);
+  async function copyOrderNumber() { if (!order) return; try { await navigator.clipboard.writeText(order.orderNumber); toast.success("Número de pedido copiado"); } catch { toast.error("No se pudo copiar el número"); } }
+  if (!hydrated) return <div className="mx-auto max-w-[640px] px-4 py-24" />;
+  return <div className="relative mx-auto max-w-[640px] overflow-hidden px-4 py-16 text-center sm:px-6"><SuccessMark />{!reduceMotion && <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-14 h-52 overflow-hidden">{confetti.map((piece, index) => <motion.span key={index} initial={{ opacity: 0, transform: "translate(0px, 0px) rotate(0deg)" }} animate={{ opacity: [0, 1, 0], transform: `translate(${piece.x}px, ${piece.y}px) rotate(${index % 2 === 0 ? 180 : -180}deg)` }} transition={{ duration: 1.5, delay: index * 0.02, ease: [0.22, 1, 0.36, 1] }} className="absolute h-2 w-1 rounded-full" style={{ left: piece.left, backgroundColor: piece.color }} />)}</div>}<h1 className="mt-5 text-[24px] font-extrabold tracking-tight text-cc-text">Gracias por tu compra</h1><p className="mt-2 text-[14px] text-cc-muted">Recibimos tu pedido y nos vamos a contactar para coordinar el pago y la entrega.</p>{order && <motion.div initial={{ opacity: 0, transform: "translateY(8px)" }} animate={{ opacity: 1, transform: "translateY(0px)" }} transition={{ duration: 0.2, delay: 0.15, ease: [0.22, 1, 0.36, 1] }} className="mt-8 rounded-cc-lg border border-cc-border bg-cc-shell p-5 text-left shadow-cc-sm"><div className="flex items-center justify-between gap-3"><div><span className="block text-[13px] text-cc-muted">Número de pedido</span><span className="font-mono text-[16px] font-bold tabular-nums text-cc-text">#{order.orderNumber}</span></div><button type="button" onClick={copyOrderNumber} className="cc-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-cc-sm bg-cc-soft px-3 text-[12px] font-bold text-cc-primary transition-[background-color] duration-[var(--cc-duration-fast)] ease-cc-out hover:bg-cc-primary-soft"><Copy className="h-3.5 w-3.5" strokeWidth={1.75} />Copiar</button></div><motion.div initial={{ opacity: 0, transform: "translateY(6px)" }} animate={{ opacity: 1, transform: "translateY(0px)" }} transition={{ duration: 0.2, delay: 0.21, ease: [0.22, 1, 0.36, 1] }} className="mt-4 flex items-center justify-between border-t border-cc-border-subtle pt-4"><span className="text-[13px] text-cc-muted">Total</span><span className="text-[15px] font-extrabold tabular-nums tracking-tight text-cc-text">{formatPrice(order.total)}</span></motion.div>{order.eta && <motion.div initial={{ opacity: 0, transform: "translateY(6px)" }} animate={{ opacity: 1, transform: "translateY(0px)" }} transition={{ duration: 0.2, delay: 0.27, ease: [0.22, 1, 0.36, 1] }} className="mt-3 flex items-center gap-2 rounded-cc-sm bg-cc-soft px-3 py-2.5 text-[13px] text-cc-text"><Truck className="h-4 w-4 text-cc-primary" strokeWidth={1.75} />Entrega estimada: <span className="font-semibold">{order.eta}</span></motion.div>}</motion.div>}<div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/" className="cc-focus-ring inline-flex min-h-11 items-center justify-center rounded-cc-sm border border-cc-border bg-cc-shell px-6 text-[14px] font-semibold text-cc-text transition-[border-color,color] duration-[var(--cc-duration-fast)] ease-cc-out hover:border-cc-primary-border hover:text-cc-primary">Seguir comprando</Link><Link href={lastOrderId ? `/orders/${lastOrderId}` : "/orders"} className="cc-focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-cc-sm bg-cc-primary px-6 text-[14px] font-semibold text-cc-shell transition-[background-color,transform] duration-[var(--cc-duration-fast)] ease-cc-out hover:bg-cc-primary-hover active:scale-[0.98]"><Package className="h-[18px] w-[18px]" strokeWidth={1.75} />Ver mi pedido</Link></div></div>;
 }

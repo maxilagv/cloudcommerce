@@ -9,7 +9,7 @@ export default function AccountLayout({
   return (
     <AuthGuard>
       <div className="mx-auto max-w-[1440px] px-4 py-8 flex gap-8 items-start">
-        <AccountSidebar activePath="/account" />
+        <AccountSidebar />
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </AuthGuard>

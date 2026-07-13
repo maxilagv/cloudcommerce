@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -27,6 +28,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "@/store/toast";
 import { Modal } from "@/components/ui/modal";
+import { useCountUp } from "./hooks/use-count-up";
 
 const nf = new Intl.NumberFormat("es-AR");
 
@@ -73,15 +75,45 @@ const STATUS_META: Record<LoyaltyRedemptionStatus, { label: string; className: s
   },
 };
 
+function LevelProgress({ balance }: { balance: number }) {
+  const nextLevel = Math.max(1_000, Math.ceil((balance + 1) / 1_000) * 1_000);
+  const previousLevel = Math.max(0, nextLevel - 1_000);
+  const progress = Math.min((balance - previousLevel) / (nextLevel - previousLevel), 1);
+  const circumference = 2 * Math.PI * 42;
+  const displayed = useCountUp(balance, 0.9);
+
+  return (
+    <div className="flex items-center gap-3 rounded-cc-lg bg-cc-shell/10 px-3 py-2.5 text-cc-shell backdrop-blur-sm">
+      <div className="relative h-16 w-16 shrink-0">
+        <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-label={`${Math.round(progress * 100)}% del próximo nivel`}>
+          <defs><linearGradient id="cloudpoints-level" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="var(--cc-shell)" /><stop offset="100%" stopColor="var(--cc-primary-border)" /></linearGradient></defs>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--cc-shell)" strokeOpacity="0.25" strokeWidth="8" />
+          <motion.circle cx="50" cy="50" r="42" fill="none" stroke="url(#cloudpoints-level)" strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }} animate={{ strokeDashoffset: circumference * (1 - progress) }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }} />
+        </svg>
+        <span className="absolute inset-0 grid place-items-center text-[11px] font-black tabular-nums">{Math.round(progress * 100)}%</span>
+      </div>
+      <div><p className="text-[11px] font-semibold text-cc-shell/80">Próximo nivel</p><p className="text-[13px] font-extrabold">{displayed.toLocaleString("es-AR")} pts</p><p className="text-[11px] text-cc-shell/80">Meta: {nextLevel.toLocaleString("es-AR")}</p></div>
+    </div>
+  );
+}
+
 export function CloudPointsView() {
   const { summary, rewards, transactions, redemptions, loading, refresh } = useCloudPoints();
   const [toRedeem, setToRedeem] = useState<LoyaltyRewardView | null>(null);
   const [redeeming, setRedeeming] = useState(false);
   const [justRedeemed, setJustRedeemed] = useState<LoyaltyRedemptionView | null>(null);
+  const reduceMotion = useReducedMotion();
+  const [showShine, setShowShine] = useState(false);
 
   const balance = summary?.balance ?? 0;
   const rate = summary?.config.pointsPer1000 ?? 1;
   const programEnabled = summary?.config.isEnabled ?? true;
+
+  useEffect(() => {
+    if (reduceMotion || sessionStorage.getItem("cc-cloudpoints-shine")) return;
+    setShowShine(true);
+    sessionStorage.setItem("cc-cloudpoints-shine", "1");
+  }, [reduceMotion]);
 
   const idempotencyKey = useMemo(
     () => (toRedeem ? crypto.randomUUID() : ""),
@@ -138,9 +170,11 @@ export function CloudPointsView() {
       {/* Saldo */}
       <section
         aria-labelledby="cloudpoints-balance-title"
-        className="relative overflow-hidden rounded-cc-xl border border-cc-border bg-[radial-gradient(circle_at_82%_18%,rgba(255,255,255,.28),transparent_38%),linear-gradient(130deg,#0B6BFF,#004ECC)] p-6 text-white shadow-cc-md"
+        className="relative overflow-hidden rounded-cc-xl border border-cc-border p-6 text-cc-shell shadow-cc-md"
+        style={{ backgroundImage: "linear-gradient(135deg, var(--cc-primary), var(--cc-primary-hover))" }}
       >
-        <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-cc-shell/10 blur-3xl" />
+        {showShine && <motion.span aria-hidden="true" initial={{ opacity: 0, transform: "translateX(-140%) skewX(-20deg)" }} animate={{ opacity: [0, 0.35, 0], transform: "translateX(260%) skewX(-20deg)" }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }} className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-cc-shell/30" />}
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
             <p
@@ -156,7 +190,8 @@ export function CloudPointsView() {
               Acumulaste {nf.format(summary?.lifetimeEarned ?? 0)} puntos en total.
             </p>
           </div>
-          <div className="rounded-cc-lg bg-white/12 px-4 py-3 text-[13px] leading-5 backdrop-blur-sm">
+          <LevelProgress balance={balance} />
+          <div className="rounded-cc-lg bg-cc-shell/10 px-4 py-3 text-[13px] leading-5 backdrop-blur-sm">
             <p className="font-bold">¿Cómo sumo puntos?</p>
             <p className="text-white/85">
               Ganás <strong>{rate}</strong> {rate === 1 ? "punto" : "puntos"} por cada $1.000 en
@@ -292,7 +327,7 @@ export function CloudPointsView() {
               Todavía no hay movimientos. Tus puntos aparecen acá cuando se entrega una compra.
             </p>
           ) : (
-            <ul className="mt-3 divide-y divide-cc-border-subtle" role="list">
+            <ul className="cc-stagger mt-3 divide-y divide-cc-border-subtle" role="list">
               {transactions.slice(0, 8).map((tx: LoyaltyTransactionView) => {
                 const meta = TX_META[tx.type];
                 const Icon = tx.points >= 0 ? meta.icon : tx.type === LoyaltyTransactionType.REDEEM ? Gift : ArrowDownRight;

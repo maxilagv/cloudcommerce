@@ -25,7 +25,7 @@ export function CartSummary() {
       <Link
         href="/checkout"
         onClick={close}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-[11px] bg-[linear-gradient(180deg,#1374FF_0%,#005FEF_100%)] text-[14px] font-bold text-white shadow-[0_10px_22px_rgba(11,107,255,0.24)] transition-[transform,box-shadow,filter] duration-[160ms] hover:-translate-y-px hover:brightness-[1.03] hover:shadow-[0_14px_28px_rgba(11,107,255,0.32)] active:scale-[0.99]"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-[11px] bg-[linear-gradient(180deg,var(--cc-primary-btn-top)_0%,var(--cc-primary-btn-bottom)_100%)] text-[14px] font-bold text-white shadow-[0_10px_22px_rgba(11,107,255,0.24)] transition-[transform,box-shadow,filter] duration-[160ms] hover:-translate-y-px hover:brightness-[1.03] hover:shadow-[0_14px_28px_rgba(11,107,255,0.32)] active:scale-[0.99]"
       >
         <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={2} />
         Ir al pago

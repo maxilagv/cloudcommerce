@@ -12,6 +12,7 @@
   --cc-bg-surface: #ffffff;
   --cc-bg-surface-soft: #f8fafd;
   --cc-bg-surface-blue: #f3f8ff;
+  --cc-bg-surface-cyan: #effbff;
   --cc-bg-hover: #f6f9ff;
 
   /* Borders */
@@ -32,6 +33,10 @@
   --cc-primary-soft: #eaf3ff;
   --cc-primary-softer: #f4f8ff;
   --cc-primary-border: #bbd7ff;
+  /* Canonical glossy CTA fill — gradient stops for the primary button.
+     Single source of truth; reference via var() instead of inlining hexes. */
+  --cc-primary-btn-top: #1374ff;
+  --cc-primary-btn-bottom: #005fef;
 
   /* Semantic */
   --cc-success: #16a34a;
@@ -62,7 +67,7 @@
   --cc-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --cc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --cc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  /* Softer spring curve for CSS-only elements (JS-driven springs live in lib/motion.ts). */
+  /* Softer spring curve for CSS-only elements (JS-driven springs live in lib/motion.tsx). */
   --cc-ease-spring-soft: cubic-bezier(0.3, 1.2, 0.4, 1);
   --cc-duration-instant: 90ms;
   --cc-duration-fast: 140ms;
@@ -86,6 +91,7 @@
   --color-cc-surface: var(--cc-bg-surface);
   --color-cc-soft: var(--cc-bg-surface-soft);
   --color-cc-surface-blue: var(--cc-bg-surface-blue);
+  --color-cc-surface-cyan: var(--cc-bg-surface-cyan);
   --color-cc-hover: var(--cc-bg-hover);
 
   --color-cc-border-subtle: var(--cc-border-subtle);

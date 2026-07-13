@@ -1,103 +1,122 @@
 "use client";
 
 import Link from "next/link";
-import { Truck, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { motion } from "motion/react";
+import { CheckCircle2, Clock, Truck, XCircle } from "lucide-react";
 import type { OrderStatus } from "@/lib/account-types";
 import { formatOrderDate, mapOrderStatus } from "@/lib/api/orders";
 import { useMyOrders } from "@/hooks/use-my-orders";
+import { Skeleton } from "@/components/ui/skeleton";
+import { staggerContainer } from "@/lib/motion";
 
 const statusConfig: Record<
   OrderStatus,
-  { label: string; bgIcon: string; textIcon: string; bgBadge: string; textBadge: string; Icon: React.ComponentType<{ className?: string; strokeWidth?: number }> }
+  {
+    label: string;
+    iconBackground: string;
+    iconColor: string;
+    badgeBackground: string;
+    badgeColor: string;
+    Icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  }
 > = {
   "in-transit": {
     label: "En tránsito",
-    bgIcon: "bg-[#EAF3FF]",
-    textIcon: "text-cc-primary",
-    bgBadge: "bg-[#EAF3FF]",
-    textBadge: "text-cc-primary",
+    iconBackground: "bg-cc-primary-soft",
+    iconColor: "text-cc-primary",
+    badgeBackground: "bg-cc-primary-soft",
+    badgeColor: "text-cc-primary",
     Icon: Truck,
   },
   preparing: {
     label: "Preparando",
-    bgIcon: "bg-[#FFF7E6]",
-    textIcon: "text-[#B45309]",
-    bgBadge: "bg-[#FFF7E6]",
-    textBadge: "text-[#B45309]",
+    iconBackground: "bg-cc-warning-soft",
+    iconColor: "text-cc-text",
+    badgeBackground: "bg-cc-warning-soft",
+    badgeColor: "text-cc-text",
     Icon: Clock,
   },
   delivered: {
     label: "Entregado",
-    bgIcon: "bg-cc-success-soft",
-    textIcon: "text-cc-success",
-    bgBadge: "bg-cc-success-soft",
-    textBadge: "text-cc-success",
+    iconBackground: "bg-cc-success-soft",
+    iconColor: "text-cc-success",
+    badgeBackground: "bg-cc-success-soft",
+    badgeColor: "text-cc-success",
     Icon: CheckCircle2,
   },
   cancelled: {
     label: "Cancelado",
-    bgIcon: "bg-cc-border-subtle",
-    textIcon: "text-cc-muted",
-    bgBadge: "bg-cc-border-subtle",
-    textBadge: "text-cc-muted",
+    iconBackground: "bg-cc-border-subtle",
+    iconColor: "text-cc-muted",
+    badgeBackground: "bg-cc-border-subtle",
+    badgeColor: "text-cc-muted",
     Icon: XCircle,
   },
 };
 
 export function OrderStatusList() {
-  const { orders } = useMyOrders();
+  const { orders, loading } = useMyOrders();
   const recent = orders.slice(0, 4);
 
   return (
-    <div className="bg-cc-shell border border-cc-border-subtle rounded-cc-xl shadow-cc-sm p-5">
-      <h2 className="text-[15px] font-bold text-cc-text mb-4">Estado de pedidos</h2>
-      {recent.length === 0 ? (
-        <p className="py-8 text-center text-[13px] text-cc-muted">
-          Todavía no tenés pedidos.
-        </p>
+    <div className="rounded-cc-xl border border-cc-border-subtle bg-cc-shell p-5 shadow-cc-sm">
+      <h2 className="mb-4 text-[15px] font-bold text-cc-text">Estado de pedidos</h2>
+      {loading ? (
+        <div className="space-y-3" aria-label="Cargando pedidos" aria-busy="true">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div key={index} className="flex items-center gap-3 py-1">
+              <Skeleton variant="avatar" className="h-9 w-9" />
+              <div className="flex-1 space-y-2">
+                <Skeleton variant="text" className="w-3/5" />
+                <Skeleton variant="text" className="h-3 w-2/5" />
+              </div>
+              <Skeleton variant="text" className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
+      ) : recent.length === 0 ? (
+        <p className="py-8 text-center text-[13px] text-cc-muted">Todavía no tenés pedidos.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-cc-border-subtle">
+        <motion.ul
+          variants={staggerContainer(0.03)}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col divide-y divide-cc-border-subtle"
+        >
           {recent.map((order) => {
-            const cfg = statusConfig[mapOrderStatus(order.status)];
-            const { Icon } = cfg;
+            const config = statusConfig[mapOrderStatus(order.status)];
+            const Icon = config.Icon;
             return (
-              <li key={order.id}>
+              <motion.li
+                key={order.id}
+                variants={{ hidden: { opacity: 0, transform: "translateY(6px)" }, visible: { opacity: 1, transform: "translateY(0px)" } }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              >
                 <Link
                   href={`/orders/${order.id}`}
-                  className="flex items-center gap-3 py-3 hover:bg-cc-bg-hover rounded-cc-sm px-2 -mx-2 transition-colors duration-[140ms] ease-cc-out group"
+                  className="-mx-2 flex min-h-16 items-center gap-3 rounded-cc-sm px-2 py-3 transition-[background-color] duration-[var(--cc-duration-fast)] ease-cc-out hover:bg-cc-primary-softer"
                 >
-                  <span
-                    className={`h-9 w-9 rounded-full ${cfg.bgIcon} ${cfg.textIcon} flex items-center justify-center shrink-0`}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={1.8} />
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${config.iconBackground} ${config.iconColor}`}>
+                    <Icon className="h-4 w-4" strokeWidth={1.75} />
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-cc-text truncate">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-semibold text-cc-text">
                       Pedido #{order.orderNumber}
-                      <span className="text-cc-muted font-normal">
-                        {" "}· {order.itemCount} {order.itemCount === 1 ? "producto" : "productos"}
-                      </span>
-                    </p>
-                    <p className="text-[11px] text-cc-muted mt-0.5">
-                      {formatOrderDate(order.createdAt)}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 text-[11px] font-semibold px-2 py-1 rounded-full ${cfg.bgBadge} ${cfg.textBadge}`}
-                  >
-                    {cfg.label}
+                      <span className="font-normal text-cc-muted"> · {order.itemCount} {order.itemCount === 1 ? "producto" : "productos"}</span>
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-cc-muted">{formatOrderDate(order.createdAt)}</span>
+                  </span>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${config.badgeBackground} ${config.badgeColor}`}>
+                    {config.label}
                   </span>
                 </Link>
-              </li>
+              </motion.li>
             );
           })}
-        </ul>
+        </motion.ul>
       )}
-      <Link
-        href="/orders"
-        className="mt-3 block text-center text-[13px] font-semibold text-cc-primary hover:underline"
-      >
-        Ver todos los pedidos →
+      <Link href="/orders" className="cc-focus-ring mt-3 block text-center text-[13px] font-semibold text-cc-primary hover:underline">
+        Ver todos los pedidos
       </Link>
     </div>
   );

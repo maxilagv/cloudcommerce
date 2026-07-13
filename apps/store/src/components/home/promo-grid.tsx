@@ -11,7 +11,7 @@ import { RevealGroup } from "@/components/ui/reveal-group";
 import { SectionHeading } from "./section-heading";
 
 const toneClass = {
-  blue: "bg-[radial-gradient(circle_at_76%_22%,rgba(255,255,255,.34),transparent_30%),linear-gradient(135deg,#0B6BFF,#004ECC)] text-white border-transparent",
+  blue: "bg-[radial-gradient(circle_at_76%_22%,rgba(255,255,255,.34),transparent_30%),linear-gradient(135deg,var(--cc-primary),var(--cc-primary-active))] text-white border-transparent",
   light: "bg-gradient-to-br from-white to-cc-primary-softer text-cc-text border-cc-border",
   glass: "bg-white text-cc-text border-cc-border",
   success: "bg-gradient-to-br from-white to-cc-success-soft text-cc-text border-cc-border",

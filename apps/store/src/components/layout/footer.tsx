@@ -1,128 +1,18 @@
 import Link from "next/link";
-import { Headphones, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { Cloud, CreditCard, Headphones, Instagram, MapPin, RotateCcw, ShieldCheck, Truck, Youtube } from "lucide-react";
 import { getStoreCategories } from "@/lib/api/catalog";
 import { categoryHref } from "@/lib/catalog-types";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo/site";
-import { BrandLogo } from "./brand-logo";
+import { SITE_NAME } from "@/lib/seo/site";
+import { FooterNewsletter } from "@/components/ui/footer-newsletter";
 
-const SHOP_LINKS = [
-  { label: "Catálogo completo", href: "/products" },
-  { label: "Ofertas", href: "/products?deals=1" },
-  { label: "Novedades", href: "/products?sort=newest" },
-  { label: "Comparar productos", href: "/compare" },
-];
+const shopLinks = [{ label: "Catálogo completo", href: "/products" }, { label: "Ofertas", href: "/products?deals=1" }, { label: "Novedades", href: "/products?sort=newest" }, { label: "Comparar productos", href: "/compare" }];
+const accountLinks = [{ label: "Mi cuenta", href: "/account" }, { label: "Mis pedidos", href: "/orders" }, { label: "Carrito", href: "/cart" }, { label: "Crear cuenta", href: "/register" }];
+const helpLinks = [{ label: "Preguntas frecuentes", href: "/" }, { label: "Envíos y entregas", href: "/" }, { label: "Cambios y devoluciones", href: "/" }, { label: "Contactanos", href: "mailto:soporte@cloudcommerce.com" }];
+const services = [{ icon: Truck, label: "Envíos a todo el país" }, { icon: ShieldCheck, label: "Compra protegida" }, { icon: RotateCcw, label: "Devoluciones simples" }, { icon: Headphones, label: "Soporte experto" }];
 
-const ACCOUNT_LINKS = [
-  { label: "Mi cuenta", href: "/account" },
-  { label: "Mis pedidos", href: "/orders" },
-  { label: "Carrito", href: "/cart" },
-  { label: "Crear cuenta", href: "/register" },
-];
+function FooterColumn({ title, links }: { title: string; links: { label: string; href: string }[] }) { return <nav aria-label={title}><p className="text-[13px] font-bold text-cc-shell">{title}</p><ul className="mt-3 grid gap-2.5">{links.map((link) => <li key={`${link.href}-${link.label}`}><Link href={link.href} className="cc-focus-ring text-[13px] text-cc-primary-border transition-[color] duration-[var(--cc-duration-fast)] ease-cc-out hover:text-cc-shell">{link.label}</Link></li>)}</ul></nav>; }
 
-const SERVICE_ITEMS = [
-  { icon: Truck, label: "Envíos a todo el país" },
-  { icon: ShieldCheck, label: "Compra 100% protegida" },
-  { icon: RotateCcw, label: "Devoluciones hasta 30 días" },
-  { icon: Headphones, label: "Soporte experto" },
-];
-
-/** Site footer — brand, real category links, shop/account navigation. */
 export async function SiteFooter() {
-  const categories = (await getStoreCategories()).filter((c) => c.isActive).slice(0, 6);
-
-  return (
-    <footer className="border-t border-cc-border bg-cc-surface">
-      <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          {/* Brand */}
-          <div className="max-w-[320px]">
-            <BrandLogo />
-            <p className="mt-3 text-[13px] leading-6 text-cc-secondary">
-              {SITE_TAGLINE}. Electrónica y electrodomésticos originales con
-              garantía oficial y envío rápido a todo el país.
-            </p>
-            <ul className="mt-4 grid gap-2">
-              {SERVICE_ITEMS.map(({ icon: Icon, label }) => (
-                <li
-                  key={label}
-                  className="flex items-center gap-2 text-[12px] font-semibold text-cc-muted"
-                >
-                  <Icon className="h-4 w-4 text-cc-primary" strokeWidth={1.9} />
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Categories (real) */}
-          {categories.length > 0 && (
-            <nav aria-label="Categorías">
-              <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-cc-text">
-                Categorías
-              </p>
-              <ul className="mt-3 grid gap-2">
-                {categories.map((category) => (
-                  <li key={category.id}>
-                    <Link
-                      href={categoryHref(category.slug)}
-                      className="cc-focus-ring text-[13px] text-cc-secondary transition-colors duration-[140ms] hover:text-cc-primary"
-                    >
-                      {category.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-
-          {/* Shop */}
-          <nav aria-label="Comprar">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-cc-text">
-              Comprar
-            </p>
-            <ul className="mt-3 grid gap-2">
-              {SHOP_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="cc-focus-ring text-[13px] text-cc-secondary transition-colors duration-[140ms] hover:text-cc-primary"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* Account */}
-          <nav aria-label="Tu cuenta">
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-cc-text">
-              Tu cuenta
-            </p>
-            <ul className="mt-3 grid gap-2">
-              {ACCOUNT_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="cc-focus-ring text-[13px] text-cc-secondary transition-colors duration-[140ms] hover:text-cc-primary"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-cc-border-subtle pt-6 sm:flex-row">
-          <p className="text-[12px] text-cc-muted">
-            © {new Date().getFullYear()} {SITE_NAME}. Todos los derechos reservados.
-          </p>
-          <p className="text-[12px] text-cc-faint">
-            Precios expresados en pesos argentinos (ARS).
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
+  const categories = (await getStoreCategories()).filter((category) => category.isActive).slice(0, 6);
+  return <footer className="mt-12 bg-cc-text text-cc-shell"><div className="mx-auto max-w-[1440px] px-4 sm:px-6"><section className="border-b border-cc-shell/15 py-10"><p className="text-[24px] font-extrabold tracking-tight">Enterate antes que nadie</p><p className="mt-2 text-[14px] text-cc-primary-border">Ofertas, novedades y lanzamientos elegidos para vos.</p><FooterNewsletter /></section><section className="grid gap-10 py-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]"><div><Link href="/" className="cc-focus-ring inline-flex items-center gap-2 rounded-cc-sm"><span className="grid h-9 w-9 place-items-center rounded-cc-sm bg-cc-shell text-cc-primary"><Cloud className="h-5 w-5" strokeWidth={1.75} /></span><span className="text-[18px] font-extrabold tracking-tight">CloudCommerce</span></Link><p className="mt-4 max-w-[280px] text-[13px] leading-6 text-cc-primary-border">Tecnología y hogar para comprar con confianza, desde cualquier lugar del país.</p></div>{categories.length > 0 && <nav aria-label="Categorías"><p className="text-[13px] font-bold text-cc-shell">Categorías</p><ul className="mt-3 grid gap-2.5">{categories.map((category) => <li key={category.id}><Link href={categoryHref(category.slug)} className="cc-focus-ring text-[13px] text-cc-primary-border transition-[color] duration-[var(--cc-duration-fast)] ease-cc-out hover:text-cc-shell">{category.name}</Link></li>)}</ul></nav>}<FooterColumn title="Comprar" links={shopLinks} /><FooterColumn title="Ayuda" links={helpLinks} /><FooterColumn title="Tu cuenta" links={accountLinks} /></section><section className="grid gap-4 border-y border-cc-shell/15 py-5 md:grid-cols-[1fr_auto]"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{services.map(({ icon: Icon, label }) => <div key={label} className="flex items-center gap-2 text-[12px] font-medium text-cc-primary-border"><Icon className="h-4 w-4 text-cc-shell" strokeWidth={1.75} />{label}</div>)}</div><div className="flex items-center gap-3 text-[12px] text-cc-primary-border"><CreditCard className="h-4 w-4" strokeWidth={1.75} /><span>Visa</span><span>Mastercard</span><span>Amex</span><label className="sr-only" htmlFor="footer-location">Ubicación</label><select id="footer-location" defaultValue="AR" className="rounded-cc-xs border border-cc-shell/20 bg-cc-text px-2 py-1 text-[12px] text-cc-shell"><option value="AR">Argentina</option></select></div></section><section className="flex flex-col gap-4 py-6 text-[12px] text-cc-primary-border sm:flex-row sm:items-center sm:justify-between"><p>© {new Date().getFullYear()} {SITE_NAME}. Todos los derechos reservados.</p><div className="flex items-center gap-4"><Link href="/" className="cc-focus-ring hover:text-cc-shell">Términos</Link><Link href="/" className="cc-focus-ring hover:text-cc-shell">Privacidad</Link><Link href="/" aria-label="Instagram de CloudCommerce" className="cc-focus-ring transition-[color,transform] duration-[var(--cc-duration-fast)] ease-cc-out hover:-translate-y-px hover:text-cc-shell"><Instagram className="h-4 w-4" strokeWidth={1.75} /></Link><Link href="/" aria-label="YouTube de CloudCommerce" className="cc-focus-ring transition-[color,transform] duration-[var(--cc-duration-fast)] ease-cc-out hover:-translate-y-px hover:text-cc-shell"><Youtube className="h-4 w-4" strokeWidth={1.75} /></Link><MapPin className="h-4 w-4" strokeWidth={1.75} /><span>Argentina</span></div></section></div></footer>;
 }

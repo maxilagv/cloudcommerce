@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ArrowRight, BadgeCheck, PackageCheck, ShieldCheck, Sparkles } from "lucide-react";
 import { homeHeroCopy, type HeroShowcaseImage } from "@/lib/home-data";
 import { BLUR_DATA_URL } from "@/lib/utils";
@@ -18,9 +18,11 @@ const chips = [
 export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
   const sectionRef = useRef<HTMLElement>(null);
   // Background layers drift at different rates as the hero scrolls past.
+  // Raw scroll-linked MotionValues bypass MotionConfig, so gate them here.
+  const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
-  const blobY = useTransform(scrollYProgress, [0, 1], [0, 40]);
-  const ringY = useTransform(scrollYProgress, [0, 1], [0, 70]);
+  const blobY = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [0, 40]);
+  const ringY = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [0, 70]);
 
   const { rotateX, rotateY, onMouseMove, onMouseLeave } = useTilt3d(4);
 
@@ -28,7 +30,7 @@ export function HomeHero({ showcase }: { showcase: HeroShowcaseImage[] }) {
     <section
       ref={sectionRef}
       aria-labelledby="home-hero-title"
-      className="relative overflow-hidden rounded-[30px] border border-cc-border bg-[radial-gradient(circle_at_76%_20%,rgba(11,107,255,0.18),transparent_30%),linear-gradient(135deg,#FFFFFF_0%,#F4F8FF_46%,#EAF3FF_100%)] px-5 py-8 shadow-cc-lg sm:px-8 lg:px-16 lg:py-12"
+      className="relative overflow-hidden rounded-[30px] border border-cc-border bg-[radial-gradient(circle_at_76%_20%,rgba(11,107,255,0.18),transparent_30%),linear-gradient(135deg,#ffffff_0%,var(--cc-primary-softer)_46%,var(--cc-primary-soft)_100%)] px-5 py-8 shadow-cc-lg sm:px-8 lg:px-16 lg:py-12"
     >
       <motion.div style={{ y: blobY }} className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-white/70 blur-3xl" />
       <motion.div style={{ y: ringY }} className="absolute right-20 top-8 h-28 w-28 rounded-full border border-white/70" />

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, Check, Loader2, Lock } from "lucide-react";
 import { TRPCClientError } from "@trpc/client";
 import { ShippingMethod } from "@cloudcommerce/types";
@@ -52,6 +53,9 @@ export default function CheckoutPage() {
   const [shippingId, setShippingId] = useState(DEFAULT_SHIPPING_ID);
   const [payment, setPayment] = useState<PaymentData>(emptyPayment);
   const [placing, setPlacing] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   // Protects against double-submit; regenerated after a failed attempt.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
@@ -92,8 +96,10 @@ export default function CheckoutPage() {
     if (step === 0 && !isPickup) {
       const errs = validateAddress(address);
       setAddressErrors(errs);
+      setSubmitAttempted(true);
       if (Object.keys(errs).length > 0) return;
     }
+    setDirection(1);
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
@@ -125,7 +131,8 @@ export default function CheckoutPage() {
       setLastOrderId(result.orderId);
       clearCart();
       toast.success("¡Pedido confirmado!", { description: `#${result.orderNumber}` });
-      router.replace("/checkout/success");
+      setCompleted(true);
+      window.setTimeout(() => router.replace("/checkout/success"), 400);
     } catch (err) {
       const message =
         err instanceof TRPCClientError && err.message
@@ -150,16 +157,23 @@ export default function CheckoutPage() {
           return (
             <li key={label} className="flex flex-1 items-center gap-2">
               <div className="flex items-center gap-2">
-                <span
+                <motion.span
+                  layout
                   className={cn(
-                    "grid h-7 w-7 place-items-center rounded-full text-[12px] font-bold transition-colors",
+                    "grid h-7 w-7 place-items-center rounded-full text-[12px] font-bold transition-[background-color,color] duration-[var(--cc-duration-fast)] ease-cc-out",
                     done && "bg-cc-success text-white",
                     current && "bg-cc-primary text-white",
                     !done && !current && "bg-cc-soft text-cc-muted",
                   )}
                 >
-                  {done ? <Check className="h-4 w-4" strokeWidth={3} /> : i + 1}
-                </span>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {done ? (
+                      <motion.span key="done" initial={{ opacity: 0, transform: "scale(0.9)" }} animate={{ opacity: 1, transform: "scale(1)" }} exit={{ opacity: 0, transform: "scale(0.9)" }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}><Check className="h-4 w-4" strokeWidth={3} /></motion.span>
+                    ) : (
+                      <motion.span key="number" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>{i + 1}</motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.span>
                 <span
                   className={cn(
                     "hidden text-[13px] font-medium sm:inline",
@@ -179,7 +193,15 @@ export default function CheckoutPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Step content */}
-        <div className="rounded-cc-lg border border-cc-border bg-white p-5 sm:p-6">
+        <div className="rounded-cc-lg border border-cc-border bg-cc-shell p-5 sm:p-6">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, transform: `translateX(${direction * 24}px)` }}
+              animate={{ opacity: 1, transform: "translateX(0px)" }}
+              exit={{ opacity: 0, transform: `translateX(${-direction * 24}px)` }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
           {step === 0 && (
             <>
               <h2 className="mb-4 text-[16px] font-bold text-cc-text">Dirección de envío</h2>
@@ -188,7 +210,7 @@ export default function CheckoutPage() {
                   Elegiste retiro coordinado: la dirección es opcional.
                 </p>
               )}
-              <AddressForm value={address} onChange={setAddress} errors={addressErrors} />
+              <AddressForm value={address} onChange={setAddress} errors={addressErrors} shouldShake={submitAttempted} />
             </>
           )}
           {step === 1 && (
@@ -233,12 +255,14 @@ export default function CheckoutPage() {
             </>
           )}
 
+            </motion.div>
+          </AnimatePresence>
           {/* Nav */}
           <div className="mt-6 flex items-center justify-between gap-3">
             {step > 0 ? (
               <button
                 type="button"
-                onClick={() => setStep((s) => Math.max(s - 1, 0))}
+                onClick={() => { setDirection(-1); setStep((s) => Math.max(s - 1, 0)); }}
                 disabled={placing}
                 className="flex items-center gap-1.5 text-[13px] font-medium text-cc-secondary hover:text-cc-text disabled:opacity-50"
               >
@@ -253,7 +277,7 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={next}
-                className="rounded-[11px] bg-cc-primary px-6 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-cc-primary-hover"
+                className="cc-focus-ring rounded-cc-sm bg-cc-primary px-6 py-2.5 text-[14px] font-semibold text-cc-shell transition-[background-color,transform] duration-[var(--cc-duration-fast)] ease-cc-out hover:bg-cc-primary-hover active:scale-[0.98]"
               >
                 Continuar
               </button>
@@ -262,9 +286,11 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={placeOrder}
                 disabled={placing}
-                className="flex items-center gap-2 rounded-[11px] bg-[linear-gradient(180deg,#1374FF_0%,#005FEF_100%)] px-6 py-2.5 text-[14px] font-bold text-white shadow-[0_10px_22px_rgba(11,107,255,0.24)] transition-[filter] hover:brightness-[1.03] disabled:opacity-70"
+                className="cc-focus-ring flex items-center gap-2 rounded-cc-sm bg-cc-primary px-6 py-2.5 text-[14px] font-bold text-cc-shell shadow-cc-sm transition-[background-color,transform] duration-[var(--cc-duration-fast)] ease-cc-out hover:bg-cc-primary-hover active:scale-[0.98] disabled:opacity-70"
               >
-                {placing ? (
+                {completed ? (
+                  <><Check className="h-4 w-4 text-cc-success" strokeWidth={2.4} />Pedido confirmado</>
+                ) : placing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Procesando…
@@ -281,7 +307,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Order summary */}
-        <aside className="h-fit rounded-cc-lg border border-cc-border bg-white p-5 lg:sticky lg:top-[84px]">
+        <aside className="h-fit rounded-cc-lg border border-cc-border bg-cc-shell p-5 lg:sticky lg:top-[84px]">
           <h2 className="text-[15px] font-bold text-cc-text">Tu pedido</h2>
           <div className="mt-4 space-y-3">
             {items.map((ci) => (

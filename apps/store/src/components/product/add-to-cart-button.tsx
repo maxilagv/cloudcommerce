@@ -91,7 +91,7 @@ export function AddToCartButton({
           "active:translate-y-0 active:scale-[0.99]",
           added
             ? "bg-cc-success shadow-[0_10px_22px_rgba(22,163,74,0.24)]"
-            : "bg-[linear-gradient(180deg,#1374FF_0%,#005FEF_100%)] shadow-[0_10px_22px_rgba(11,107,255,0.24)] hover:-translate-y-px hover:brightness-[1.03] hover:shadow-[0_14px_28px_rgba(11,107,255,0.32)]",
+            : "bg-[linear-gradient(180deg,var(--cc-primary-btn-top)_0%,var(--cc-primary-btn-bottom)_100%)] shadow-[0_10px_22px_rgba(11,107,255,0.24)] hover:-translate-y-px hover:brightness-[1.03] hover:shadow-[0_14px_28px_rgba(11,107,255,0.32)]",
         )}
       >
         <AnimatePresence mode="popLayout" initial={false}>

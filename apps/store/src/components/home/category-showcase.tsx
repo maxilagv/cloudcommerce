@@ -12,8 +12,8 @@ import { SectionHeading } from "./section-heading";
 
 const accentClass = {
   blue: "from-white to-cc-primary-softer",
-  cyan: "from-white to-[#EFFBFF]",
-  neutral: "from-white to-[#F8FAFD]",
+  cyan: "from-white to-cc-surface-cyan",
+  neutral: "from-white to-cc-soft",
 };
 
 export function CategoryShowcase({ categories }: { categories: HomeCategory[] }) {
