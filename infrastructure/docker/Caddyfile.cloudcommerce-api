@@ -1,0 +1,23 @@
+# Temporary public hostname backed by sslip.io. Replace with the real API
+# domain once DNS is available, then update CORS_ALLOWED_ORIGINS as well.
+cloudcommerce-api.173-249-11-196.sslip.io {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	reverse_proxy cloudcommerce-api:4000 {
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 60s
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+}

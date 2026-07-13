@@ -36,11 +36,13 @@ FROM node:lts-alpine AS runtime
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 4000) + '/health/live').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-USER node
 COPY --from=prod-deps /app /app
 COPY --from=build /app/apps/api/dist /app/apps/api/dist
 COPY --from=build /app/packages/database/dist /app/packages/database/dist
+COPY --from=build /app/packages/database/src/migrations /app/packages/database/src/migrations
 COPY --from=build /app/packages/trpc/dist /app/packages/trpc/dist
 COPY --from=build /app/packages/types/dist /app/packages/types/dist
 COPY --from=build /app/packages/validators/dist /app/packages/validators/dist
+RUN mkdir -p /data/media && chown -R node:node /data
+USER node
 CMD ["node", "dist/index.js"]

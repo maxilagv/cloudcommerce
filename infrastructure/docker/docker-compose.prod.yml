@@ -1,0 +1,107 @@
+name: cloudcommerce-api
+
+x-logging: &default-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-api-environment: &api-environment
+  NODE_ENV: production
+  HOST: 0.0.0.0
+  PORT: "4000"
+  DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  REDIS_URL: redis://redis:6379
+  STORAGE_LOCAL_ROOT: /data/media
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+    mem_limit: 1g
+    pids_limit: 256
+
+  redis:
+    image: redis:7.4.2-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+    mem_limit: 384m
+    pids_limit: 128
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    env_file: ${CLOUDCOMMERCE_ENV_FILE:-.env}
+    environment: *api-environment
+    working_dir: /app/packages/database
+    command: ["node", "dist/migrate.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+    read_only: true
+    tmpfs: [/tmp]
+    logging: *default-logging
+    mem_limit: 512m
+    pids_limit: 128
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: ${CLOUDCOMMERCE_ENV_FILE:-.env}
+    environment: *api-environment
+    volumes:
+      - media-data:/data/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      default:
+      edge:
+        aliases: [cloudcommerce-api]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+    tmpfs: [/tmp]
+    logging: *default-logging
+    mem_limit: 1g
+    pids_limit: 256
+
+volumes:
+  postgres-data:
+  redis-data:
+  media-data:
+
+networks:
+  edge:
+    external: true
+    name: crm_layer_prod_default
